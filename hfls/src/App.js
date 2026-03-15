@@ -14,18 +14,33 @@ const CAT_ICONS = {
   "피난구조설비": "🚪", "소화활동설비": "🚒"
 };
 
-// 노유자시설 그룹핑 (select 옵션 그룹 표시용)
+// 건물유형 그룹 — 소방시설법 시행령 별표 2 <개정 2025.11.25> 호수 순서
 const TYPE_GROUPS = [
-  { label: "공동주택", ids: ["apt", "villa"] },
-  { label: "근린·업무·판매", ids: ["geunlin", "office", "retail"] },
-  { label: "창고·공장", ids: ["warehouse", "factory"] },
-  { label: "의료시설", ids: ["medical"] },
+  { label: "제1호: 공동주택",             ids: ["apt", "villa", "multiplex", "dormitory"] },
+  { label: "제2호: 근린생활시설",          ids: ["geunlin"] },
+  { label: "제3호: 문화 및 집회시설",      ids: ["culture"] },
+  { label: "제4호: 종교시설",             ids: ["religion"] },
+  { label: "제5호: 판매시설",             ids: ["retail"] },
+  { label: "제6호: 운수시설",             ids: ["transport"] },
+  { label: "제7호: 의료시설",             ids: ["medical"] },
+  { label: "제8호: 교육연구시설",          ids: ["education"] },
   {
-    label: "노유자시설 (시행령 별표 2 제11호)",
+    label: "제9호: 노유자 시설 ⚠ 생활/이용 구분",
     ids: ["senior_life", "senior_user"],
-    notice: "★ 시행령 별표 2 제11호 가·나목 기준 분리 (소방시설 기준 상이)"
+    notice: "★ 별표 4 소방시설 기준상 생활시설(24시간 거주)과 이용시설(낮 이용)의 적용기준이 다름"
   },
-  { label: "교육·복합", ids: ["education", "complex"] },
+  { label: "제10호: 수련시설",            ids: ["training"] },
+  { label: "제11호: 운동시설",            ids: ["sports"] },
+  { label: "제12호: 업무시설",            ids: ["office"] },
+  { label: "제13호: 숙박시설",            ids: ["lodging"] },
+  { label: "제14호: 위락시설",            ids: ["entertainment"] },
+  { label: "제15호: 공장",               ids: ["factory"] },
+  { label: "제16호: 창고시설",            ids: ["warehouse"] },
+  { label: "제18호: 항공기·자동차 관련",   ids: ["parking"] },
+  { label: "제22호: 방송통신시설",         ids: ["broadcast"] },
+  { label: "제23호: 발전시설",            ids: ["power"] },
+  { label: "제27호: 지하상가",            ids: ["underground"] },
+  { label: "제30호: 복합건축물",           ids: ["complex"] },
 ];
 
 function Field({ label, children }) {
