@@ -195,13 +195,21 @@ export const BUILDING_TYPES = [
   // 8. 교육연구시설
   { id: "school",        name: "교육연구시설 — 학교", catNo: "8", isSchool: true },
   { id: "education",     name: "교육연구시설 — 교육원·직업훈련소·학원·연구소·도서관", catNo: "8" },
-  // 9. 노유자 시설
-  { id: "welfare_res",   name: "노유자시설 — 노유자 생활시설 (입소형·거주형)", catNo: "9", isWelfareRes: true },
-  { id: "welfare_child", name: "노유자시설 — 아동 관련 시설 (어린이집 등)", catNo: "9" },
-  { id: "welfare_elder", name: "노유자시설 — 노인 관련 시설 (요양원 등)", catNo: "9" },
-  { id: "welfare_dis",   name: "노유자시설 — 장애인 관련 시설", catNo: "9" },
-  { id: "welfare_ment",  name: "노유자시설 — 정신질환자 관련 시설", catNo: "9" },
-  { id: "welfare_home",  name: "노유자시설 — 노숙인 관련 시설", catNo: "9" },
+  // 9. 노유자 시설 — 생활시설 / 이용시설 2종 구분
+  {
+    id: "welfare_res",
+    name: "노유자시설 — 노유자 생활시설 (입소·거주형: 노인요양시설·장애인거주시설·아동복지시설 등)",
+    catNo: "9",
+    isWelfareRes: true,   // 면적 무관 → 간이SPK(or SPK) + 자탐 + 자동화재속보 전부 의무
+    isWelfare: true
+  },
+  {
+    id: "welfare_use",
+    name: "노유자시설 — 노유자 이용시설 (주간보호·단기보호·이용형: 어린이집 통원 등)",
+    catNo: "9",
+    isWelfareUse: true,   // 면적 기준에 따라 적용
+    isWelfare: true
+  },
   // 10. 수련시설
   { id: "recreation",    name: "수련시설 — 청소년수련관·수련원·유스호스텔", catNo: "10" },
   // 11. 운동시설
@@ -302,11 +310,12 @@ function _era3d(bt, area, gf, bf, occ) {
   const r = [];
   const cat = bt.catNo;
   const {
-    isApt, isNursing, isMental, isWelfareRes, isTunnel, isUGDuct, isUGMall,
+    isApt, isNursing, isMental, isWelfareRes, isWelfareUse,
+    isTunnel, isUGDuct, isUGMall,
     isCattle, isGas, isParking, isHangar, isHotel, isMovie, isLargeRetail,
     isSubway, isSchool, isHeritage
   } = bt;
-  const isWelfare   = cat === "9";
+  const isWelfare   = cat === "9";          // 노유자시설 전체
   const isMixed     = cat === "30";
   const isHospital  = cat === "7";
 
@@ -376,20 +385,45 @@ function _era3d(bt, area, gf, bf, occ) {
       "별표4 제4호다목", "NFTC 103A");
     hasSPK = true;
   }
-  if (!hasSPK && (isHospital || isWelfare) && area >= 600) {
+  // 의료시설 스프링클러 (600㎡이상)
+  if (!hasSPK && isHospital && area >= 600) {
     _push(r, "스프링클러설비", "소화설비",
       `연면적 ${_a(area)}㎡ (600㎡ 이상) 모든 층`,
       "별표4 제4호라목", "NFTC 103A");
     hasSPK = true;
   }
 
-  // 간이스프링클러
-  if (!hasSPK && isWelfare && area < 600) {
+  // ★ 노유자 생활시설 — 면적 무관 스프링클러(600이상) or 간이스프링클러(600미만) 의무
+  if (!hasSPK && isWelfareRes) {
+    if (area >= 600) {
+      _push(r, "스프링클러설비", "소화설비",
+        `연면적 ${_a(area)}㎡ (노유자 생활시설 600㎡ 이상) 모든 층`,
+        "별표4 제4호라목", "NFTC 103A");
+    } else {
+      _push(r, "간이스프링클러설비", "소화설비",
+        `연면적 ${_a(area)}㎡ (노유자 생활시설 600㎡ 미만 — 면적 무관 의무)`,
+        "별표4 제5호가목", "NFTC 103B",
+        "노유자 생활시설은 면적 관계없이 의무 설치");
+    }
+    hasSPK = true;
+  }
+
+  // ★ 노유자 이용시설 — 면적 기준 적용
+  if (!hasSPK && isWelfareUse && area >= 600) {
+    _push(r, "스프링클러설비", "소화설비",
+      `연면적 ${_a(area)}㎡ (노유자 이용시설 600㎡ 이상) 모든 층`,
+      "별표4 제4호라목", "NFTC 103A");
+    hasSPK = true;
+  }
+  if (!hasSPK && isWelfareUse && area < 600) {
     _push(r, "간이스프링클러설비", "소화설비",
-      `연면적 ${_a(area)}㎡ (600㎡ 미만 노유자시설)`,
+      `연면적 ${_a(area)}㎡ (노유자 이용시설 600㎡ 미만)`,
       "별표4 제5호가목", "NFTC 103B",
       "단독경보형 감지기 설치 시 간이스프링클러 제외 가능");
+    hasSPK = true;
   }
+
+  // 요양병원 간이스프링클러 (600㎡ 미만)
   if (!hasSPK && isNursing && area < 600) {
     _push(r, "간이스프링클러설비", "소화설비",
       `연면적 ${_a(area)}㎡ (600㎡ 미만 요양병원)`,
@@ -439,9 +473,10 @@ function _era3d(bt, area, gf, bf, occ) {
       `연면적 ${_a(area)}㎡ (2,000㎡ 미만 합숙소·기숙사)`,
       "별표4 제2호나목", "NFTC 201");
   }
-  if (isWelfare && area < 600) {
+  // 단독경보형 감지기 — 노유자 이용시설만 해당 (생활시설은 자탐 의무)
+  if (isWelfareUse && area < 600) {
     _push(r, "단독경보형 감지기", "경보설비",
-      `연면적 ${_a(area)}㎡ (600㎡ 미만 노유자시설)`,
+      `연면적 ${_a(area)}㎡ (600㎡ 미만 노유자 이용시설)`,
       "별표4 제2호나목", "NFTC 201");
   }
   if (cat === "13" && area < 600) {
@@ -454,11 +489,20 @@ function _era3d(bt, area, gf, bf, occ) {
   let hasAutoDetect = false;
   let adCond = "", adArt = "";
 
-  if (["2","7","9","13","14","26","30"].includes(cat) && area >= 600) {
-    hasAutoDetect = true; adCond = `연면적 ${_a(area)}㎡ (600㎡ 이상)`;
-    adArt = "별표4 제2호다목1)";
+  // ★ 노유자 생활시설 — 면적 무관 자탐 의무
+  if (!hasAutoDetect && isWelfareRes) {
+    hasAutoDetect = true;
+    adCond = "노유자 생활시설 모든 층 (면적 무관)";
+    adArt = "별표4 제2호다목2)";
   }
-  if (!hasAutoDetect && (isApt || isMental || isNursing || isWelfareRes)) {
+
+  if (["2","7","9","13","14","26","30"].includes(cat) && area >= 600) {
+    if (!hasAutoDetect) {
+      hasAutoDetect = true; adCond = `연면적 ${_a(area)}㎡ (600㎡ 이상)`;
+      adArt = "별표4 제2호다목1)";
+    }
+  }
+  if (!hasAutoDetect && (isApt || isMental || isNursing)) {
     hasAutoDetect = true; adCond = "모든 층 (규모 무관)";
     adArt = "별표4 제2호다목2)";
   }
@@ -496,22 +540,27 @@ function _era3d(bt, area, gf, bf, occ) {
       "별표4 제2호라목", "NFTC 203");
   }
 
-  // 자동화재속보설비
+  // ★ 자동화재속보설비
+  // 노유자 생활시설 — 면적 무관 의무
+  if (isWelfareRes) {
+    _push(r, "자동화재속보설비", "경보설비",
+      "노유자 생활시설 (면적 무관)",
+      "별표4 제2호마목2)", "NFTC 204");
+  }
+  // 노유자 이용시설 — 500㎡ 이상
+  if (isWelfareUse && area >= 500) {
+    _push(r, "자동화재속보설비", "경보설비",
+      `연면적 ${_a(area)}㎡ (500㎡ 이상 노유자 이용시설)`,
+      "별표4 제2호마목3)", "NFTC 204");
+  }
+  // 업무·공장·창고·발전·복합 — 1,500㎡이상 층
   if (["12","15","16","23","30"].includes(cat) && area >= 1500) {
     _push(r, "자동화재속보설비", "경보설비",
       `바닥면적 1,500㎡ 이상인 층 있음`,
       "별표4 제2호마목1)", "NFTC 204",
       "방재실 등 수신기 설치 장소에 24시간 상주 근무자 있으면 면제 가능");
   }
-  if (isWelfareRes) {
-    _push(r, "자동화재속보설비", "경보설비",
-      "노유자 생활시설 (규모 무관)",
-      "별표4 제2호마목2)", "NFTC 204");
-  } else if (isWelfare && area >= 500) {
-    _push(r, "자동화재속보설비", "경보설비",
-      `연면적 ${_a(area)}㎡ (500㎡ 이상 노유자시설)`,
-      "별표4 제2호마목3)", "NFTC 204");
-  }
+  // 요양병원 — 500㎡ 미만
   if (isNursing && area < 500) {
     _push(r, "자동화재속보설비", "경보설비",
       `연면적 ${_a(area)}㎡ (500㎡ 미만 요양병원)`,
