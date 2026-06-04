@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { LAW_ERAS, BUILDING_TYPES, getEraByDate, getRequirements } from "./data";
 
 // ─── 관리자 비밀번호 (변경 가능) ─────────────────────────
-const ADMIN_PW = "sfhc2025";
+const ADMIN_PW = "3535";
 
 // ─── 카테고리 설정 ───────────────────────────────────────
 const CATS = ["소화설비", "경보설비", "피난구조설비", "소화용수설비", "소화활동설비"];
