@@ -1,3 +1,5 @@
+import { D } from "./sources";
+
 // ============================================================
 // 특정소방대상물 용도 분류 (소방시설법 시행령 별표2 기준)
 // g: 판정 규칙에서 참조하는 용도 그룹 키
@@ -76,8 +78,11 @@ export const USES = [
   { id: "library", no: "8", name: "교육연구시설 — 도서관", g: ["edu", "library"] },
   { id: "edu_dorm", no: "8", name: "교육연구시설 내 기숙사·합숙소", g: ["edu", "edu_dorm"] },
 
-  { id: "noyu_res", no: "9", name: "노유자 생활시설 (노인주거·노인의료복지·아동복지·장애인거주 등 24시간 생활)", g: ["noyu", "noyu_res"] },
-  { id: "noyu", no: "9", name: "노유자 시설 (생활시설 외: 주야간보호·어린이집 등)", g: ["noyu"] },
+  // 노유자 생활시설: 2012.2.5. 시행 개정으로 도입된 구분 — 그 전 기준일은 모두 '노유자시설'로 판정
+  // 현행 정의: 시행령 제7조제1항제7호 각 목(별표4 제1호마목5)가) — 가목2)·나목~바목 시설 중 단독·공동주택에 설치되는 것 제외
+  { id: "noyu_res", no: "9", name: "노유자 생활시설 — 노인주거복지·노인의료복지·재가노인복지시설(주·야간보호·단기보호)·학대피해노인 전용쉼터", g: ["noyu", "noyu_res", "noyu_elder"] },
+  { id: "noyu_res2", no: "9", name: "노유자 생활시설 — 아동복지시설·장애인 거주시설·정신질환자 관련·노숙인 자활/재활/요양·결핵·한센 24시간 생활시설", g: ["noyu", "noyu_res"] },
+  { id: "noyu", no: "9", name: "노유자 시설 (생활시설 외) — 어린이집·노인여가복지(경로당·노인복지관)·장애인 지역사회재활·직업재활시설·지역아동센터 등", g: ["noyu"] },
   { id: "kinder", no: "9", name: "노유자 시설 — 유치원(병설유치원 포함)", g: ["noyu", "kinder"] },
 
   { id: "training", no: "10", name: "수련시설 (숙박시설 없음)", g: ["training"] },
@@ -144,4 +149,21 @@ export function getUse(id) {
 export function hasG(use, ...keys) {
   if (!use) return false;
   return keys.some((k) => use.g.includes(k));
+}
+
+/**
+ * 노유자 생활시설 해당 여부 (기준일 d)
+ *  - 2012.2.5. 전: 구분 없음 → 모든 노유자시설은 '노유자시설'(false)
+ *  - 2013.2.10. 이후: 시행령 제7조제1항제7호 가목2)·나목~바목 시설이 단독주택·공동주택에 설치된 경우 제외
+ *    (가목1 노인주거·노인의료·재가노인복지시설은 제외 대상 아님 — 현행 원문 기준, 2013 당시 문구는 연혁본 확인)
+ */
+export function isNoyuRes(u, f, d) {
+  if (!u || !u.g.includes("noyu_res")) return false;
+  if (d < D.B12) return false;
+  if (d >= D.B13 && !u.g.includes("noyu_elder") && f && f.noyuInHouse) return false;
+  return true;
+}
+/** 노유자시설 중 생활시설 외(면적 기준 적용 대상) */
+export function isNoyuGen(u, f, d) {
+  return !!u && u.g.includes("noyu") && !isNoyuRes(u, f, d);
 }

@@ -35,7 +35,8 @@ export function tableRef(date) {
   if (date >= D.C) return "소방시설법 시행령 별표4";
   if (date >= D.B12) return "구 화재예방소방시설법 시행령 별표5(당시 별표 번호 연혁본 확인)";
   if (date >= D.A) return "구 소방시설설치유지법 시행령 별표4";
-  return "구 소방법 시행령 별표(미검증)";
+  if (date >= D.P92) return "구 소방법 시행령 별표(소방특별조사 운영매뉴얼 연도별 적용기준)";
+  return "구 소방법 시행령 별표(1992.7.28. 이전 — 미수록)";
 }
 
 function refText(fac, crit, date) {
@@ -55,8 +56,8 @@ export function evaluateAt(input, date, overrides = {}) {
   if (!u) return null;
   const x = derive(input);
   const f = input.f || {};
-  const unsupported = date < D.A;
-  const evalDate = unsupported ? D.A : date;
+  const unsupported = date < D.P92;
+  const evalDate = unsupported ? D.P92 : date;
   const rowPre = (u.g.includes("row") || u.g.includes("multi")) && date < D.C24;
   const g = (...k) => k.some((kk) => u.g.includes(kk));
   const ctx = { u, x, f, g, d: evalDate, dep: {} };
@@ -187,7 +188,7 @@ export function review(input, today, overrides = {}) {
   const curr = evaluateAt(input, today, overrides);
 
   // 부칙 소급(의무)
-  const retro = RETRO_RULES.filter((r) => r.applies(u) && input.date < r.before).map((r) => ({
+  const retro = RETRO_RULES.filter((r) => r.applies(u, input) && input.date < r.before).map((r) => ({
     ...r,
     facNames: r.facs.map((k) => getFacility(k).name),
     expired: today > r.deadline,

@@ -3,6 +3,8 @@ import InputPanel, { EMPTY_INPUT, syncFloors } from "./components/InputPanel";
 import ResultView from "./components/ResultView";
 import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
 import { review } from "./law/engine";
+import { RULES_REV } from "./law/sources";
+import BUILD from "./buildInfo.json";
 
 // 관리자 비밀번호: Vercel 환경변수 REACT_APP_ADMIN_PW 로 변경 가능 (클라이언트 측 잠금 — 보안 수단 아님)
 const ADMIN_PW = process.env.REACT_APP_ADMIN_PW || "3535";
@@ -108,7 +110,12 @@ export default function App() {
       <header className="top no-print">
         <div className="top-in">
           <div>
-            <div className="brand">HFLS</div>
+            <div className="brand-row">
+              <span className="brand">HFLS</span>
+              <span className="ver-badge" title={`빌드 ${BUILD.builtAt} KST · 커밋 ${BUILD.commit} · ${BUILD.env}\n판정규칙 ${RULES_REV.date}: ${RULES_REV.note}`}>
+                v{BUILD.version} · {BUILD.builtAt.slice(0, 10)}
+              </span>
+            </div>
             <h1>소방시설 연혁 법령 적용 지원 시스템</h1>
             <div className="sub">건축허가등 신청일 기준 별표 판정 · 부칙 소급 · 강화기준 특례 · 증축·용도변경 특례 · 현행 비교</div>
           </div>
@@ -167,7 +174,11 @@ export default function App() {
       </main>
 
       <footer className="foot">
-        HFLS v2.0 · 현행 기준: 소방시설 설치 및 관리에 관한 법률 시행령(대통령령 제36728호, 2026.10.2. 시행) 별표4(2025.11.25. 개정) · 판정일 {today}
+        <span className="ver-line">
+          HFLS v{BUILD.version} · 빌드 {BUILD.builtAt} KST · {BUILD.commit} · 판정규칙 {RULES_REV.date}
+        </span>
+        <br />
+        현행 기준: 소방시설 설치 및 관리에 관한 법률 시행령(대통령령 제36728호, 2026.10.2. 시행) 별표4(2025.11.25. 개정) · 판정일 {today}
         <br />
         업무 참고용(법적 효력 없음). 최종 판단은 국가법령정보센터 연혁본·부칙 및 소방청 질의회신으로 확인하십시오.
       </footer>

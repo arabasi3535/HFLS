@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { CATS } from "../law/facilities";
 import { STATUS, toCSV } from "../law/engine";
-import { SOURCES } from "../law/sources";
+import { SOURCES, D } from "../law/sources";
 
 const ST_CLASS = {
   [STATUS.REQ]: "st-req",
@@ -11,6 +11,7 @@ const ST_CLASS = {
 };
 const CERT = {
   V: { t: "원문확인", c: "cert-v", d: "원문·부칙·법제처 제·개정이유로 확인" },
+  M: { t: "매뉴얼확인", c: "cert-m", d: "소방특별조사 운영매뉴얼 「소방시설의 연도별 적용기준」으로 확인 — 법령 연혁본 대조 권장" },
   I: { t: "시점추정", c: "cert-i", d: "개정이유 대조로 도입·폐지 시점 추정 — 연혁본 대조 권장" },
   U: { t: "미검증", c: "cert-u", d: "연혁본 확인 필요" },
 };
@@ -31,7 +32,11 @@ function SrcLinks({ src }) {
   return (
     <span className="srcs">
       {src.split(",").map((k) =>
-        SOURCES[k] ? (
+        SOURCES[k] && !SOURCES[k].url ? (
+          <span key={k} className="src-nolink" title={SOURCES[k].title}>
+            [{k}]
+          </span>
+        ) : SOURCES[k] ? (
           <a key={k} href={SOURCES[k].url} target="_blank" rel="noreferrer" title={SOURCES[k].title}>
             [{k}]
           </a>
@@ -110,7 +115,12 @@ export default function ResultView({ rv }) {
       )}
       {hist.unsupported && (
         <div className="alert danger">
-          <b>2004.5.30. 이전(소방법 시대) 기준일</b> — 본 시스템은 이 시기 별표 원문을 검증·수록하지 않았습니다. 아래 결과는 2004.5.30. 초기 기준을 준용한 <b>참고값</b>이며 모두 [확인 필요]입니다.
+          <b>1992.7.28. 이전 기준일</b> — 본 시스템은 이 시기 기준을 수록하지 않았습니다. 아래 결과는 1992.7.28. 소방법 기준을 준용한 <b>참고값</b>이며 모두 [설치(연혁 확인)]으로 하향 표시됩니다.
+        </div>
+      )}
+      {!hist.unsupported && hist.date < D.A && (
+        <div className="alert warn">
+          <b>소방법 시대(1992.7.28.~2004.5.29.) 기준일</b> — 소방특별조사 운영매뉴얼 「소방시설의 연도별 적용기준」으로 판정합니다(검증등급 <b>매뉴얼확인</b>). 당시 용도분류(구 건축법)는 현행 별표2와 달라 근사 대응하였으므로, 결과는 당시 소방법 시행령 연혁본으로 대조하십시오.
         </div>
       )}
       {hist.rowPre && (

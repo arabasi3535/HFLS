@@ -23,6 +23,8 @@
   --i: #8a5300;
   --u-bg: #f1f1f1;
   --u: #555;
+  --m-bg: #e6eefb;
+  --m: #1d4f9a;
   --radius: 10px;
 }
 @media (prefers-color-scheme: dark) {
@@ -43,6 +45,8 @@
     --chk-bg: #1d2445;
     --chk: #a9b6ff;
     --v-bg: #13301f;
+    --m-bg: #142a4a;
+    --m: #9cc0f5;
     --v: #8fdcaa;
     --i-bg: #3a2a10;
     --i: #ffc56b;
@@ -159,7 +163,9 @@ input.err, select.err { border-color: var(--brand); }
 .st-none { color: var(--none); }
 .cert { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: 4px; padding: 0 6px; margin-left: 4px; vertical-align: 1px; }
 .cert-v { background: var(--v-bg); color: var(--v); }
+.cert-m { background: var(--m-bg); color: var(--m); }
 .cert-i { background: var(--i-bg); color: var(--i); }
+.src-nolink { color: var(--muted, #667); margin-left: 2px; font-size: 0.85em; }
 .cert-u { background: var(--u-bg); color: var(--u); }
 .tag-red { color: var(--req); font-weight: 700; }
 .tag-amber { color: var(--rc); font-weight: 700; }
@@ -219,3 +225,8 @@ ul.plain li { margin: 3px 0; }
   .card, .alert { break-inside: avoid; border-color: #bbb; }
   tr.detail-row { display: table-row; }
 }
+
+/* 버전 표시 (배포 반영 확인용) */
+.brand-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ver-badge { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0; padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); color: #fff; vertical-align: middle; cursor: help; }
+.ver-line { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink2); }

@@ -55,7 +55,9 @@ export function HistoryTab() {
                   <td className="nowrap small">{a.kind}</td>
                   <td className="small">{a.text}</td>
                   <td>
-                    <span className={`cert ${a.cert === "V" ? "cert-v" : "cert-i"}`}>{a.cert === "V" ? "확인" : "추정"}</span>
+                    <span className={`cert ${a.cert === "V" ? "cert-v" : a.cert === "M" ? "cert-m" : "cert-i"}`}>
+                      {a.cert === "V" ? "확인" : a.cert === "M" ? "매뉴얼" : "추정"}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -98,7 +100,7 @@ export function RulesTab({ adminMode, overrides, setOverrides }) {
     [fac, q]
   );
   const counts = useMemo(() => {
-    const m = { V: 0, I: 0, U: 0 };
+    const m = { V: 0, M: 0, I: 0, U: 0 };
     CRITERIA.forEach((c) => (m[(overrides[c.id] && overrides[c.id].cert) || c.cert] += 1));
     return m;
   }, [overrides]);
@@ -136,7 +138,8 @@ export function RulesTab({ adminMode, overrides, setOverrides }) {
       <div className="card">
         <div className="card-t">판정 규칙 데이터 ({CRITERIA.length}건) · 검증현황</div>
         <div className="small">
-          <span className="cert cert-v">원문확인 {counts.V}</span> <span className="cert cert-i">시점추정 {counts.I}</span>{" "}
+          <span className="cert cert-v">원문확인 {counts.V}</span> <span className="cert cert-m">매뉴얼확인 {counts.M}</span>{" "}
+          <span className="cert cert-i">시점추정 {counts.I}</span>{" "}
           <span className="cert cert-u">미검증 {counts.U}</span>
           <span className="muted"> — 추정·미검증 규칙은 소방청 「소방시설 설치기준 개정연혁 법령집」 및 국가법령정보센터 연혁본으로 대조해 갱신하십시오.</span>
         </div>
@@ -189,8 +192,8 @@ export function RulesTab({ adminMode, overrides, setOverrides }) {
                     </td>
                     <td className="small nowrap">{win(c)}</td>
                     <td>
-                      <span className={`cert ${cert === "V" ? "cert-v" : cert === "I" ? "cert-i" : "cert-u"}`}>
-                        {cert === "V" ? "원문확인" : cert === "I" ? "시점추정" : "미검증"}
+                      <span className={`cert ${cert === "V" ? "cert-v" : cert === "M" ? "cert-m" : cert === "I" ? "cert-i" : "cert-u"}`}>
+                        {cert === "V" ? "원문확인" : cert === "M" ? "매뉴얼확인" : cert === "I" ? "시점추정" : "미검증"}
                       </span>
                     </td>
                     {adminMode && (
@@ -198,6 +201,7 @@ export function RulesTab({ adminMode, overrides, setOverrides }) {
                         <select value={ov.cert || ""} onChange={(e) => setOv(c.id, { cert: e.target.value || undefined })}>
                           <option value="">기본</option>
                           <option value="V">원문확인</option>
+                          <option value="M">매뉴얼확인</option>
                           <option value="I">시점추정</option>
                           <option value="U">미검증</option>
                         </select>
@@ -263,6 +267,9 @@ export function GuideTab() {
             <span className="cert cert-v">원문확인</span> 별표 원문(2004 초기본·2020.12.10.·2025.11.25.), 부칙, 법제처 제·개정이유로 확인한 기준·시점
           </li>
           <li>
+            <span className="cert cert-m">매뉴얼확인</span> 소방특별조사 운영매뉴얼 제5장 「소방시설의 연도별 적용기준」(1968~2015)으로 확인한 기준·시점 — 법령 연혁본 대조 권장
+          </li>
+          <li>
             <span className="cert cert-i">시점추정</span> 기준 내용은 원문에 있으나 도입·폐지 시점을 개정이유 대조로 추정 — 연혁본 대조 권장
           </li>
           <li>
@@ -271,7 +278,7 @@ export function GuideTab() {
         </ul>
         <div className="card-t">한계</div>
         <ul>
-          <li>2004.5.30. 이전(소방법 시대) 별표는 미수록 — 참고값만 표시.</li>
+          <li>1992.7.28.~2004.5.29.(소방법 시대)은 운영매뉴얼 연도별 적용기준으로 판정(당시 용도분류는 근사 대응). 1992.7.28. 이전은 미수록 — 참고값만 표시.</li>
           <li>복합건축물은 구성 용도별로 각각 조회 후 별표4 비고1(근린생활시설등 기준이 더 강하면 그 부분에 그 기준) 적용.</li>
           <li>다중이용업소(다중이용업소법), 위험물(위험물안전관리법), 초고층·지하연계 복합건축물(초고층재난관리법) 별도 기준은 미포함.</li>
           <li>본 결과는 업무 참고자료이며 법적 효력이 없습니다. 최종 판단은 국가법령정보센터 연혁본·부칙과 소방청 질의회신으로 확인하십시오.</li>

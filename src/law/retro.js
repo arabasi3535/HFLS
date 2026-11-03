@@ -6,13 +6,15 @@
 //  4) 시행령 제15조 — 증축·용도변경 특례
 // ============================================================
 import { D } from "./sources";
+import { isNoyuRes } from "./uses";
 
 /** 1) 부칙 소급(기존 대상물 의무) — 기준일(당시 신청일)이 cutoff 이전인 기존 대상물 */
 export const RETRO_RULES = [
   {
     id: "retro-noyu2012",
     title: "기존 노유자 생활시설 — 간이스프링클러·자동화재탐지설비·자동화재속보설비 설치 의무",
-    applies: (u) => u.g.includes("noyu_res"),
+    // 현행 정의상 노유자 생활시설(2012.2.5. 전 신청분은 당시 '노유자시설'이었으나 부칙으로 소급)
+    applies: (u, input) => isNoyuRes(u, (input && input.f) || {}, "9999-12-31"),
     before: D.B12,
     facs: ["sspk", "afd", "report"],
     deadline: "2014-02-04",
@@ -93,13 +95,22 @@ export function extensionRule(input) {
   const { action } = input;
   if (action === "extension") {
     const ex = input.extExceptions || {};
-    const separated =
-      ex.fireproof || ex.shutter || ex.door60plus || (ex.door60 && input.date2 >= D.C) || ex.restroom33 || ex.canopy;
+    const separated = ex.fireproof || ex.shutter || ex.door60plus || ex.door60 || ex.restroom33 || ex.canopy;
     const notes = [];
-    if (ex.door60 && input.date2 < D.C) {
-      notes.push(
-        "60분 방화문 구획은 2022.12.1. 이후 증축 허가 신청분부터 소급 인정(대통령령 제35860호 부칙 제3조) — 이 증축은 해당하지 않음."
-      );
+    if (ex.door60 || ex.door60plus) {
+      if (input.date2 >= D.C) {
+        notes.push(
+          "방화문 구획: 현행 시행령 제15조제1항제2호나목 「60분+ 방화문 또는 60분 방화문」(2025.11.25. 개정·2025.12.1. 시행). " +
+            (ex.door60 && !ex.door60plus
+              ? "60분 방화문은 2022.12.1.~2025.11.30. 조문에는 없었으나, 부칙(대통령령 제35860호) 제3조에 따라 2022.12.1. 이후 증축 허가등 신청분에도 소급 적용됨."
+              : "")
+        );
+      } else {
+        notes.push(
+          "방화문 구획: 2022.12.1. 전 증축 신청분은 구 화재예방소방시설법 시행령 제17조제1항 단서(갑종방화문, 자동방화셔터 포함) 기준. " +
+            "60분+·60분 방화문은 건축법 시행령 개정(2021.8.7. 시행)으로 종전 갑종방화문을 대체한 등급이므로 구획 인정으로 판정하되, 당시 조문 문구·건축법 시행령 부칙은 [확인 필요]."
+        );
+      }
     }
     return {
       title: "증축 — 시행령 제15조제1항",
@@ -110,7 +121,7 @@ export function extensionRule(input) {
       wholeDate: separated ? null : input.date2,
       partDates: separated ? { existing: input.date, added: input.date2 } : null,
       basis:
-        "시행령 제15조제1항 단서 각 호: 1. 내화구조 바닥·벽 구획 2. 자동방화셔터 또는 60분+·60분 방화문 구획 3. 화재위험 낮은 대상물 내 33㎡ 이하 직원휴게실 4. 캐노피(3면 이상 벽 없음)",
+        "시행령 제15조제1항 단서 각 호: 1. 내화구조 바닥·벽 구획 2. 자동방화셔터 또는 60분+ 방화문·60분 방화문 구획(2025.12.1. 시행, 부칙 제3조로 2022.12.1. 이후 신청분 소급) 3. 화재위험 낮은 대상물 내 33㎡ 이하 직원휴게실 4. 캐노피(3면 이상 벽 없음)",
       notes,
     };
   }

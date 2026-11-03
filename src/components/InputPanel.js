@@ -123,7 +123,7 @@ export default function InputPanel({ input, setInput, onRun, onReset, onExample,
                 <Check checked={input.extExceptions.fireproof} onChange={(v) => setEx("fireproof", v)}>내화구조 바닥·벽으로 구획</Check>
                 <Check checked={input.extExceptions.shutter} onChange={(v) => setEx("shutter", v)}>자동방화셔터로 구획</Check>
                 <Check checked={input.extExceptions.door60plus} onChange={(v) => setEx("door60plus", v)}>60분+ 방화문으로 구획</Check>
-                <Check checked={input.extExceptions.door60} onChange={(v) => setEx("door60", v)}>60분 방화문으로 구획 (2022.12.1. 이후 증축 신청분)</Check>
+                <Check checked={input.extExceptions.door60} onChange={(v) => setEx("door60", v)}>60분 방화문으로 구획 (현행 제15조①2호나목 — 2022.12.1. 이후 신청분 부칙 제3조 소급, 그 전은 구 갑종방화문 기준)</Check>
                 <Check checked={input.extExceptions.restroom33} onChange={(v) => setEx("restroom33", v)}>화재위험 낮은 대상물 내 33㎡ 이하 직원휴게실 증축</Check>
                 <Check checked={input.extExceptions.canopy} onChange={(v) => setEx("canopy", v)}>캐노피(3면 이상 벽 없음) 설치</Check>
               </div>
@@ -275,6 +275,14 @@ export default function InputPanel({ input, setInput, onRun, onReset, onExample,
               {g("clinic") && <Check checked={input.f.inpatient} onChange={(v) => setF("inpatient", v)}>입원실 있음</Check>}
               {g("clinic") && <Check checked={input.f.dialysis} onChange={(v) => setF("dialysis", v)}>인공신장실 있음</Check>}
               <Check checked={input.f.bars} onChange={(v) => setF("bars", v)}>창살 설치(화재 시 자동 개방 구조 제외)</Check>
+              {g("noyu_res") && !g("noyu_elder") && (
+                <Check checked={input.f.noyuInHouse} onChange={(v) => setF("noyuInHouse", v)}>
+                  단독주택·공동주택에 설치된 시설 (2013.2.10. 이후 노유자 생활시설에서 제외)
+                </Check>
+              )}
+              {g("noyu_res") && (
+                <div className="field-hint">노유자 생활시설 구분은 2012.2.5. 시행 개정으로 도입 — 그 전 기준일은 '노유자시설'(면적 기준)로 판정하고, 기존 시설은 2012 부칙 소급을 별도 표시합니다.</div>
+              )}
             </div>
           )}
 
