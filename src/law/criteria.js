@@ -1136,10 +1136,7 @@ function elExcl(c) {
   return c.g("gas") || (c.g("warehouse") && !c.g("logistics")) || c.g("cattle");
 }
 function ugWlTotal(c) {
-  const a = c.x.ugSum;
-  const b = c.x.wlSum;
-  if (a === null || b === null) return null;
-  return a + b;
+  return c.x.ugWlSum;
 }
 function ugWlUseGE(c, t) {
   return ge(ugWlTotal(c), t);

@@ -54,7 +54,7 @@ const toDep = (st) => (st === STATUS.REQ ? true : st === STATUS.NONE ? false : n
 export function evaluateAt(input, date, overrides = {}) {
   const u = getUse(input.use);
   if (!u) return null;
-  const x = derive(input);
+  const x = derive(input, u);
   const f = input.f || {};
   const unsupported = date < D.P92;
   const evalDate = unsupported ? D.P92 : date;
@@ -65,7 +65,10 @@ export function evaluateAt(input, date, overrides = {}) {
   const byFac = {};
   for (const fac of FACILITIES) byFac[fac.key] = { fac, status: STATUS.NONE, hits: [], checks: [], maybes: [] };
 
+  // 단독주택은 별표2 특정소방대상물이 아님 → 별표4 미적용(주택용소방시설만, 소방시설법 제10조)
+  const isHouse = u.g.includes("house");
   const run = (crit) => {
+    if (isHouse) return;
     const ov = overrides[crit.id] || {};
     if (ov.disabled) return;
     const eff = effectAt(crit, evalDate);
@@ -150,8 +153,12 @@ function inputChecklist(u, input, x) {
   const g = (...k) => k.some((kk) => u.g.includes(kk));
   if (!x.floorsComplete) out.push("층별 바닥면적이 비어 있어 '층' 단위 기준(지하·무창·4층 이상 600㎡/1천㎡, 지하층 합계 등)이 [확인 필요]로 표시될 수 있습니다.");
   if (x.useAreaAssumed && !g("apt", "house")) out.push("해당 용도 바닥면적 합계 미입력 → 연면적을 해당 용도 면적으로 간주했습니다(복합 용도이면 입력 필요).");
-  if (x.occ === null && g("culture", "religion", "sports", "retail", "transport", "logistics", "training_lodge", "cinema"))
-    out.push("수용인원(시행령 별표7 산정) 미입력 — 수용인원 기준(100명·250명·500명)이 판정되지 않습니다.");
+  if (x.occ === null && g("culture", "religion", "sports", "training_lodge", "lodging"))
+    out.push("수용인원(시행령 별표7: 의자·침대 수 기준) 미입력 — 수용인원 기준(100명 등)이 판정되지 않습니다.");
+  else if (x.occEstimated && g("retail", "transport", "logistics", "station", "ugmall"))
+    out.push("수용인원 미입력 → 별표7 제2호 기준 상한(해당 용도 바닥면적 ÷ 1.9㎡)으로 판정했습니다. 경계값 부근이면 실제 수용인원을 입력하십시오.");
+  if (!x.floorsComplete)
+    out.push("미입력 층의 바닥면적은 '연면적 − 입력된 층 면적 합'을 상한으로 보고 판정합니다(연면적에는 지하층 포함, 건축법 시행령 제119조제1항제4호).");
   if (g("factory", "warehouse") && f.combustibleTimes == null) out.push("특수가연물 저장·취급량(지정수량 배수) 미입력 — 0으로 간주.");
   if (g("factory", "warehouse") && !f.nonFireproof) out.push("지붕·외벽 불연재료/내화구조 여부 확인(아니면 '불연·내화 아님' 체크).");
   if (g("tunnel") && f.tunnelLen == null) out.push("터널 길이 미입력.");
@@ -169,7 +176,7 @@ function inputChecklist(u, input, x) {
 export function review(input, today, overrides = {}) {
   const u = getUse(input.use);
   if (!u || !input.date) return null;
-  const x = derive(input);
+  const x = derive(input, u);
   const issues = consistencyIssues(input, x);
   const ext = input.action !== "new" && input.date2 ? extensionRule(input) : null;
 

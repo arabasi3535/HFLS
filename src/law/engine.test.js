@@ -204,3 +204,16 @@ describe("노유자 생활시설 구분(2012.2.5. 도입)", () => {
     expect(rv.retro.map((r) => r.id)).toContain("retro-noyu2012");
   });
 });
+
+describe("상식 점검(소규모·입력 생략)", () => {
+  test("단독주택 100㎡ 2층 → 별표4 소방시설 전부 해당없음", () => {
+    const r = evaluateAt(base({ use: "house", area: 100, gf: 2, bf: 0, floors: floors(2, 0, "") }), "2026-11-04");
+    expect(r.rows.filter((x) => x.status !== STATUS.NONE)).toHaveLength(0);
+  });
+  test("층별 면적 미입력이어도 연면적 200㎡면 옥내소화전 '확인 필요'가 아니라 해당없음", () => {
+    const r = evaluateAt(base({ use: "office", area: 200, gf: 2, bf: 1, floors: floors(2, 1, "") }), "2026-11-04");
+    expect(st(r, "hydrant")).toBe(STATUS.NONE);
+    expect(st(r, "spk")).toBe(STATUS.NONE);
+    expect(st(r, "elight")).toBe(STATUS.NONE);
+  });
+});
