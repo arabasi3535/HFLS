@@ -1,0 +1,17 @@
+{
+  "name": "HFLS 소방시설 연혁 법령 적용 지원",
+  "short_name": "HFLS",
+  "description": "건축허가등 신청일 기준 소방시설 설치기준 연혁 판정 · 부칙 소급 · 강화기준 · 증축/용도변경 특례",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f5f8",
+  "theme_color": "#12263f",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

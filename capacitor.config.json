@@ -1,0 +1,8 @@
+{
+  "appId": "kr.go.hfls.app",
+  "appName": "HFLS 소방시설 연혁",
+  "webDir": "build",
+  "android": {
+    "allowMixedContent": false
+  }
+}
