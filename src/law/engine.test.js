@@ -35,8 +35,9 @@ describe("스프링클러 층수 기준 연혁", () => {
   test("2016년 신청 7층 업무시설 → 당시 11층 기준으로 미대상", () => {
     expect(st(evaluateAt(b, "2016-06-01"), "spk")).toBe(STATUS.NONE);
   });
-  test("2017.1.28. 이후 → 6층 이상 설치", () => {
-    expect(st(evaluateAt(b, "2017-01-28"), "spk")).toBe(STATUS.REQ);
+  test("2018.1.27. 이후(2017.1.26. 개정 부칙: 공포 후 1년) → 6층 이상 설치", () => {
+    expect(st(evaluateAt(b, "2017-06-01"), "spk")).toBe(STATUS.NONE);
+    expect(st(evaluateAt(b, "2018-01-29"), "spk")).toBe(STATUS.REQ);
   });
   test("현행 비교: 업무시설 스프링클러는 소급 없음(법 제13조 본문)", () => {
     const rv = review({ ...b, date: "2016-06-01" }, "2026-11-03");
@@ -99,7 +100,7 @@ describe("현행 기준", () => {
 
 describe("운영매뉴얼(1992~2015) 연도별 적용기준", () => {
   const office12 = base({ use: "office", area: 4000, gf: 12, bf: 0, floors: floors(12, 0, 333.4) });
-  test("2001년 12층 업무시설 → 소방법 '11층 이상의 층' 스프링클러(매뉴얼확인)", () => {
+  test("2001년 12층 업무시설 → 소방법 '11층 이상의 층' 스프링클러(연혁자료확인)", () => {
     const r = evaluateAt(office12, "2001-01-01");
     expect(r.unsupported).toBe(false);
     expect(st(r, "spk")).toBe(STATUS.REQ);
@@ -195,9 +196,13 @@ describe("노유자 생활시설 구분(2012.2.5. 도입)", () => {
     expect(r.byKey.sspk.hits.map((h) => h.id)).not.toContain("sspk-noyures");
     expect(st(r, "afd")).toBe(STATUS.NONE);
   });
-  test("노인시설(가목1)은 공동주택 설치여도 생활시설 유지", () => {
-    const r = dc("2015-01-01", { noyuInHouse: true }, "noyu_res");
+  test("노인시설(가목1)은 공동주택 설치여도 생활시설 유지 (2015.7.1.~)", () => {
+    const r = dc("2016-01-01", { noyuInHouse: true }, "noyu_res");
     expect(st(r, "afd")).toBe(STATUS.REQ);
+  });
+  test("2013.2.10.~2015.6.30.에는 단독·공동주택 설치 노유자 생활시설 전체 제외(노인시설 포함)", () => {
+    const r = dc("2015-01-01", { noyuInHouse: true }, "noyu_res");
+    expect(st(r, "afd")).toBe(STATUS.NONE);
   });
   test("2011년 신청 주·야간보호 → 2012 부칙 소급 표시", () => {
     const rv = review(base({ use: "noyu_res", date: "2011-06-01", area: 200, useArea: 200, gf: 1, bf: 0, floors: floors(1, 0, 200) }), "2026-11-04");

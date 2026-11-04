@@ -48,7 +48,7 @@ export function HistoryTab() {
               </tr>
             </thead>
             <tbody>
-              {AMENDMENTS.map((a, i) => (
+              {[...AMENDMENTS].sort((p, q) => (p.eff < q.eff ? -1 : p.eff > q.eff ? 1 : 0)).map((a, i) => (
                 <tr key={i}>
                   <td className="nowrap">{fd(a.eff)}</td>
                   <td className="nowrap">{a.no}</td>
@@ -56,7 +56,7 @@ export function HistoryTab() {
                   <td className="small">{a.text}</td>
                   <td>
                     <span className={`cert ${a.cert === "V" ? "cert-v" : a.cert === "M" ? "cert-m" : "cert-i"}`}>
-                      {a.cert === "V" ? "확인" : a.cert === "M" ? "매뉴얼" : "추정"}
+                      {a.cert === "V" ? "확인" : a.cert === "M" ? "연혁자료" : "추정"}
                     </span>
                   </td>
                 </tr>
@@ -138,7 +138,7 @@ export function RulesTab({ adminMode, overrides, setOverrides }) {
       <div className="card">
         <div className="card-t">판정 규칙 데이터 ({CRITERIA.length}건) · 검증현황</div>
         <div className="small">
-          <span className="cert cert-v">원문확인 {counts.V}</span> <span className="cert cert-m">매뉴얼확인 {counts.M}</span>{" "}
+          <span className="cert cert-v">원문확인 {counts.V}</span> <span className="cert cert-m">연혁자료확인 {counts.M}</span>{" "}
           <span className="cert cert-i">시점추정 {counts.I}</span>{" "}
           <span className="cert cert-u">미검증 {counts.U}</span>
           <span className="muted"> — 추정·미검증 규칙은 소방청 「소방시설 설치기준 개정연혁 법령집」 및 국가법령정보센터 연혁본으로 대조해 갱신하십시오.</span>
@@ -193,7 +193,7 @@ export function RulesTab({ adminMode, overrides, setOverrides }) {
                     <td className="small nowrap">{win(c)}</td>
                     <td>
                       <span className={`cert ${cert === "V" ? "cert-v" : cert === "M" ? "cert-m" : cert === "I" ? "cert-i" : "cert-u"}`}>
-                        {cert === "V" ? "원문확인" : cert === "M" ? "매뉴얼확인" : cert === "I" ? "시점추정" : "미검증"}
+                        {cert === "V" ? "원문확인" : cert === "M" ? "연혁자료확인" : cert === "I" ? "시점추정" : "미검증"}
                       </span>
                     </td>
                     {adminMode && (
@@ -201,7 +201,7 @@ export function RulesTab({ adminMode, overrides, setOverrides }) {
                         <select value={ov.cert || ""} onChange={(e) => setOv(c.id, { cert: e.target.value || undefined })}>
                           <option value="">기본</option>
                           <option value="V">원문확인</option>
-                          <option value="M">매뉴얼확인</option>
+                          <option value="M">연혁자료확인</option>
                           <option value="I">시점추정</option>
                           <option value="U">미검증</option>
                         </select>
@@ -267,7 +267,7 @@ export function GuideTab() {
             <span className="cert cert-v">원문확인</span> 별표 원문(2004 초기본·2020.12.10.·2025.11.25.), 부칙, 법제처 제·개정이유로 확인한 기준·시점
           </li>
           <li>
-            <span className="cert cert-m">매뉴얼확인</span> 소방특별조사 운영매뉴얼 제5장 「소방시설의 연도별 적용기준」(1968~2015)으로 확인한 기준·시점 — 법령 연혁본 대조 권장
+            <span className="cert cert-m">연혁자료확인</span> 소방특별조사 운영매뉴얼 「소방시설의 연도별 적용기준」(1968~2015) 및 한국소방시설관리협회 「소방시설 설치기준 개정연혁」(2024.11.)으로 확인한 기준·시점
           </li>
           <li>
             <span className="cert cert-i">시점추정</span> 기준 내용은 원문에 있으나 도입·폐지 시점을 개정이유 대조로 추정 — 연혁본 대조 권장

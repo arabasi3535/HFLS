@@ -134,6 +134,7 @@ export function derive(b, u) {
   const f12 = sumR(above.filter((f) => f.level === 1 || f.level === 2));
   const wlSum = sumR(wl);
   const ugWlSum = sumR(floors.filter((f) => (f.level < 0 && bf > 0) || f.windowless));
+  const aboveSum = sumR(above);
   const floorSum = sum(floors);
   const useArea = num(b.useArea) ?? area; // 해당 용도 바닥면적 합계(미입력 시 연면적으로 간주)
 
@@ -157,6 +158,7 @@ export function derive(b, u) {
     f12, // 지상 1·2층 바닥면적 합계
     wlSum, // 무창층 바닥면적 합계
     ugWlSum, // 지하층+무창층 바닥면적 합계
+    aboveSum, // 지상층 바닥면적 합계
     floorSum,
     hasWindowless: wl.length > 0,
     ugOrWlMax: maxOf((f) => f.level < 0 || f.windowless),

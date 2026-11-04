@@ -245,7 +245,8 @@ export default function InputPanel({ input, setInput, onRun, onReset, onExample,
             <Check checked={input.f.corridorApt} onChange={(v) => setF("corridorApt", v)}>갓복도형 아파트등</Check>
             <Check checked={input.f.co2} onChange={(v) => setF("co2", v)}>이산화탄소소화설비(호스릴 제외) 설치</Check>
             <Check checked={input.f.gasUse} onChange={(v) => setF("gasUse", v)}>가스시설(도시가스·LPG 등) 설치</Check>
-            <Check checked={input.f.leak100A} onChange={(v) => setF("leak100A", v)}>계약전류 100A 초과 + 라스(철망) 비내화구조</Check>
+            <Check checked={input.f.lath ?? !!input.f.leak100A} onChange={(v) => setF("lath", v)}>라스(철망) 비내화구조 — 벽·바닥·반자 일부 이상을 불연·준불연이 아닌 재료에 철망을 넣어 만든 건축물</Check>
+            <Check checked={input.f.leak100A} onChange={(v) => setF("leak100A", v)}>계약전류용량 100A 초과</Check>
             <Check checked={input.f.workers50} onChange={(v) => setF("workers50", v)}>근로자 50명 이상 옥내 작업장</Check>
             <Check checked={input.f.staffed24} onChange={(v) => setF("staffed24", v)}>방재실 등 수신기 설치장소 24시간 상주 (자동화재속보설비 단서)</Check>
             <Check checked={input.f.unmanned} onChange={(v) => setF("unmanned", v)}>야간 무인경비시스템으로 관리 (2004~2022 업무·공장·창고 자동화재속보설비)</Check>
@@ -276,9 +277,11 @@ export default function InputPanel({ input, setInput, onRun, onReset, onExample,
               {g("clinic") && <Check checked={input.f.inpatient} onChange={(v) => setF("inpatient", v)}>입원실 있음</Check>}
               {g("clinic") && <Check checked={input.f.dialysis} onChange={(v) => setF("dialysis", v)}>인공신장실 있음</Check>}
               <Check checked={input.f.bars} onChange={(v) => setF("bars", v)}>창살 설치(화재 시 자동 개방 구조 제외)</Check>
-              {g("noyu_res") && !g("noyu_elder") && (
+              {g("noyu_res") && (
                 <Check checked={input.f.noyuInHouse} onChange={(v) => setF("noyuInHouse", v)}>
-                  단독주택·공동주택에 설치된 시설 (2013.2.10. 이후 노유자 생활시설에서 제외)
+                  {g("noyu_elder")
+                    ? "단독주택·공동주택에 설치된 시설 (2013.2.10.~2015.6.30.만 노유자 생활시설에서 제외 — 2015.7.1.부터 노인시설은 제외 대상 아님)"
+                    : "단독주택·공동주택에 설치된 시설 (2013.2.10. 이후 노유자 생활시설에서 제외)"}
                 </Check>
               )}
               {g("noyu_res") && (
@@ -326,8 +329,8 @@ export default function InputPanel({ input, setInput, onRun, onReset, onExample,
           {g("row", "multi", "apt", "school") && (
             <div className="cond-group">
               <div className="cg-t">공동주택·학교</div>
-              {g("row", "multi") && (
-                <Field label="세대수" hint="50세대 미만 연립·다세대는 내부주차장 물분무등 제외(2017.1.28.~)">
+              {g("row", "multi", "apt") && (
+                <Field label="세대수" hint="50세대 미만 연립·다세대 내부주차장 물분무등 제외(2022.12.1.~), 1994~2001 아파트 자탐·1997~2001 아파트 차고 물분무는 의무관리대상(300세대↑ 등)만">
                   <input type="number" value={input.f.households ?? ""} onChange={(e) => setF("households", e.target.value)} />
                 </Field>
               )}
