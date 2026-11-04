@@ -217,3 +217,10 @@ describe("상식 점검(소규모·입력 생략)", () => {
     expect(st(r, "elight")).toBe(STATUS.NONE);
   });
 });
+
+describe("자동화재속보설비 단서", () => {
+  test("24시간 상주 체크 → 설치하지 않을 수 있음 안내", () => {
+    const r = evaluateAt(base({ use: "hosp", area: 2000, gf: 4, bf: 0, floors: floors(4, 0, 500), f: { staffed24: true } }), "2026-11-04");
+    expect(r.byKey.report.exHint).toMatch(/24시간/);
+  });
+});

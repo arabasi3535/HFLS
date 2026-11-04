@@ -109,10 +109,9 @@ export const CRITERIA = [
   },
   {
     id: "hyd-2", fac: "hydrant", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "2)",
-    text: "근생·판매·운수·의료·노유자·업무·숙박·위락·공장·창고·항공기및자동차·교정(국방·군사 제외)·방송통신(통신촬영)·발전·장례·복합: 연면적 1,500㎡ 이상 또는 지하층·무창층·4층 이상 층 중 바닥면적 300㎡ 이상인 층", scope: "모든 층",
+    text: "근생·판매·운수·의료·노유자·업무·숙박·위락·공장·창고·항공기및자동차·국방·군사시설(교정시설 제외)·방송통신(통신촬영)·발전·장례·복합: 연면적 1,500㎡ 이상 또는 지하층·무창층·4층 이상 층 중 바닥면적 300㎡ 이상인 층", scope: "모든 층",
     when: (c) =>
-      c.g("neigh", "retail", "transport", "medical", "noyu", "office", "lodging", "entertain", "factory", "warehouse", "aircar", "broadcast", "power", "funeral", "mixed") ||
-      (c.g("correction") && !c.g("military"))
+      c.g("neigh", "retail", "transport", "medical", "noyu", "office", "lodging", "entertain", "factory", "warehouse", "aircar", "military", "broadcast", "power", "funeral", "mixed")
         ? or(ge(c.x.area, 1500), c.x.ugOrWlGE(300), c.x.upper4GE(300))
         : F,
     basis: A,
@@ -704,10 +703,26 @@ export const CRITERIA = [
     basis: () => "층별 바닥면적 기준",
   },
   {
-    id: "rep-1500", fac: "report", from: D.A, to: D.C, cert: "I", src: "manual,s1,s2", cur: "",
-    text: "(종전) 공장·창고·업무(사람이 근무하지 않는 시간 무인경비)·국방군사·발전 바닥면적 1,500㎡ 이상인 층이 있는 것 — 2022.12.1. 전부개정 시 삭제 추정", scope: "모든 층",
-    when: (c) => (c.g("office", "factory", "warehouse", "military", "power") ? c.x.anyFloorAnyGE(1500) : F),
-    basis: () => "층별 바닥면적 기준",
+    id: "rep-1500", fac: "report", from: D.A, to: D.C, cert: "M", src: "manual,s1,s2", cur: "",
+    text: "(종전) 공장·창고시설·업무시설(사람이 근무하지 않는 시간에 무인경비시스템으로 관리하는 시설에 한함) 바닥면적 1,500㎡ 이상인 층이 있는 것 (2004.5.30.~2022.11.30. 추정)", scope: "모든 층",
+    when: (c) => {
+      if (!c.g("office", "factory", "warehouse")) return F;
+      const big = c.x.anyFloorAnyGE(1500);
+      if (big !== T) return big;
+      return c.f.unmanned ? T : U; // 무인경비 여부 미확인 → 확인 필요
+    },
+    basis: (c) => `1,500㎡ 이상인 층 있음${c.f.unmanned ? ", 야간 무인경비" : " — 야간 무인경비시스템 관리 여부 확인"}`,
+  },
+  {
+    id: "rep-1500b", fac: "report", fromU: [D.A, D.B12], to: D.C, cert: "I", src: "s2", cur: "",
+    text: "(종전) 국방·군사시설·발전시설(무인경비시스템 관리) 바닥면적 1,500㎡ 이상인 층이 있는 것 — 추가 시점 확인 필요", scope: "모든 층",
+    when: (c) => {
+      if (!c.g("military", "power")) return F;
+      const big = c.x.anyFloorAnyGE(1500);
+      if (big !== T) return big;
+      return c.f.unmanned ? T : U;
+    },
+    basis: () => "1,500㎡ 이상인 층 있음",
   },
   {
     id: "rep-noyures", fac: "report", from: D.B12, to: INF, cert: "V", src: "manual,reasons,incheon2012,s2,cur4", cur: "1)",

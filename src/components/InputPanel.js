@@ -247,7 +247,8 @@ export default function InputPanel({ input, setInput, onRun, onReset, onExample,
             <Check checked={input.f.gasUse} onChange={(v) => setF("gasUse", v)}>가스시설(도시가스·LPG 등) 설치</Check>
             <Check checked={input.f.leak100A} onChange={(v) => setF("leak100A", v)}>계약전류 100A 초과 + 라스(철망) 비내화구조</Check>
             <Check checked={input.f.workers50} onChange={(v) => setF("workers50", v)}>근로자 50명 이상 옥내 작업장</Check>
-            <Check checked={input.f.staffed24} onChange={(v) => setF("staffed24", v)}>방재실 등 수신기 설치장소 24시간 상주</Check>
+            <Check checked={input.f.staffed24} onChange={(v) => setF("staffed24", v)}>방재실 등 수신기 설치장소 24시간 상주 (자동화재속보설비 단서)</Check>
+            <Check checked={input.f.unmanned} onChange={(v) => setF("unmanned", v)}>야간 무인경비시스템으로 관리 (2004~2022 업무·공장·창고 자동화재속보설비)</Check>
             <Check checked={input.f.roadDirect} onChange={(v) => setF("roadDirect", v)}>지하층이 피난층이고 주출입구가 도로와 접함(연결살수 제외)</Check>
           </div>
 

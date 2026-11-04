@@ -91,19 +91,29 @@ export default function App() {
   };
 
   const login = () => {
-    if (adminMode) return setAdminMode(false);
+    if (adminMode) {
+      setAdminMode(false);
+      if (tab === "history" || tab === "rules") setTab("review"); // 관리자 전용 탭에서 해제 시 적용 검토로
+      return;
+    }
     const pw = window.prompt("관리자 비밀번호");
     if (pw === null) return;
     if (pw === ADMIN_PW) setAdminMode(true);
     else alert("비밀번호가 올바르지 않습니다.");
   };
 
-  const tabs = [
-    ["review", "적용 검토"],
-    ["history", "법령 연혁"],
-    ["rules", "규칙·검증현황"],
-    ["guide", "사용 안내"],
-  ];
+  // 일반 사용자: 적용 검토·사용 안내 / 관리자 모드: 법령 연혁·규칙·검증현황 추가
+  const tabs = adminMode
+    ? [
+        ["review", "적용 검토"],
+        ["guide", "사용 안내"],
+        ["history", "법령 연혁 (관리자)"],
+        ["rules", "규칙·검증현황 (관리자)"],
+      ]
+    : [
+        ["review", "적용 검토"],
+        ["guide", "사용 안내"],
+      ];
 
   return (
     <div className="app">
@@ -168,8 +178,8 @@ export default function App() {
             </section>
           </div>
         )}
-        {tab === "history" && <HistoryTab />}
-        {tab === "rules" && <RulesTab adminMode={adminMode} overrides={overrides} setOverrides={setOverrides} />}
+        {adminMode && tab === "history" && <HistoryTab />}
+        {adminMode && tab === "rules" && <RulesTab adminMode={adminMode} overrides={overrides} setOverrides={setOverrides} />}
         {tab === "guide" && <GuideTab />}
       </main>
 

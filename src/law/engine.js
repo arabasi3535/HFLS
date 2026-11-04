@@ -95,7 +95,7 @@ export function evaluateAt(input, date, overrides = {}) {
     };
     const bucket = byFac[crit.fac];
     if (r === true) {
-      const downgrade = eff === "maybe" || cert === "U" || unsupported || rowPre;
+      const downgrade = eff === "maybe" || cert === "U" || unsupported;
       if (downgrade) bucket.maybes.push(item);
       else bucket.hits.push(item);
     } else {
@@ -115,7 +115,11 @@ export function evaluateAt(input, date, overrides = {}) {
     const b = byFac[fac.key];
     const ex = EXEMPTION_HINTS[fac.key];
     const exHint =
-      ex && b.status !== STATUS.NONE && ex.by.some((k) => byFac[k] && byFac[k].status === STATUS.REQ) ? ex.text : "";
+      fac.key === "report" && b.status !== STATUS.NONE && f.staffed24 && date >= D.U14b
+        ? "방재실 등 화재 수신기 설치 장소에 24시간 화재 감시 인원 상시 근무 → 자동화재속보설비를 설치하지 않을 수 있음(별표4 제2호사목 단서; 2014.10.8. 단서 신설 — 당시는 일부 대상만)"
+        : ex && b.status !== STATUS.NONE && ex.by.some((k) => byFac[k] && byFac[k].status === STATUS.REQ)
+        ? ex.text
+        : "";
     return { ...b, std: stdLabel(fac, date), exHint };
   });
 
