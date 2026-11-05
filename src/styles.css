@@ -416,3 +416,25 @@ select.w-big { font-size: 15px; padding: 11px 12px; font-weight: 600; }
   .tag, .lg, .it { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .opt-strong.none-on { display: none; }
 }
+
+/* ===================== v2.6 — 실시간 반영 ===================== */
+.w-live { flex: 1; align-self: center; font-size: 12px; color: var(--muted); }
+.empty-need { margin-top: 14px; font-size: 13px; color: var(--ink2); background: var(--line2); border-radius: 8px; padding: 9px 12px; }
+.empty-need b { color: var(--brand); font-weight: 700; }
+.note.prov { border-left-color: #d97706; font-size: 12.5px; }
+.note.prov b { color: var(--rc); }
+@keyframes hfls-flash { 0% { background: #fde68a; } 100% { background: transparent; } }
+.it.flash { animation: hfls-flash 3s ease-out; }
+.it.flash .it-name::after { content: " 추가"; font-size: 10.5px; font-weight: 700; color: #b45309; margin-left: 4px; }
+.removed-note { margin: 0 12px 6px; font-size: 12px; color: var(--muted); background: var(--line2); border-radius: 6px; padding: 5px 10px; text-decoration: line-through; text-decoration-color: rgba(0, 0, 0, 0.25); }
+.mobile-bar { display: none; }
+@media (max-width: 960px) {
+  .mobile-bar { display: flex; position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 50; align-items: center; justify-content: space-between; gap: 10px; background: var(--navy); color: #fff; border-radius: 12px; padding: 10px 12px 10px 16px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); font-size: 13.5px; }
+  .mobile-bar b { font-size: 17px; color: #ffb4ae; }
+  .mobile-bar button { font: inherit; font-weight: 700; font-size: 13px; background: var(--brand); color: #fff; border: 0; border-radius: 8px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+  .app { padding-bottom: 72px; }
+}
+@media print {
+  .watermark { position: fixed; top: 40%; left: 0; right: 0; text-align: center; font-size: 120px; font-weight: 900; color: rgba(180, 30, 30, 0.12); transform: rotate(-20deg); z-index: 0; pointer-events: none; }
+  .note.prov { display: block; }
+}

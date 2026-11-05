@@ -11,7 +11,7 @@ import BUILD from "./buildInfo.json";
 const ADMIN_PW = process.env.REACT_APP_ADMIN_PW || "3535";
 // 제작자 표시 (머리말 오른쪽·바닥글·인쇄물)
 const AUTHOR = { org: "안동소방서 예방안전과", name: "이제현" };
-const K = { new: "hfls_new_v3", existing: "hfls_exist_v3", ov: "hfls_overrides_v2" };
+const K = { new: "hfls_new_v3", existing: "hfls_exist_v3", ov: "hfls_overrides_v2", sel: "hfls_sel_v3" };
 
 const load = (k, d) => {
   try {
@@ -45,25 +45,46 @@ function todayKST() {
 function validate(input, mode) {
   const e = {};
   if (mode === "existing") {
-    if (!input.date) e.date = "건축허가일을 입력하십시오.";
-    else if (input.date > todayKST()) e.date = "오늘 이후 날짜입니다.";
+    if (!input.date) e.date = "건축허가일";
+    else if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date) || input.date < "1958-01-01") e.date = "건축허가일(날짜 확인)";
+    else if (input.date > todayKST()) e.date = "건축허가일(오늘 이후 날짜)";
   }
   const u = getUse(input.use);
-  if (!u) e.use = "대상물 분류를 선택하십시오.";
+  if (!u) e.use = "대상물 분류";
   else if (u.g.includes("tunnel")) {
-    if (!(parseFloat(input.f.tunnelLen) > 0)) e.area = "터널 길이를 입력하십시오.";
+    if (!(parseFloat(input.f.tunnelLen) > 0)) e.area = "터널 길이";
   } else if (!u.g.includes("ugduct")) {
-    if (input.gf === "" || !(parseInt(input.gf, 10) >= 0)) e.gf = "지상 층수를 입력하십시오.";
-    if (!(parseFloat(input.area) > 0)) e.area = "연면적을 입력하십시오.";
+    if (input.gf === "" || !(parseInt(input.gf, 10) >= 0)) e.gf = "지상 층수";
+    if (!(parseFloat(input.area) > 0)) e.area = "연면적";
   }
   return e;
+}
+
+/** 입력 도중 값(2→24→240…)으로 판정이 흔들리지 않도록 잠시 멈췄을 때 반영 */
+function useDebounced(v, ms) {
+  const [d, setD] = useState(v);
+  useEffect(() => {
+    const t = setTimeout(() => setD(v), ms);
+    return () => clearTimeout(t);
+  }, [v, ms]);
+  return d;
+}
+
+/** 결과가 잠정인 이유 */
+function provisionalReasons(rv, input) {
+  const out = [];
+  const u = rv.use;
+  const hasFloors = !u.g.includes("tunnel") && !u.g.includes("ugduct") && !u.g.includes("house") && (input.floors || []).length > 0;
+  if (hasFloors && !(input.floors || []).every((f) => parseFloat(f.area) > 0)) out.push("층별 바닥면적 미입력(연면적 범위로 판정)");
+  const nChk = rv.hist.rows.filter((r) => r.status === "확인 필요").length;
+  if (nChk) out.push(`확인 필요 ${nChk}건`);
+  return out;
 }
 
 export default function App() {
   const [inputs, setInputs] = useState(() => ({ new: restore(K.new), existing: restore(K.existing) }));
   const [overrides, setOverrides] = useState(() => load(K.ov, {}));
-  const [submitted, setSubmitted] = useState({ new: null, existing: null });
-  const [errors, setErrors] = useState({ new: {}, existing: {} });
+  const [sels, setSels] = useState(() => load(K.sel, { new: {}, existing: {} }));
   const [tab, setTab] = useState("new");
   const [adminMode, setAdminMode] = useState(false);
   const today = useMemo(todayKST, []);
@@ -71,33 +92,32 @@ export default function App() {
   useEffect(() => save(K.new, inputs.new), [inputs.new]);
   useEffect(() => save(K.existing, inputs.existing), [inputs.existing]);
   useEffect(() => save(K.ov, overrides), [overrides]);
+  useEffect(() => save(K.sel, sels), [sels]);
 
   const mode = tab === "existing" ? "existing" : "new";
   const isInput = tab === "new" || tab === "existing";
   const setInput = (upd) => setInputs((p) => ({ ...p, [mode]: typeof upd === "function" ? upd(p[mode]) : upd }));
 
+  const deb = useDebounced(inputs, 350);
+  const live = deb[mode];
+  const missing = useMemo(() => Object.values(validate(live, mode)), [live, mode]);
   const rv = useMemo(() => {
-    const s = submitted[mode];
-    if (!s) return null;
-    const inp = { ...s, action: "new", date: mode === "new" ? today : s.date };
-    return review(inp, today, overrides);
-  }, [submitted, mode, today, overrides]);
+    if (missing.length) return null;
+    const inp = { ...live, action: "new", date: mode === "new" ? today : live.date };
+    try {
+      return review(inp, today, overrides);
+    } catch (e) {
+      return null;
+    }
+  }, [live, missing, mode, today, overrides]);
+  const provisional = useMemo(() => (rv ? provisionalReasons(rv, live) : []), [rv, live]);
+  const setSel = (upd) => setSels((p) => ({ ...p, [mode]: typeof upd === "function" ? upd(p[mode]) : upd }));
+  // 날짜 형식 오류만 입력란에 표시(미입력은 결과 영역에서 안내)
+  const dateErr = mode === "existing" && inputs.existing.date && missing.find((m) => m.startsWith("건축허가일("));
 
-  const run = () => {
-    const input = inputs[mode];
-    const e = validate(input, mode);
-    setErrors((p) => ({ ...p, [mode]: e }));
-    if (Object.keys(e).length) return;
-    setSubmitted((p) => ({ ...p, [mode]: { ...JSON.parse(JSON.stringify(input)), _run: Date.now() } }));
-    setTimeout(() => {
-      const el = document.getElementById("result-top");
-      if (el && window.innerWidth < 960) el.scrollIntoView({ behavior: "smooth" });
-    }, 60);
-  };
   const reset = () => {
     setInputs((p) => ({ ...p, [mode]: EMPTY }));
-    setSubmitted((p) => ({ ...p, [mode]: null }));
-    setErrors((p) => ({ ...p, [mode]: {} }));
+    setSels((p) => ({ ...p, [mode]: {} }));
   };
 
   const login = () => {
@@ -160,19 +180,24 @@ export default function App() {
         {isInput && (
           <div className="layout">
             <aside className="no-print">
-              <Wizard key={mode} mode={mode} input={inputs[mode]} setInput={setInput} onRun={run} onReset={reset} errors={errors[mode]} />
+              <Wizard key={mode} mode={mode} input={inputs[mode]} setInput={setInput} onReset={reset} errors={dateErr ? { date: dateErr.replace(/^건축허가일\(|\)$/g, "") } : {}} />
             </aside>
             <section id="result-top" className="results">
               {rv ? (
-                <Report key={`${mode}-${submitted[mode]._run}`} rv={rv} mode={mode} adminMode={adminMode} author={AUTHOR} />
+                <Report key={mode} rv={rv} mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} />
               ) : (
                 <div className="empty">
                   <div className="empty-t">{mode === "new" ? "오늘 허가 신청하는 건축물" : "이미 허가받은 건축물"}</div>
                   <div className="empty-d">
                     {mode === "new"
-                      ? "대상물 분류부터 차례로 입력하면 현행 시행령 별표4에 따라 설치할 소방시설을 산정합니다."
+                      ? "대상물 분류부터 차례로 입력하면 현행 시행령 별표4에 따라 설치할 소방시설이 바로 표시됩니다."
                       : "건축물대장의 건축허가일을 입력하면 당시 시행령 별표4로 산정하고, 부칙 소급 시설을 구분해 표시합니다."}
                   </div>
+                  {missing.length > 0 && (
+                    <div className="empty-need">
+                      남은 필수 입력: <b>{missing.join(" · ")}</b>
+                    </div>
+                  )}
                 </div>
               )}
             </section>

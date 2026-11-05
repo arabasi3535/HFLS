@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CATS, SUBSTITUTIONS, getFacility } from "../law/facilities";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
@@ -48,12 +48,12 @@ function substitutionsFor(rows, u) {
   return out;
 }
 
-function Item({ it, open, onToggle }) {
+function Item({ it, open, onToggle, flash }) {
   const r = it.row;
   const items = r ? [...r.hits, ...r.maybes] : [];
   const lead = items[0];
   return (
-    <li className={`it ${it.kind} ${it.sub ? "subbed" : ""}`}>
+    <li className={`it ${it.kind} ${it.sub ? "subbed" : ""} ${flash ? "flash" : ""}`}>
       <button type="button" className="it-main" onClick={onToggle}>
         <span className="it-name">{it.name}</span>
         <span className="it-tags">
@@ -96,13 +96,23 @@ function Item({ it, open, onToggle }) {
   );
 }
 
-export default function Report({ rv, mode, adminMode, author }) {
+const EMPTY_SEL = { retro: {}, strong: {}, sub: {} };
+
+export default function Report({ rv, mode, adminMode, author, sel: selIn, setSel, provisional }) {
   const existing = mode === "existing";
   const [open, setOpen] = useState({});
-  const [retroOn, setRetroOn] = useState({});
-  const [strongOn, setStrongOn] = useState({});
-  const [subOn, setSubOn] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
+  const sel = { ...EMPTY_SEL, ...(selIn || {}) };
+  const retroOn = sel.retro;
+  const strongOn = sel.strong;
+  const subOn = sel.sub;
+  const upd = (k) => (fn) => setSel((p) => {
+    const cur = { ...EMPTY_SEL, ...(p || {}) };
+    return { ...cur, [k]: fn(cur[k]) };
+  });
+  const setRetroOn = upd("retro");
+  const setStrongOn = upd("strong");
+  const setSubOn = upd("sub");
 
   const { hist } = rv;
   const u = rv.use;
@@ -134,6 +144,24 @@ export default function Report({ rv, mode, adminMode, author }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hist, rv, existing, retroOn, strongOn, subOn, subs]);
 
+  // 조건 변경 시 추가·제외된 시설 잠시 강조
+  const prevRef = useRef(null);
+  const [flash, setFlash] = useState({ added: [], removed: [] });
+  const sig = list.map((i) => `${i.key}:${i.kind}:${i.sub ? 1 : 0}`).join("|");
+  useEffect(() => {
+    const now = new Map(list.filter((i) => !i.sub).map((i) => [i.key, i.name]));
+    const prev = prevRef.current;
+    prevRef.current = now;
+    if (!prev) return undefined;
+    const added = [...now.keys()].filter((k) => !prev.has(k));
+    const removed = [...prev.entries()].filter(([k]) => !now.has(k)).map(([, n]) => n);
+    if (!added.length && !removed.length) return undefined;
+    setFlash({ added, removed });
+    const t = setTimeout(() => setFlash({ added: [], removed: [] }), 3000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig]);
+
   const checks = hist.rows.filter((r) => r.status === STATUS.CHK);
   const strongCands = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("강화")) : [];
   const noRetroAdds = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("소급 없음")) : [];
@@ -153,6 +181,13 @@ export default function Report({ rv, mode, adminMode, author }) {
           작성일 {fmtDate(rv.today)} · {author.org} {author.name}
         </div>
       </div>
+
+      {provisional.length > 0 && (
+        <div className="note prov">
+          <b>잠정 결과</b> — {provisional.join(" · ")}
+        </div>
+      )}
+      {provisional.length > 0 && <div className="print-only watermark">잠정</div>}
 
       {/* 요약 */}
       <div className="sum">
@@ -243,6 +278,7 @@ export default function Report({ rv, mode, adminMode, author }) {
             연혁 확인
           </span>
         </div>
+        {flash.removed.length > 0 && <div className="removed-note">제외됨: {flash.removed.join(", ")}</div>}
         {list.length === 0 && <div className="empty-list">설치 대상 소방시설이 없습니다.</div>}
         {CATS.map((cat) => {
           const items = list.filter((i) => i.cat === cat);
@@ -252,7 +288,7 @@ export default function Report({ rv, mode, adminMode, author }) {
               <div className="cat-h">{cat}</div>
               <ul>
                 {items.map((it) => (
-                  <Item key={it.key} it={it} open={!!open[it.key]} onToggle={() => toggle(it.key)} />
+                  <Item key={it.key} it={it} flash={flash.added.includes(it.key)} open={!!open[it.key]} onToggle={() => toggle(it.key)} />
                 ))}
               </ul>
             </div>
@@ -304,7 +340,7 @@ export default function Report({ rv, mode, adminMode, author }) {
 
       <div className="rep-actions no-print">
         <button type="button" className="w-run" onClick={() => window.print()}>
-          PDF 저장 / 인쇄
+          {provisional.length > 0 ? "PDF 저장 (잠정)" : "PDF 저장 / 인쇄"}
         </button>
         <button
           type="button"
@@ -335,6 +371,22 @@ export default function Report({ rv, mode, adminMode, author }) {
           )}
         </div>
       )}
+      <div className="mobile-bar no-print">
+        <span>
+          설치 <b>{list.filter((x) => !x.sub).length}</b>종{nRetro > 0 ? ` · 소급 ${nRetro}` : ""}
+          {checks.length > 0 ? ` · 확인 필요 ${checks.length}` : ""}
+          {provisional.length > 0 ? " · 잠정" : ""}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            const el = document.getElementById("result-top");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+        >
+          결과 보기
+        </button>
+      </div>
     </div>
   );
 }

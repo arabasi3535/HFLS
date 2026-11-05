@@ -97,7 +97,7 @@ const Num = ({ value, onChange, placeholder }) => (
   <input type="number" inputMode="decimal" value={value ?? ""} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
 );
 
-export default function Wizard({ mode, input, setInput, onRun, onReset, errors }) {
+export default function Wizard({ mode, input, setInput, onReset, errors }) {
   const [showMore, setShowMore] = useState(false);
   const set = (k, v) => setInput((p) => ({ ...p, [k]: v }));
   const setF = (k, v) => setInput((p) => ({ ...p, f: { ...p.f, [k]: v } }));
@@ -392,9 +392,7 @@ export default function Wizard({ mode, input, setInput, onRun, onReset, errors }
           )}
 
           <div className="w-actions">
-            <button type="button" className="w-run" onClick={onRun}>
-              소방시설 산정
-            </button>
+            <span className="w-live">입력하는 즉시 결과에 반영됩니다</span>
             <button type="button" className="w-reset" onClick={onReset}>
               초기화
             </button>
