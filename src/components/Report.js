@@ -98,7 +98,7 @@ function Item({ it, open, onToggle, flash }) {
 
 const EMPTY_SEL = { retro: {}, strong: {}, sub: {} };
 
-export default function Report({ rv, mode, adminMode, author, sel: selIn, setSel, provisional }) {
+export default function Report({ rv, mode, adminMode, author, sel: selIn, setSel, provisional, onReport }) {
   const existing = mode === "existing";
   const [open, setOpen] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
@@ -348,6 +348,12 @@ export default function Report({ rv, mode, adminMode, author, sel: selIn, setSel
           onClick={() => setOpen(Object.fromEntries(list.map((i) => [i.key, !list.every((x) => open[x.key])])))}
         >
           {list.length && list.every((x) => open[x.key]) ? "설명 접기" : "설명 모두 펼치기"}
+        </button>
+      </div>
+      <div className="rep-report no-print">
+        결과가 법령과 다르다면{" "}
+        <button type="button" className="w-link" onClick={onReport}>
+          이 결과 오류 신고
         </button>
       </div>
       <div className="rep-foot">업무 참고용(법적 효력 없음) — 최종 판단은 국가법령정보센터 연혁본·부칙과 소방청 질의회신으로 확인하십시오.</div>

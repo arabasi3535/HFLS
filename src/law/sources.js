@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.6.0",
+  version: "2.7.0",
   date: "2026-11-06",
-  note: "입력 즉시 결과 반영(0.35초 지연 반영), 잠정 결과 표시·인쇄 워터마크, 추가·제외 시설 강조, 소급·강화·대체 선택 유지, 모바일 하단 요약 바",
+  note: "사용 횟수(오늘·누적) 표시, 오류 신고 접수·관리자 신고함(Vercel 함수 + Upstash Redis)",
 };
 
 export const D = {

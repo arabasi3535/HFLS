@@ -2,7 +2,7 @@
  * 페이지(HTML): 네트워크 우선 → 실패 시 캐시 (배포 즉시 최신 반영)
  * 정적 파일(/static, 아이콘): 캐시 우선 (파일명에 해시 포함)
  */
-const CACHE = "hfls-v2.6.0";
+const CACHE = "hfls-v2.7.0";
 const CORE = ["/", "/index.html", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -20,6 +20,7 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) return; // 사용 통계·오류 신고는 항상 네트워크
 
   if (req.mode === "navigate") {
     e.respondWith(

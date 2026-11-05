@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import Wizard, { EMPTY } from "./components/Wizard";
 import Report from "./components/Report";
 import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
+import { BugReportModal, ReportsTab } from "./components/Feedback";
+import { loadStats } from "./lib/remote";
 import { review } from "./law/engine";
 import { getUse } from "./law/uses";
 import { RULES_REV } from "./law/sources";
@@ -87,7 +89,19 @@ export default function App() {
   const [sels, setSels] = useState(() => load(K.sel, { new: {}, existing: {} }));
   const [tab, setTab] = useState("new");
   const [adminMode, setAdminMode] = useState(false);
+  const [adminPw, setAdminPw] = useState("");
+  const [stats, setStats] = useState(null);
+  const [bug, setBug] = useState(false);
   const today = useMemo(todayKST, []);
+
+  // 사용 횟수(접속 기준, 같은 탭은 1회) — 저장소 미설정이면 표시하지 않음
+  useEffect(() => {
+    let alive = true;
+    loadStats().then((s) => alive && setStats(s));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => save(K.new, inputs.new), [inputs.new]);
   useEffect(() => save(K.existing, inputs.existing), [inputs.existing]);
@@ -123,12 +137,16 @@ export default function App() {
   const login = () => {
     if (adminMode) {
       setAdminMode(false);
-      if (tab === "history" || tab === "rules") setTab("new");
+      setAdminPw("");
+      if (tab === "history" || tab === "rules" || tab === "reports") setTab("new");
       return;
     }
     const pw = window.prompt("관리자 비밀번호");
     if (pw === null) return;
-    if (pw === ADMIN_PW) setAdminMode(true);
+    if (pw === ADMIN_PW) {
+      setAdminMode(true);
+      setAdminPw(pw);
+    }
     else alert("비밀번호가 올바르지 않습니다.");
   };
 
@@ -140,6 +158,7 @@ export default function App() {
       ? [
           ["history", "법령 연혁"],
           ["rules", "규칙·검증"],
+          ["reports", "오류 신고함"],
         ]
       : []),
   ];
@@ -154,6 +173,11 @@ export default function App() {
               <span className="ver-badge" title={`빌드 ${BUILD.builtAt} KST · 커밋 ${BUILD.commit} · ${BUILD.env}\n판정규칙 ${RULES_REV.date}: ${RULES_REV.note}`}>
                 v{BUILD.version}
               </span>
+              {stats && (
+                <span className="usage" title={`접속 기준(같은 탭 새로고침은 1회) · ${stats.date} 한국시간`}>
+                  오늘 {stats.today.toLocaleString("ko-KR")} · 누적 {stats.total.toLocaleString("ko-KR")}
+                </span>
+              )}
             </div>
             <h1>소방시설 적용 검토</h1>
           </div>
@@ -169,7 +193,7 @@ export default function App() {
         </div>
         <nav className="tabs">
           {tabs.map(([k, l]) => (
-            <button key={k} className={`${tab === k ? "on" : ""} ${k === "history" || k === "rules" ? "adm" : ""}`} onClick={() => setTab(k)}>
+            <button key={k} className={`${tab === k ? "on" : ""} ${k === "history" || k === "rules" || k === "reports" ? "adm" : ""}`} onClick={() => setTab(k)}>
               {l}
             </button>
           ))}
@@ -184,7 +208,7 @@ export default function App() {
             </aside>
             <section id="result-top" className="results">
               {rv ? (
-                <Report key={mode} rv={rv} mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} />
+                <Report key={mode} rv={rv} mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)} />
               ) : (
                 <div className="empty">
                   <div className="empty-t">{mode === "new" ? "오늘 허가 신청하는 건축물" : "이미 허가받은 건축물"}</div>
@@ -206,6 +230,16 @@ export default function App() {
         {tab === "guide" && <GuideTab adminMode={adminMode} />}
         {adminMode && tab === "history" && <HistoryTab />}
         {adminMode && tab === "rules" && <RulesTab adminMode={adminMode} overrides={overrides} setOverrides={setOverrides} />}
+        {adminMode && tab === "reports" && (
+          <ReportsTab
+            adminPw={adminPw}
+            onLoadInput={(m, input) => {
+              const md = m === "existing" ? "existing" : "new";
+              setInputs((p) => ({ ...p, [md]: { ...EMPTY, ...input, f: input.f || {}, floors: input.floors || [] } }));
+              setTab(md);
+            }}
+          />
+        )}
       </main>
 
       <footer className="foot no-print">
@@ -217,7 +251,27 @@ export default function App() {
         </span>
         <span>현행 기준: 소방시설 설치 및 관리에 관한 법률 시행령 별표4(2025.11.25. 개정) · 판정일 {today}</span>
         <span>업무 참고용(법적 효력 없음)</span>
+        <button type="button" className="fb-btn" onClick={() => setBug(true)}>
+          오류 신고 · 의견 보내기
+        </button>
       </footer>
+      {bug && (
+        <BugReportModal
+          version={BUILD.version}
+          onClose={() => setBug(false)}
+          context={
+            isInput && rv
+              ? {
+                  mode,
+                  input: live,
+                  result: rv.hist.rows.filter((r) => r.status !== "해당없음").map((r) => `${r.fac.name}:${r.status}`),
+                }
+              : isInput
+              ? { mode, input: live }
+              : null
+          }
+        />
+      )}
     </div>
   );
 }
