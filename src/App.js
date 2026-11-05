@@ -8,6 +8,8 @@ import BUILD from "./buildInfo.json";
 
 // 관리자 비밀번호: Vercel 환경변수 REACT_APP_ADMIN_PW 로 변경 가능 (클라이언트 측 잠금 — 보안 수단 아님)
 const ADMIN_PW = process.env.REACT_APP_ADMIN_PW || "3535";
+// 제작자 표시 (머리말 오른쪽·바닥글)
+const AUTHOR = { org: "안동소방서 예방안전과", name: "이제현" };
 const K_INPUT = "hfls_input_v2";
 const K_OV = "hfls_overrides_v2";
 
@@ -129,9 +131,15 @@ export default function App() {
             <h1>소방시설 연혁 법령 적용 지원 시스템</h1>
             <div className="sub">건축허가등 신청일 기준 별표 판정 · 부칙 소급 · 강화기준 특례 · 증축·용도변경 특례 · 현행 비교</div>
           </div>
-          <button className={`btn small ${adminMode ? "on" : ""}`} onClick={login}>
-            {adminMode ? "관리자 모드 해제" : "관리자"}
-          </button>
+          <div className="top-right">
+            <div className="author" title="제작">
+              <span className="author-org">{AUTHOR.org}</span>
+              <span className="author-name">{AUTHOR.name}</span>
+            </div>
+            <button className={`btn small ${adminMode ? "on" : ""}`} onClick={login}>
+              {adminMode ? "관리자 모드 해제" : "관리자"}
+            </button>
+          </div>
         </div>
         <nav className="tabs">
           {tabs.map(([k, l]) => (
@@ -189,6 +197,10 @@ export default function App() {
         </span>
         <br />
         현행 기준: 소방시설 설치 및 관리에 관한 법률 시행령(대통령령 제36728호, 2026.10.2. 시행) 별표4(2025.11.25. 개정) · 판정일 {today}
+        <br />
+        <span className="foot-author">
+          제작 · {AUTHOR.org} {AUTHOR.name}
+        </span>
         <br />
         업무 참고용(법적 효력 없음). 최종 판단은 국가법령정보센터 연혁본·부칙 및 소방청 질의회신으로 확인하십시오.
       </footer>
