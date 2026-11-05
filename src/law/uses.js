@@ -152,21 +152,24 @@ export function hasG(use, ...keys) {
 }
 
 /**
- * 노유자 생활시설 해당 여부 (기준일 d)
+ * 노유자 생활시설 해당 여부 (기준일 d) — 3값(true/false/null) 반환
  *  - 2012.2.5. 전: 구분 없음 → 모든 노유자시설은 '노유자시설'(false)
- *  - 2013.2.10.~2015.6.30.: 단독주택·공동주택에 설치되는 노유자 생활시설 제외(운영매뉴얼 — 노인시설 포함 전체)
- *  - 2015.7.1.~: 노인 관련 시설(①)은 제외 대상 아님, ②~⑥(아동·장애인·정신질환자·노숙인·결핵/한센)만 제외(법령집)
- *    2020.9.15.~ 학대피해노인 전용쉼터도 제외 대상 — 본 시스템은 '노유자 생활시설 — 아동복지시설 등' 항목에 포함
+ *  - 노인 관련 생활시설(노인주거·노인의료·재가노인복지): 단독·공동주택 설치 여부와 관계없이 생활시설
+ *    (대통령령 제24304호·법령집 2015.7.1. 문구 '나목(②)부터 바목(⑥)까지 중 단독·공동주택 설치 시설 제외', 사용자 제공 분류표 주석)
+ *  - 그 밖의 생활시설이 단독·공동주택에 설치된 경우: 2013.2.10.부터 제외.
+ *    2012.2.5.~2013.2.9.은 제23272호 정의에 이미 제외 규정이 있었다는 지적(원문 미대조)과 운영매뉴얼(2013.2.10. 신설)이 달라 확인 필요(null)
  */
 export function isNoyuRes(u, f, d) {
   if (!u || !u.g.includes("noyu_res")) return false;
   if (d < D.B12) return false;
   const inHouse = !!(f && f.noyuInHouse);
-  if (inHouse && d >= D.B13 && d < D.B15b) return false;
-  if (inHouse && d >= D.B15b && !u.g.includes("noyu_elder")) return false;
-  return true;
+  if (!inHouse || u.g.includes("noyu_elder")) return true;
+  if (d < D.B13) return null;
+  return false;
 }
-/** 노유자시설 중 생활시설 외(면적 기준 적용 대상) */
+/** 노유자시설 중 생활시설 외(면적 기준 적용 대상) — 3값 */
 export function isNoyuGen(u, f, d) {
-  return !!u && u.g.includes("noyu") && !isNoyuRes(u, f, d);
+  if (!u || !u.g.includes("noyu")) return false;
+  const r = isNoyuRes(u, f, d);
+  return r === null ? null : !r;
 }

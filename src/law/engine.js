@@ -7,7 +7,7 @@ import { CRITERIA } from "./criteria";
 import { FACILITIES, getFacility, stdLabel, EXEMPTION_HINTS } from "./facilities";
 import { D, getLawSystem, SOURCES } from "./sources";
 import { getUse } from "./uses";
-import { derive, consistencyIssues } from "./logic";
+import { derive, consistencyIssues, num } from "./logic";
 import { RETRO_RULES, strengthenedFacs, STRENGTHENED, housingFacilityNote, extensionRule } from "./retro";
 
 export const STATUS = {
@@ -58,17 +58,25 @@ export function evaluateAt(input, date, overrides = {}) {
   const f = input.f || {};
   const unsupported = date < D.P92;
   const evalDate = unsupported ? D.P92 : date;
-  const rowPre = (u.g.includes("row") || u.g.includes("multi")) && date < D.C24;
+  // 특정소방대상물 해당 여부(별표2) 선행 판정
+  //  - 단독주택: 해당 없음(주택용소방시설만)
+  //  - 연립·다세대: 2024.12.1. 신청분부터 별표2 공동주택 편입(대통령령 제33004호 부칙). 2004.5.30.~2024.11.30.은
+  //    공동주택 = 아파트등·기숙사뿐 → 별표4 미적용. 내부 차고·주차장(물분무등)만 별도 검토(연혁 확인)
+  //  - 1992.7.28.~2004.5.29.(소방법) 연립·다세대: 당시 소방대상물 분류 확인 필요 → 결과 전체 하향
+  const isRowMulti = u.g.includes("row") || u.g.includes("multi");
+  const rowPre = isRowMulti && date < D.C24;
+  const rowGap = isRowMulti && date >= D.A && date < D.C24;
+  const rowOld = isRowMulti && date < D.A;
+  const nonSpecific = u.g.includes("house") || rowGap;
   const g = (...k) => k.some((kk) => u.g.includes(kk));
   const ctx = { u, x, f, g, d: evalDate, dep: {} };
 
   const byFac = {};
   for (const fac of FACILITIES) byFac[fac.key] = { fac, status: STATUS.NONE, hits: [], checks: [], maybes: [] };
 
-  // 단독주택은 별표2 특정소방대상물이 아님 → 별표4 미적용(주택용소방시설만, 소방시설법 제10조)
-  const isHouse = u.g.includes("house");
   const run = (crit) => {
-    if (isHouse) return;
+    const parkingOnly = rowGap && crit.fac === "water" && (crit.id === "wat-inpark" || crit.id === "wat-mech");
+    if (nonSpecific && !parkingOnly) return;
     const ov = overrides[crit.id] || {};
     if (ov.disabled) return;
     const eff = effectAt(crit, evalDate);
@@ -95,7 +103,8 @@ export function evaluateAt(input, date, overrides = {}) {
     };
     const bucket = byFac[crit.fac];
     if (r === true) {
-      const downgrade = eff === "maybe" || cert === "U" || unsupported;
+      // 미검증(U)·시점추정(I) 규칙, 효력시점 불명확 구간, 미수록 기간, 특정소방대상물 해당 여부 불명확 → '설치(연혁 확인)'
+      const downgrade = eff === "maybe" || cert === "U" || cert === "I" || unsupported || rowOld || parkingOnly;
       if (downgrade) bucket.maybes.push(item);
       else bucket.hits.push(item);
     } else {
@@ -128,6 +137,9 @@ export function evaluateAt(input, date, overrides = {}) {
     system: getLawSystem(date),
     unsupported,
     rowPre,
+    rowGap,
+    rowOld,
+    nonSpecific,
     table: tableRef(date),
     rows,
     byKey: Object.fromEntries(rows.map((r) => [r.fac.key, r])),
@@ -160,10 +172,13 @@ function inputChecklist(u, input, x) {
   if (x.occ === null && g("culture", "religion", "sports", "training_lodge", "lodging"))
     out.push("수용인원(시행령 별표7: 의자·침대 수 기준) 미입력 — 수용인원 기준(100명 등)이 판정되지 않습니다.");
   else if (x.occEstimated && g("retail", "transport", "logistics", "station", "ugmall"))
-    out.push("수용인원 미입력 → 별표7 제2호 기준 상한(해당 용도 바닥면적 ÷ 1.9㎡)으로 판정했습니다. 경계값 부근이면 실제 수용인원을 입력하십시오.");
+    out.push("수용인원 미입력 → 시행령 별표7 제2호 기준 상한(해당 용도 바닥면적 ÷ 3㎡, 교육연구시설 ÷ 1.9㎡)으로 판정했습니다. 복도·계단·화장실을 빼야 하므로 경계값 부근이면 실제 수용인원을 입력하십시오.");
   if (!x.floorsComplete)
     out.push("미입력 층의 바닥면적은 '연면적 − 입력된 층 면적 합'을 상한으로 보고 판정합니다(연면적에는 지하층 포함, 건축법 시행령 제119조제1항제4호).");
-  if (g("factory", "warehouse") && f.combustibleTimes == null) out.push("특수가연물 저장·취급량(지정수량 배수) 미입력 — 0으로 간주.");
+  if (g("factory", "warehouse") && num(f.combustibleTimes) === null) out.push("특수가연물 저장·취급량(지정수량 배수) 미입력 → 관련 기준(500·750·1,000배)은 [확인 필요]. 취급하지 않으면 0을 입력하십시오.");
+  if (g("warehouse") && num(f.rackArea) === null) out.push("랙식 창고 바닥면적 미입력 → 스프링클러 랙식 기준은 [확인 필요]. 랙식 창고가 아니면 0을 입력하십시오.");
+  if (g("gas") && num(f.gasTankTon) === null) out.push("가스시설 지상 노출 탱크 저장용량 미입력 → 상수도소화용수·연결살수 기준은 [확인 필요].");
+  if (g("culture", "religion", "sports") && !g("zoo") && num(f.stageArea) === null) out.push("무대부 바닥면적 미입력 → 스프링클러·제연설비 무대부 기준은 [확인 필요]. 무대부가 없으면 0을 입력하십시오.");
   if (g("factory", "warehouse") && !f.nonFireproof) out.push("지붕·외벽 불연재료/내화구조 여부 확인(아니면 '불연·내화 아님' 체크).");
   if (g("tunnel") && f.tunnelLen == null) out.push("터널 길이 미입력.");
   if (!f.parkingInside && !g("tunnel", "ugduct")) out.push("건축물 내부 차고·주차장 면적(물분무등 200㎡)·지하 주차장 면적(2026.3.1. 기준) 해당 여부 확인.");
@@ -184,27 +199,68 @@ export function review(input, today, overrides = {}) {
   const issues = consistencyIssues(input, x);
   const ext = input.action !== "new" && input.date2 ? extensionRule(input) : null;
 
-  // 적용 기준일 결정
+  // 적용 기준일 및 부분별 판정 입력 결정
+  //  - 증축(구획 예외): 기존 부분 = 증축 전 규모 × 최초 신청일 기준 / 증축 부분 = 증축 후 전체 규모 × 증축 신청일 기준
+  //  - 용도변경(제15조②): 기존 부분 = 변경 전 용도 × 최초 신청일 기준 / 변경 부분 = 변경 후 용도·변경 면적 × 변경 신청일 기준
+  //  - 용도변경 예외(제15조② 단서): 전체 = 변경 전 용도에 적용되던 기준
   let primaryDate = input.date;
+  let primaryInput = input;
+  let primaryLabel = "";
   let secondary = null; // {label, date}
+  let secondInput = input;
+  const prevUse = input.prevUse ? getUse(input.prevUse) : null;
+  const changeArea = num(input.changeArea);
   if (ext) {
-    if (ext.wholeDate) primaryDate = ext.wholeDate;
-    else if (ext.partDates) {
-      primaryDate = ext.partDates.existing;
-      secondary = { label: input.action === "extension" ? "증축 부분" : "용도변경 부분", date: ext.partDates.added };
+    if (input.action === "extension") {
+      if (ext.wholeDate) primaryDate = ext.wholeDate;
+      else if (ext.partDates) {
+        primaryDate = ext.partDates.existing;
+        primaryLabel = "기존 부분(증축 전 규모)";
+        primaryInput = beforeExtension(input);
+        if (!primaryInput) issues.push("증축 전 연면적·층수를 입력하지 않아 기존 부분도 증축 후 규모로 판정했습니다(과다 판정 가능) — 「증축 전 규모」를 입력하십시오.");
+        primaryInput = primaryInput || input;
+        secondary = { label: "증축 부분(증축 후 전체 규모로 판단)", date: ext.partDates.added };
+      }
+    } else if (input.action === "usechange") {
+      if (!prevUse) issues.push("변경 전 용도를 선택하지 않아 기존 부분도 변경 후 용도로 판정했습니다 — 「변경 전 용도」를 선택하십시오.");
+      if (ext.wholeDate) {
+        primaryDate = ext.wholeDate;
+        primaryLabel = prevUse ? `전체(변경 전 용도 ${prevUse.name} 기준)` : "";
+        if (prevUse) primaryInput = { ...input, use: prevUse.id, useArea: "" };
+      } else if (ext.partDates) {
+        primaryDate = ext.partDates.existing;
+        if (prevUse) {
+          const area = num(input.area);
+          primaryLabel = `기존 부분(변경 전 용도: ${prevUse.name})`;
+          primaryInput = { ...input, use: prevUse.id, useArea: area !== null && changeArea !== null ? Math.max(0, area - changeArea) : "" };
+        }
+        secondary = { label: `용도변경 부분(${u.name}${changeArea !== null ? `, ${changeArea.toLocaleString("ko-KR")}㎡` : ""})`, date: ext.partDates.added };
+        secondInput = changeArea !== null ? { ...input, useArea: changeArea } : input;
+        if (changeArea === null) issues.push("용도변경 부분 면적을 입력하지 않아 '해당 용도 바닥면적 합계' 입력값(없으면 연면적)으로 판정했습니다.");
+      }
     }
   }
-  const hist = evaluateAt(input, primaryDate, overrides);
-  const second = secondary ? evaluateAt(input, secondary.date, overrides) : null;
+  const hist = evaluateAt(primaryInput, primaryDate, overrides);
+  const second = secondary ? evaluateAt(secondInput, secondary.date, overrides) : null;
   const curr = evaluateAt(input, today, overrides);
 
-  // 부칙 소급(의무)
-  const retro = RETRO_RULES.filter((r) => r.applies(u, input) && input.date < r.before).map((r) => ({
-    ...r,
-    facNames: r.facs.map((k) => getFacility(k).name),
-    expired: today > r.deadline,
-    histStatus: r.facs.map((k) => ({ k, name: getFacility(k).name, st: hist.byKey[k].status })),
-  }));
+  // 부칙 소급(의무) — 각 부칙의 '시행 당시 건축 완료(설치)된' 대상물: 사용승인일(설치완료일)로 판정
+  const completed = input.completed || "";
+  const retro = RETRO_RULES.filter((r) => r.applies(u, input) && input.date < r.before && (!completed || completed < r.before)).map((r) => {
+    // 부칙은 '개정규정에 따라' 설치하도록 하므로, 부칙 시행일 기준 판정으로 실제 설치할 시설을 정함(예: 600㎡ 이상 SPK / 미만 간이SPK)
+    const at = evaluateAt(input, r.before, overrides);
+    return {
+      ...r,
+      needsCompletion: !completed,
+      facNames: r.facs.map((k) => getFacility(k).name),
+      expired: today > r.deadline,
+      histStatus: r.facs.map((k) => ({ k, name: getFacility(k).name, st: hist.byKey[k].status })),
+      atStatus: r.facs.map((k) => ({ k, name: getFacility(k).name, st: at.byKey[k].status, row: at.byKey[k] })),
+    };
+  });
+  const retroExcluded = completed
+    ? RETRO_RULES.filter((r) => r.applies(u, input) && input.date < r.before && completed >= r.before).map((r) => r.title)
+    : [];
   const retroFacSet = new Set(retro.flatMap((r) => r.facs));
 
   // 현행 비교 + 법 제13조 강화기준
@@ -213,7 +269,9 @@ export function review(input, today, overrides = {}) {
     const h = hist.byKey[fac.key].status;
     const c = curr.byKey[fac.key].status;
     let kind = "same";
-    if (RANK[c] >= 2 && RANK[h] < 2) kind = "added";
+    // 어느 한쪽이라도 '확인 필요'(정보 부족)이면 강화·완화를 확정하지 않음
+    if (h === STATUS.CHK || c === STATUS.CHK) kind = h === c ? "same" : "unknown";
+    else if (RANK[c] >= 2 && RANK[h] < 2) kind = "added";
     else if (RANK[h] >= 2 && RANK[c] < 2) kind = "removed";
     let retroKind = "";
     if (kind === "added") {
@@ -231,7 +289,9 @@ export function review(input, today, overrides = {}) {
     issues,
     ext,
     primaryDate,
+    primaryLabel,
     secondary,
+    retroExcluded,
     hist,
     second,
     curr,
@@ -242,6 +302,18 @@ export function review(input, today, overrides = {}) {
     checklist: inputChecklist(u, input, x),
     sources: SOURCES,
   };
+}
+
+/** 증축 전 규모 입력 → 기존 부분 판정용 입력 (층별 면적은 미상으로 두고 연면적 상한으로 판정) */
+function beforeExtension(input) {
+  const area = num(input.prevArea);
+  const gf = num(input.prevGf);
+  if (area === null || gf === null) return null;
+  const bf = num(input.prevBf) ?? 0;
+  const floors = [];
+  for (let i = bf; i >= 1; i--) floors.push({ level: -i, area: "", windowless: false });
+  for (let i = 1; i <= gf; i++) floors.push({ level: i, area: "", windowless: false });
+  return { ...input, area, gf, bf, useArea: "", floors };
 }
 
 /** 검토표 CSV (엑셀 호환 BOM) */
@@ -255,7 +327,7 @@ export function toCSV(rv) {
     const basis = items.map((i) => `${i.text} / ${i.basis}`).join(" | ");
     const refs = [...new Set(items.map((i) => i.ref))].join(" | ");
     lines.push(
-      [row.fac.cat, row.fac.name, row.status, basis, refs, cmp.c, cmp.retroKind || (cmp.kind === "removed" ? "현행 미대상" : ""), row.std, row.exHint]
+      [row.fac.cat, row.fac.name, row.status, basis, refs, cmp.c, cmp.retroKind || (cmp.kind === "removed" ? "현행 미대상" : cmp.kind === "unknown" ? "비교 판정 불가(확인 필요)" : ""), row.std, row.exHint]
         .map(esc)
         .join(",")
     );

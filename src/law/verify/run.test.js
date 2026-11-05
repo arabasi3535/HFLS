@@ -14,7 +14,7 @@ function check(c) {
     t: c.t,
     missing: c.exp.filter((k) => !sys.includes(k)),
     extra: sys.filter((k) => !c.exp.includes(k)),
-    chkDiff: chk.filter((k) => !echk.includes(k)),
+    chkDiff: [...chk.filter((k) => !echk.includes(k)), ...echk.filter((k) => !chk.includes(k)).map((k) => k + "(기대한 확인필요 누락)")],
     reqchk: by(STATUS.REQ_CHK),
   };
 }

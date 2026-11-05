@@ -87,9 +87,9 @@ describe("현행 기준", () => {
     const r = evaluateAt(base({ use: "office", area: 1200, gf: 4, bf: 1, floors: floors(4, 1, "") }), "2024-01-01");
     expect(st(r, "hydrant")).toBe(STATUS.CHK);
   });
-  test("2026.3.1. 이후 지하주차장 300㎡ → 자탐", () => {
+  test("2026.3.1. 이후 지하주차장 300㎡ → 자탐 (별표 원문 문구 미대조 규칙 → 설치(연혁 확인))", () => {
     const r = evaluateAt(base({ use: "neigh", area: 500, gf: 2, bf: 1, floors: floors(2, 1, 166.7), f: { ugParking: 300 } }), "2026-04-01");
-    expect(st(r, "afd")).toBe(STATUS.REQ);
+    expect(st(r, "afd")).toBe(STATUS.REQ_CHK);
   });
   test("1992.7.28. 이전 → 미지원 표시 및 설치 판정 하향", () => {
     const r = evaluateAt(base({ use: "office", area: 4000, gf: 12, bf: 0, floors: floors(12, 0, 333.4) }), "1990-01-01");
@@ -200,9 +200,13 @@ describe("노유자 생활시설 구분(2012.2.5. 도입)", () => {
     const r = dc("2016-01-01", { noyuInHouse: true }, "noyu_res");
     expect(st(r, "afd")).toBe(STATUS.REQ);
   });
-  test("2013.2.10.~2015.6.30.에는 단독·공동주택 설치 노유자 생활시설 전체 제외(노인시설 포함)", () => {
-    const r = dc("2015-01-01", { noyuInHouse: true }, "noyu_res");
-    expect(st(r, "afd")).toBe(STATUS.NONE);
+  test("노인 관련 생활시설은 2013~2015에도 단독·공동주택 설치 여부와 관계없이 생활시설(제24304호 '나목~바목' 제외)", () => {
+    const r = dc("2014-06-01", { noyuInHouse: true }, "noyu_res");
+    expect(st(r, "afd")).toBe(STATUS.REQ);
+  });
+  test("비노인 생활시설·공동주택 설치 — 2012.2.5.~2013.2.9.은 자료 불일치로 확인 필요, 2013.2.10.부터 제외", () => {
+    expect(st(dc("2012-06-01", { noyuInHouse: true }, "noyu_res2"), "afd")).toBe(STATUS.CHK);
+    expect(st(dc("2013-03-01", { noyuInHouse: true }, "noyu_res2"), "afd")).toBe(STATUS.NONE);
   });
   test("2011년 신청 주·야간보호 → 2012 부칙 소급 표시", () => {
     const rv = review(base({ use: "noyu_res", date: "2011-06-01", area: 200, useArea: 200, gf: 1, bf: 0, floors: floors(1, 0, 200) }), "2026-11-04");

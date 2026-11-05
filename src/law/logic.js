@@ -143,14 +143,15 @@ export function derive(b, u) {
     gf,
     bf,
     totalFloors: gf + bf, // 지하층을 포함한 층수
-    // 수용인원: 미입력 시 시행령 별표7 제2호(강의실 등 ÷1.9㎡, 그 밖 ÷3㎡)로 상한 산정
-    //  — 의자·침대 기준 용도(문화집회·종교·운동·숙박·숙박형 수련시설)는 상한을 잡지 않음
+    // 수용인원 미입력 시 시행령 별표7 제2호로 상한 산정(복도·계단·화장실 제외 전 면적 기준이므로 상한):
+    //   가. 강의실·교무실·상담실·실습실·휴게실 용도 대상물(교육연구) ÷1.9㎡ / 다. 그 밖의 대상물 ÷3㎡
+    //   나. 강당·문화집회·운동·종교(의자 수 또는 ÷4.6㎡)·숙박시설(침대 수)·숙박 수련시설은 상한 미산정
     occ:
       num(b.occ) !== null
         ? num(b.occ)
-        : useArea !== null && !["culture", "religion", "sports", "lodging", "training_lodge"].some(ug_)
-        ? { lo: 0, hi: Math.floor(useArea / 1.9) }
-        : null,
+        : useArea === null || ["culture", "religion", "sports", "lodging", "training_lodge"].some(ug_)
+        ? null
+        : { lo: 0, hi: Math.floor(useArea / (["edu", "school"].some(ug_) ? 1.9 : 3)) },
     occEstimated: num(b.occ) === null,
     useArea,
     useAreaAssumed: num(b.useArea) === null,

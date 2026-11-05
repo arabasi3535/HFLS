@@ -1,6 +1,6 @@
 {
   "name": "hfls",
-  "version": "2.3.1",
+  "version": "2.5.0",
   "private": true,
   "description": "HFLS - 소방시설 연혁 법령 적용 지원 시스템 (건축허가등 신청일 기준 별표4 판정 + 부칙 소급 + 강화기준 특례 + 증축·용도변경 특례)",
   "dependencies": {

@@ -30,7 +30,11 @@ const P99U = [D.P99, D.P99b]; // 1999 개정: 매뉴얼 1999.2.5. / 법령집 19
 
 const n0 = (v) => num(v) ?? 0; // 부가조건 수치: 미입력은 0(해당없음)으로 보고 체크리스트로 안내
 const tunnelLen = (c) => (c.g("tunnel") ? num(c.f.tunnelLen) : 0);
-const comb = (c) => n0(c.f.combustibleTimes);
+// 해당 용도에서 판정에 필요한 선택 입력값: 미입력은 0이 아니라 '미확인(null)' → [확인 필요]. 해당 없으면 0 입력
+const comb = (c) => num(c.f.combustibleTimes); // 공장·창고에서만 사용
+const gasTon = (c) => num(c.f.gasTankTon); // 가스시설에서만 사용
+const stageVal = (c) => (c.g("culture", "religion", "sports") && !c.g("zoo") ? num(c.f.stageArea) : 0);
+const rackVal = (c) => (c.g("warehouse") ? num(c.f.rackArea) : n0(c.f.rackArea));
 const ugpk = (c) => n0(c.f.ugParking);
 
 const A = (s) => `연면적 ${fmt(s.x.area)}㎡`;
@@ -141,8 +145,8 @@ export const CRITERIA = [
   {
     id: "spk-old-stage", fac: "spk", from: D.P92, to: D.A, cert: "M", src: "manual", cur: "",
     text: "(소방법) 관람집회 및 운동시설 무대부: 500㎡ 이상(지하층·무창층·4층 이상은 300㎡ 이상)", scope: "무대부",
-    when: (c) => (c.g("culture", "sports") && !c.g("zoo") && num(c.f.stageArea) ? ge(num(c.f.stageArea), c.f.stageUG ? 300 : 500) : F),
-    basis: (c) => `무대부 ${fmt(num(c.f.stageArea))}㎡`,
+    when: (c) => (c.g("culture", "sports") && !c.g("zoo") ? ge(stageVal(c), c.f.stageUG ? 300 : 500) : F),
+    basis: (c) => `무대부 ${fmt(stageVal(c))}㎡`,
   },
   {
     id: "spk-old-retail92", fac: "spk", from: D.P92, to: D.P95, cert: "M", src: "manual", cur: "",
@@ -191,7 +195,7 @@ export const CRITERIA = [
     when: (c) => {
       if (!(c.g("culture", "religion", "sports") && !c.g("zoo"))) return F;
       const cin = c.g("cinema") ? ge(num(c.f.cinemaArea) ?? c.x.useArea, c.f.cinemaUG ? 500 : 1000) : F;
-      const stage = num(c.f.stageArea) ? ge(num(c.f.stageArea), c.f.stageUG ? 300 : 500) : F;
+      const stage = ge(stageVal(c), c.f.stageUG ? 300 : 500);
       return or(ge(c.x.occ, 100), cin, stage);
     },
     basis: (c) => `수용인원 ${fmt(c.x.occ)}명${c.g("cinema") ? `, 상영관 ${fmt(num(c.f.cinemaArea) ?? c.x.useArea)}㎡` : ""}${num(c.f.stageArea) ? `, 무대부 ${fmt(num(c.f.stageArea))}㎡` : ""}`,
@@ -264,12 +268,12 @@ export const CRITERIA = [
   {
     id: "spk-rack-92", fac: "spk", from: D.P92, to: D.P95, cert: "M", src: "manual", cur: "",
     text: "(소방법) 반자 높이 10m를 넘는 랙식 창고 연면적 2,100㎡ 이상", scope: "모든 층",
-    when: (c) => ge(n0(c.f.rackArea), 2100), basis: (c) => `랙 부분 ${fmt(n0(c.f.rackArea))}㎡`,
+    when: (c) => ge(rackVal(c), 2100), basis: (c) => `랙 부분 ${fmt(rackVal(c))}㎡`,
   },
   {
     id: "spk-rack", fac: "spk", from: D.P95, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "8)",
     text: "랙식 창고(천장·반자 높이 10m 초과): 바닥면적 합계 1,500㎡ 이상 (1995.8.10.)", scope: "모든 층",
-    when: (c) => ge(n0(c.f.rackArea), 1500), basis: (c) => `랙 부분 ${fmt(n0(c.f.rackArea))}㎡`,
+    when: (c) => ge(rackVal(c), 1500), basis: (c) => `랙 부분 ${fmt(rackVal(c))}㎡`,
   },
   {
     id: "spk-comb", fac: "spk", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "9)",
@@ -290,7 +294,7 @@ export const CRITERIA = [
         c.g("logistics") ? or(ge(c.x.useArea, 2500), ge(c.x.occ, 250)) : F,
         c.g("warehouse") && !c.g("logistics") ? ge(c.x.useArea, 2500) : F,
         c.x.ugWlOrUpper4GE(500),
-        ge(n0(c.f.rackArea), 750),
+        ge(rackVal(c), 750),
         ge(comb(c), 500)
       );
     },
@@ -369,7 +373,7 @@ export const CRITERIA = [
     id: "sspk-noyu", fac: "sspk", from: D.B08, to: INF, cert: "M", src: "manual,s2,cur4", cur: "5)나)·다)",
     text: "노유자시설(생활시설 외): 바닥면적 합계 300㎡ 이상 600㎡ 미만, 또는 300㎡ 미만으로 창살 설치 (2008.8.16.)", scope: "해당 시설",
     when: (c) =>
-      isNoyuGen(c.u, c.f, c.d) ? or(between(c.x.useArea, 300, 600), and(lt(c.x.useArea, 300), !!c.f.bars)) : F,
+      and(isNoyuGen(c.u, c.f, c.d), or(between(c.x.useArea, 300, 600), and(lt(c.x.useArea, 300), !!c.f.bars))),
     basis: (c) => `${UA(c)}${c.f.bars ? ", 창살 있음" : ""}`,
   },
   {
@@ -620,8 +624,7 @@ export const CRITERIA = [
     id: "afd-noyu400", fac: "afd", from: D.A, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "7)",
     text: "노유자시설(생활시설 외) 연면적 400㎡ 이상, 숙박시설이 있는 수련시설 수용인원 100명 이상", scope: "모든 층",
     when: (c) => {
-      const noyu = isNoyuGen(c.u, c.f, c.d);
-      return or(noyu ? ge(c.x.area, 400) : F, c.g("training_lodge") ? ge(c.x.occ, 100) : F);
+      return or(and(isNoyuGen(c.u, c.f, c.d), ge(c.x.area, 400)), c.g("training_lodge") ? ge(c.x.occ, 100) : F);
     },
     basis: (c) => `${A(c)}, 수용인원 ${fmt(c.x.occ)}명`,
   },
@@ -770,7 +773,7 @@ export const CRITERIA = [
     id: "rep-noyu500", fac: "report", from: D.A, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "2)·3)",
     text: "노유자시설, 숙박시설이 있는 수련시설: 바닥면적 500㎡ 이상인 층이 있는 것", scope: "해당 시설",
     when: (c) =>
-      isNoyuGen(c.u, c.f, c.d) || c.g("training_lodge") ? c.x.anyFloorAnyGE(500) : F,
+      or(and(isNoyuGen(c.u, c.f, c.d), c.x.anyFloorAnyGE(500)), c.g("training_lodge") ? c.x.anyFloorAnyGE(500) : F),
     basis: () => "층별 바닥면적 기준",
   },
   {
@@ -1003,7 +1006,7 @@ export const CRITERIA = [
   {
     id: "ws-gas", fac: "waterSupply", from: D.P94, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "나",
     text: "가스시설 지상 노출 탱크 저장용량 합계 100톤 이상 (1994.7.20.)", scope: "해당 시설",
-    when: (c) => (c.g("gas") ? ge(n0(c.f.gasTankTon), 100) : F), basis: (c) => `탱크 ${fmt(n0(c.f.gasTankTon))}톤`,
+    when: (c) => (c.g("gas") ? ge(gasTon(c), 100) : F), basis: (c) => `탱크 ${fmt(gasTon(c))}톤`,
   },
   {
     id: "ws-waste", fac: "waterSupply", from: D.C, to: INF, cert: "M", src: "hist24,cur4", cur: "다",
@@ -1016,8 +1019,8 @@ export const CRITERIA = [
     id: "sm-stage", fac: "smoke", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "1)·2)",
     text: "문화집회(관람집회)·종교·운동시설 무대부 바닥면적 200㎡ 이상, 수용인원 100명 이상 영화상영관(2004.5.30.~)", scope: "무대부·영화상영관",
     when: (c) =>
-      or(c.g("culture", "religion", "sports") ? ge(n0(c.f.stageArea), 200) : F, c.g("cinema") && c.d >= D.A ? ge(c.x.occ, 100) : F),
-    basis: (c) => `무대부 ${fmt(n0(c.f.stageArea))}㎡${c.g("cinema") ? `, 수용인원 ${fmt(c.x.occ)}명` : ""}`,
+      or(c.g("culture", "religion", "sports") ? ge(stageVal(c), 200) : F, c.g("cinema") && c.d >= D.A ? ge(c.x.occ, 100) : F),
+    basis: (c) => `무대부 ${fmt(stageVal(c))}㎡${c.g("cinema") ? `, 수용인원 ${fmt(c.x.occ)}명` : ""}`,
   },
   {
     id: "sm-ug", fac: "smoke", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "3)",
@@ -1132,12 +1135,12 @@ export const CRITERIA = [
   {
     id: "cs-gas-old", fac: "conspk", from: D.P92, to: D.P94, cert: "M", src: "manual", cur: "",
     text: "(소방법) 가연성가스 100톤 이상 저장·취급 (1992.7.28.~1994.7.19.)", scope: "탱크시설",
-    when: (c) => (c.g("gas") ? ge(n0(c.f.gasTankTon), 100) : F), basis: (c) => `탱크 ${fmt(n0(c.f.gasTankTon))}톤`,
+    when: (c) => (c.g("gas") ? ge(gasTon(c), 100) : F), basis: (c) => `탱크 ${fmt(gasTon(c))}톤`,
   },
   {
     id: "cs-gas", fac: "conspk", from: D.P94, to: INF, cert: "V", src: "hist24,s1,s2,cur4", cur: "3)",
     text: "가스시설 지상 노출 탱크 저장용량 30톤 이상 (1994.7.20.)", scope: "탱크시설",
-    when: (c) => (c.g("gas") ? ge(n0(c.f.gasTankTon), 30) : F), basis: (c) => `탱크 ${fmt(n0(c.f.gasTankTon))}톤`,
+    when: (c) => (c.g("gas") ? ge(gasTon(c), 30) : F), basis: (c) => `탱크 ${fmt(gasTon(c))}톤`,
   },
   {
     id: "cs-ugpark", fac: "conspk", from: D.C26, to: INF, cert: "I", src: "reasons,fpn2026", cur: "5)·6)",

@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { CATS } from "../law/facilities";
 import { STATUS, toCSV } from "../law/engine";
-import { SOURCES, D } from "../law/sources";
+import { SOURCES, D, HIST24_PAGES } from "../law/sources";
 
 const ST_CLASS = {
   [STATUS.REQ]: "st-req",
@@ -27,14 +27,16 @@ function CertBadge({ c }) {
     </span>
   );
 }
-function SrcLinks({ src }) {
+const SRC_SHORT = { manual: "운영매뉴얼", hist24: "법령집", use24: "2024용도별" };
+function SrcLinks({ src, fac }) {
   if (!src) return null;
   return (
     <span className="srcs">
       {src.split(",").map((k) =>
         SOURCES[k] && !SOURCES[k].url ? (
           <span key={k} className="src-nolink" title={SOURCES[k].title}>
-            [{k}]
+            [{SRC_SHORT[k] || k}
+            {k === "hist24" && fac && HIST24_PAGES[fac] ? ` p.${HIST24_PAGES[fac]}~` : ""}]
           </span>
         ) : SOURCES[k] ? (
           <a key={k} href={SOURCES[k].url} target="_blank" rel="noreferrer" title={SOURCES[k].title}>
@@ -70,7 +72,7 @@ function CritList({ row }) {
                   <span>범위: {i.scope}</span>
                 </div>
                 <div className="crit-ref">
-                  {i.ref} <SrcLinks src={i.src} /> <code className="cid">{i.id}</code>
+                  {i.ref} <SrcLinks src={i.src} fac={row.fac.key} /> <code className="cid">{i.id}</code>
                 </div>
                 {i.note && <div className="crit-note">관리자 메모: {i.note}</div>}
               </div>
@@ -130,9 +132,14 @@ export default function ResultView({ rv }) {
           <b>소방법 시대(1992.7.28.~2004.5.29.) 기준일</b> — 소방특별조사 운영매뉴얼 「소방시설의 연도별 적용기준」으로 판정합니다(검증등급 <b>연혁자료확인</b>). 당시 용도분류(구 건축법)는 현행 별표2와 달라 근사 대응하였으므로, 결과는 당시 소방법 시행령 연혁본으로 대조하십시오.
         </div>
       )}
-      {hist.rowPre && (
+      {hist.rowGap && (
         <div className="alert warn">
-          연립·다세대주택은 공동주택(별표2 제1호)으로서 별표4 기준이 적용됩니다. 주택전용 간이스프링클러설비·연동형 단독경보형 감지기는 2024.12.1. 이후 신청분부터 추가되었으며(대통령령 제33004호 부칙), 그 전 신청분은 주택용소방시설(소방시설법 제10조) 설치 의무를 함께 검토하십시오.
+          <b>2024.12.1. 전 신청 연립·다세대주택은 특정소방대상물이 아닙니다</b> — 당시 별표2 공동주택은 아파트등(5층 이상 주택)·기숙사뿐이며, 연립·다세대는 2024.12.1. 신청분부터 편입되었습니다(대통령령 제33004호 부칙). 별표4 기준은 적용하지 않고 주택용소방시설(소화기·단독경보형 감지기) 대상으로 검토합니다. 다만 건축물 내부 차고·주차장(물분무등소화설비, 2018~2022 '50세대 미만 연립·다세대 제외' 규정 관련)은 [설치(연혁 확인)]으로 별도 표시합니다.
+        </div>
+      )}
+      {hist.rowOld && (
+        <div className="alert warn">
+          <b>소방법 시대 연립·다세대주택</b> — 당시 소방대상물(특수장소) 해당 여부를 연혁본으로 확인해야 하므로 모든 결과를 [설치(연혁 확인)]으로 낮춰 표시합니다.
         </div>
       )}
 
@@ -140,7 +147,7 @@ export default function ResultView({ rv }) {
       <div className="card law-card">
         <div className="lc-row">
           <div>
-            <div className="lc-k">적용 기준일</div>
+            <div className="lc-k">적용 기준일{rv.primaryLabel ? ` — ${rv.primaryLabel}` : ""}</div>
             <div className="lc-v">{fmtDate(rv.primaryDate)}</div>
           </div>
           <div>
@@ -173,7 +180,9 @@ export default function ResultView({ rv }) {
 
       {/* 결론 */}
       <div className="card">
-        <div className="card-t">결론 — 당시 기준 설치 대상 ({reqList.length}종)</div>
+        <div className="card-t">
+          결론 — {rv.primaryLabel ? `${rv.primaryLabel} ` : ""}당시 기준 설치 대상 ({reqList.length}종)
+        </div>
         <div className="chips">
           {reqList.length === 0 && <span className="muted">설치 대상 없음</span>}
           {reqList.map((r) => (
@@ -210,9 +219,15 @@ export default function ResultView({ rv }) {
       </div>
 
       {/* 부칙 소급 */}
-      {(rv.retro.length > 0 || rv.housing) && (
+      {(rv.retro.length > 0 || rv.housing || (rv.retroExcluded && rv.retroExcluded.length > 0)) && (
         <div className="card retro-card">
           <div className="card-t">부칙 소급 — 기존 대상물 설치 의무</div>
+          {rv.retroExcluded &&
+            rv.retroExcluded.map((t) => (
+              <div key={t} className="small muted">
+                ※ 소급 제외: {t} — 입력한 사용승인일이 부칙 시행일 이후이므로 '시행 당시 기존 대상물'에 해당하지 않음
+              </div>
+            ))}
           {rv.retro.map((r) => (
             <div key={r.id} className={`retro ${r.expired ? "expired" : ""}`}>
               <div className="retro-t">
@@ -225,6 +240,11 @@ export default function ResultView({ rv }) {
               <div className="muted small">
                 근거: {r.basis} <SrcLinks src={r.src} />
               </div>
+              {r.needsCompletion && (
+                <div className="small warn-text">
+                  ※ 적용 대상은 {r.when}입니다. 사용승인일(설치완료일)을 입력하지 않아 신청일 기준으로 후보 표시했습니다 — 입력 시 자동 판정.
+                </div>
+              )}
               <div className="small">
                 당시 판정:{" "}
                 {r.histStatus.map((h) => (
@@ -301,6 +321,7 @@ export default function ResultView({ rv }) {
                             <td className="small">
                               {cmp.kind === "added" && <span className={cmp.retroKind.startsWith("부칙") ? "tag-red" : cmp.retroKind.startsWith("강화") ? "tag-amber" : "tag-gray"}>{cmp.retroKind}</span>}
                               {cmp.kind === "removed" && <span className="tag-gray">현행 미대상(완화·변경)</span>}
+                              {cmp.kind === "unknown" && <span className="tag-gray">비교 판정 불가(확인 필요 항목)</span>}
                             </td>
                             <td className="small muted">{r.std}</td>
                           </tr>
