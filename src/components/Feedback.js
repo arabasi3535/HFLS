@@ -140,6 +140,10 @@ export function ReportsTab({ adminPw, onLoadInput }) {
   const [open, setOpen] = useState({});
 
   const load = async () => {
+    if (!adminPw) {
+      setData({ loading: false, items: [], total: 0, error: "서버 관리자 비밀번호(Vercel 환경변수 ADMIN_PW)로 로그인해야 신고함을 볼 수 있습니다. README 「사용 통계·오류 신고 설정」 참고." });
+      return;
+    }
     setData((d) => ({ ...d, loading: true }));
     const r = await listReports(adminPw);
     setData(r.ok ? { loading: false, items: r.items || [], total: r.total || 0, error: "" } : { loading: false, items: [], total: 0, error: r.error });

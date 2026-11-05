@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.7.0",
+  version: "2.7.1",
   date: "2026-11-06",
-  note: "사용 횟수(오늘·누적) 표시, 오류 신고 접수·관리자 신고함(Vercel 함수 + Upstash Redis)",
+  note: "관리자 비밀번호를 서버(ADMIN_PW)에서 확인 — 화면 코드에 비밀번호 미포함, 로그인 시도 제한",
 };
 
 export const D = {

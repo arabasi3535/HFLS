@@ -3,14 +3,16 @@ import Wizard, { EMPTY } from "./components/Wizard";
 import Report from "./components/Report";
 import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
 import { BugReportModal, ReportsTab } from "./components/Feedback";
-import { loadStats } from "./lib/remote";
+import { loadStats, adminAuth } from "./lib/remote";
 import { review } from "./law/engine";
 import { getUse } from "./law/uses";
 import { RULES_REV } from "./law/sources";
 import BUILD from "./buildInfo.json";
 
-// 관리자 비밀번호: Vercel 환경변수 REACT_APP_ADMIN_PW 로 변경 가능 (클라이언트 측 잠금 — 보안 수단 아님)
-const ADMIN_PW = process.env.REACT_APP_ADMIN_PW || "3535";
+// 관리자 비밀번호
+//  - 배포 사이트: 서버 환경변수 ADMIN_PW로 확인(화면 코드에 비밀번호가 들어가지 않음)
+//  - ADMIN_PW 미설정·로컬 실행: 아래 값으로 확인(법령 연혁·규칙 화면만 — 오류 신고함은 열리지 않음)
+const LOCAL_ADMIN_PW = process.env.REACT_APP_ADMIN_PW || "3535";
 // 제작자 표시 (머리말 오른쪽·바닥글·인쇄물)
 const AUTHOR = { org: "안동소방서 예방안전과", name: "이제현" };
 const K = { new: "hfls_new_v3", existing: "hfls_exist_v3", ov: "hfls_overrides_v2", sel: "hfls_sel_v3" };
@@ -134,7 +136,7 @@ export default function App() {
     setSels((p) => ({ ...p, [mode]: {} }));
   };
 
-  const login = () => {
+  const login = async () => {
     if (adminMode) {
       setAdminMode(false);
       setAdminPw("");
@@ -143,11 +145,20 @@ export default function App() {
     }
     const pw = window.prompt("관리자 비밀번호");
     if (pw === null) return;
-    if (pw === ADMIN_PW) {
+    const r = await adminAuth(pw);
+    if (r.error) return alert(r.error);
+    if (r.ok) {
       setAdminMode(true);
       setAdminPw(pw);
+      return;
     }
-    else alert("비밀번호가 올바르지 않습니다.");
+    // 서버에 ADMIN_PW가 없거나 연결되지 않을 때만 로컬 비밀번호 사용(신고함 제외)
+    if ((r.unset || r.unreachable) && pw === LOCAL_ADMIN_PW) {
+      setAdminMode(true);
+      setAdminPw("");
+      return;
+    }
+    alert("비밀번호가 올바르지 않습니다.");
   };
 
   const tabs = [

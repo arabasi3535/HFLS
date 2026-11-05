@@ -59,3 +59,16 @@ export async function deleteReport(pw, id) {
     return false;
   }
 }
+
+/** 관리자 확인: {ok} | {unset} | {unreachable} | {error} */
+export async function adminAuth(pw) {
+  try {
+    const r = await json(await fetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pw }) }));
+    if (!r.body || r.status === 404) return { unreachable: true };
+    if (r.status === 429) return { error: r.body.error };
+    if (r.body.unset) return { unset: true };
+    return { ok: !!r.body.ok };
+  } catch (e) {
+    return { unreachable: true };
+  }
+}

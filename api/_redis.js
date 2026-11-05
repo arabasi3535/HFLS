@@ -30,10 +30,10 @@ function clientIp(req) {
   return xf || req.headers["x-real-ip"] || "unknown";
 }
 
-/** 관리자 비밀번호(서버 측) — Vercel 환경변수 ADMIN_PW 권장 */
+/** 관리자 비밀번호(서버 전용) — Vercel 환경변수 ADMIN_PW. 미설정이면 신고함 열람 불가 */
+const adminSet = () => !!process.env.ADMIN_PW;
 function adminOk(req) {
-  const pw = process.env.ADMIN_PW || process.env.REACT_APP_ADMIN_PW || "3535";
-  return (req.headers["x-admin-pw"] || "") === pw;
+  return adminSet() && (req.headers["x-admin-pw"] || "") === process.env.ADMIN_PW;
 }
 
-module.exports = { configured, pipeline, todayKST, clientIp, adminOk };
+module.exports = { configured, pipeline, todayKST, clientIp, adminOk, adminSet };

@@ -1,5 +1,5 @@
 // 오류 신고: POST 접수(누구나) / GET 목록·DELETE 삭제(관리자, 헤더 x-admin-pw)
-const { configured, pipeline, todayKST, clientIp, adminOk } = require("./_redis");
+const { configured, pipeline, todayKST, clientIp, adminOk, adminSet } = require("./_redis");
 
 const KEY = "hfls:reports";
 const MAX_KEEP = 2000;
@@ -37,7 +37,8 @@ module.exports = async (req, res) => {
       await pipeline([["LPUSH", KEY, JSON.stringify(item)], ["LTRIM", KEY, 0, MAX_KEEP - 1]]);
       return res.status(200).json({ ok: true, id: item.id });
     }
-    if (!adminOk(req)) return res.status(401).json({ error: "관리자 비밀번호가 필요합니다." });
+    if (!adminSet()) return res.status(403).json({ error: "Vercel 환경변수 ADMIN_PW가 설정되지 않아 신고함을 열 수 없습니다." });
+    if (!adminOk(req)) return res.status(401).json({ error: "관리자 비밀번호가 올바르지 않습니다." });
     if (req.method === "GET") {
       const [list, len] = await pipeline([["LRANGE", KEY, 0, 299], ["LLEN", KEY]]);
       return res.status(200).json({ items: (list || []).map((s) => JSON.parse(s)), total: len });
