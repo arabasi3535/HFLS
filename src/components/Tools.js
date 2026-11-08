@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import PumpCalc from "./PumpCalc";
 import { windowlessFloor, occupancy, OCC_TYPES } from "../law/tools";
 
 // ============================================================
@@ -182,6 +183,11 @@ function Occupancy({ st, setSt }) {
           <div className="w-err">{r.msg}</div>
         )}
       </div>
+      <div className="tl-actions">
+        <button type="button" className="w-reset" onClick={() => setSt({ type: v.type })}>
+          초기화
+        </button>
+      </div>
       <details className="tl-ref">
         <summary>산정 기준 — 소방시설법 시행령 제17조 [별표7]</summary>
         <ul>
@@ -199,44 +205,10 @@ function Occupancy({ st, setSt }) {
 }
 
 function Pump() {
-  const ref = useRef(null);
-  const [h, setH] = useState(1600);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-    let ro = null;
-    const fit = () => {
-      try {
-        const doc = el.contentDocument;
-        if (doc && doc.body) setH(Math.max(600, doc.documentElement.scrollHeight));
-      } catch (e) {
-        /* 다른 출처면 고정 높이 */
-      }
-    };
-    const onLoad = () => {
-      fit();
-      try {
-        ro = new ResizeObserver(fit);
-        ro.observe(el.contentDocument.body);
-      } catch (e) {
-        /* 미지원 */
-      }
-    };
-    el.addEventListener("load", onLoad);
-    return () => {
-      el.removeEventListener("load", onLoad);
-      if (ro) ro.disconnect();
-    };
-  }, []);
   return (
     <div className="tl-body tl-pump">
-      <div className="tl-intro">
-        스프링클러설비 펌프 양정(H = H₁ + H₂ + 10m)·토출량·전동기 출력·수원 용량 계산 — NFPC·NFTC 103 기준(제작: 안동소방서 이제현).{" "}
-        <a href="/tools/pump/" target="_blank" rel="noreferrer">
-          새 창으로 열기
-        </a>
-      </div>
-      <iframe ref={ref} title="소화펌프 용량 산정기" src="/tools/pump/" style={{ height: h }} className="tl-frame" />
+      <div className="tl-intro">스프링클러설비 펌프 양정(H = H₁ + H₂ + 10m)·토출량·전동기 출력·수원 용량 계산 — NFPC·NFTC 103 기준(제작: 안동소방서 이제현).</div>
+      <PumpCalc />
     </div>
   );
 }
@@ -252,6 +224,10 @@ export default function Tools() {
   const [sub, setSub] = useState(all.sub || "windowless");
   useEffect(() => save({ ...all, sub }), [all, sub]);
   const part = (k) => [all[k] || {}, (v) => setAll((p) => ({ ...p, [k]: v }))];
+  const [pumpSeen, setPumpSeen] = useState(sub === "pump");
+  useEffect(() => {
+    if (sub === "pump") setPumpSeen(true);
+  }, [sub]);
   const [wl, setWl] = part("windowless");
   const [oc, setOc] = part("occ");
   return (
@@ -265,7 +241,12 @@ export default function Tools() {
       </nav>
       {sub === "windowless" && <Windowless st={wl} setSt={setWl} />}
       {sub === "occ" && <Occupancy st={oc} setSt={setOc} />}
-      {sub === "pump" && <Pump />}
+      {/* 펌프 계산기는 한 번 연 뒤에는 다른 계산기로 바꿔도 입력값 유지 */}
+      {pumpSeen && (
+        <div style={{ display: sub === "pump" ? "block" : "none" }}>
+          <Pump />
+        </div>
+      )}
     </div>
   );
 }
