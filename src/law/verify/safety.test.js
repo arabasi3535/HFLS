@@ -93,9 +93,11 @@ describe("소방안전관리대상물 등급", () => {
     expect(run({ ...base, f: { gasTon: 300, gasTankTon: 300 } }).grade.grade).toBe("2급");
     expect(run({ ...base, f: { gasTankTon: 300 } }).grade.status).toBe(S.CHK);
   });
-  test("공공기관 → 소방안전관리대상물 제외(해당없음)", () => {
+  test("공공기관 → 같은 기준으로 '공공기관 1급' 표시", () => {
     const r = run({ use: "office", area: 7000, gf: 11, bf: 0, floors: fl(11, 0, 636), f: { publicOrg: true } });
-    expect(r.grade.status).toBe(S.NA);
+    expect(r.grade.grade).toBe("1급");
+    expect(r.grade.label).toBe("공공기관 1급");
+    expect(r.grade.summary).toMatch("공공기관 1급");
   });
   test("단독주택 → 해당없음", () => {
     expect(run({ use: "house", area: 150, gf: 2, bf: 0, floors: fl(2, 0, 75) }).grade.status).toBe(S.NA);
@@ -206,5 +208,60 @@ describe("소방자동차 전용구역(소방기본법 제21조의2)", () => {
   });
   test("업무시설 → 비대상", () => {
     expect(run({ use: "office", area: 7000, gf: 7, bf: 0, floors: fl(7, 0, 1000) }).lane.status).toBe(S.NO);
+  });
+});
+
+describe("자체점검(시행규칙 별표3, 개정 2025.12.1.)", () => {
+  test("업무시설 7,000㎡ 7층(스프링클러) → 종합+작동", () => {
+    const r = run({ use: "office", area: 7000, gf: 7, bf: 0, floors: fl(7, 0, 1000) }).insp;
+    expect(r.comp.length).toBeGreaterThan(0);
+    expect(r.op).toBe(true);
+    expect(r.summary).toBe("종합점검 + 작동점검");
+  });
+  test("근린생활시설 900㎡(3급, 자탐) → 작동점검만, 관계인 점검 가능", () => {
+    const r = run({ use: "neigh", area: 900, gf: 3, bf: 0, floors: fl(3, 0, 300) }).insp;
+    expect(r.comp.length).toBe(0);
+    expect(r.op).toBe(true);
+    expect(r.who.join()).toMatch("관계인");
+  });
+  test("특급 → 종합점검 반기 1회, 작동점검 제외", () => {
+    const r = run({ use: "apt", area: 200000, gf: 50, bf: 3, floors: fl(50, 3, 3700), f: { households: 800 } }).insp;
+    expect(r.top).toBe(true);
+    expect(r.op).toBe(false);
+    expect(r.when.join()).toMatch("반기 1회");
+  });
+  test("위험물 제조소등 → 자체점검 제외", () => {
+    expect(run({ use: "hazmat", area: 500, gf: 1, bf: 0, floors: fl(1, 0, 500) }).insp.status).toBe(S.NA);
+  });
+  test("공공기관 1,000㎡ 이상 + 자탐 → 종합 / 1,000㎡ 미만 + 자탐 → 작동", () => {
+    const big = run({ use: "office", area: 1500, gf: 3, bf: 0, floors: fl(3, 0, 500), f: { publicOrg: true } }).insp;
+    expect(big.comp.join()).toMatch("6) 공공기관");
+    const small = run({ use: "neigh", area: 900, gf: 3, bf: 0, floors: fl(3, 0, 300), f: { publicOrg: true } }).insp;
+    expect(small.comp.length).toBe(0);
+    expect(small.op).toBe(true);
+    const fb = run({ use: "office", area: 1500, gf: 3, bf: 0, floors: fl(3, 0, 500), f: { publicOrg: true, fireBrigade: true } }).insp;
+    expect(fb.comp.join()).not.toMatch("6) 공공기관");
+  });
+  test("다중이용업(종합 대상 업종) 연면적 2,000㎡ 이상 → 종합", () => {
+    const r = run({ use: "neigh", area: 2500, gf: 3, bf: 0, floors: fl(3, 0, 833), f: { multiUse: true, multiUseHeavy: true } }).insp;
+    expect(r.comp.join()).toMatch("4)");
+  });
+  test("물분무등 5,000㎡ — 설치 목록 기준 / 호스릴만이면 제외", () => {
+    const i = { use: "factory", area: 6000, gf: 1, bf: 0, floors: fl(1, 0, 6000), f: { combustibleTimes: 0, elecRoom: 400 } };
+    const rv = review({ action: "new", occ: "", useArea: "", completed: "", ...i, date: T }, T);
+    const inst = new Map([["water", true], ["afd", true]]);
+    expect(safetyReview(rv, "new", undefined, inst).insp.comp.join()).toMatch("3) 물분무등");
+    const rv2 = review({ action: "new", occ: "", useArea: "", completed: "", ...i, f: { ...i.f, waterReelOnly: true }, date: T }, T);
+    expect(safetyReview(rv2, "new", undefined, inst).insp.comp.join()).not.toMatch("3) 물분무등");
+  });
+  test("대체 설비(법정) — 주차장 물분무등 대신 스프링클러 설치 시 종합 대상", () => {
+    const i = { use: "neigh", area: 900, gf: 3, bf: 0, floors: fl(3, 0, 300) };
+    const rv = review({ action: "new", occ: "", useArea: "", completed: "", ...i, date: T, f: {} }, T);
+    expect(safetyReview(rv, "new", undefined, new Map([["afd", true], ["spk", true]])).insp.comp.join()).toMatch("2) 스프링클러");
+  });
+  test("기존 건축물 사용승인일 3월 → 종합 3월, 작동 9월", () => {
+    const r = run({ use: "office", area: 7000, gf: 7, bf: 0, floors: fl(7, 0, 1000), completed: "2015-03-20" }, "2014-01-01", "existing").insp;
+    expect(r.when.join()).toMatch("(3월)");
+    expect(r.when.join()).toMatch("(9월)");
   });
 });

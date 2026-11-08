@@ -39,13 +39,13 @@ function substitutionsFor(rows, u) {
       const park = ids.filter((id) => PARKING_WATER.includes(id));
       if (!park.length) continue;
       const partial = ids.some((id) => !PARKING_WATER.includes(id));
-      out.push({ ...s, partial });
+      out.push({ ...s, partial, viaKeys: ["spk"] });
       continue;
     }
     if (s.any) continue; // 설비 외 조건(공공소화전·지락차단장치 등) — 관리자 상세에서만 안내
     const via = s.by.filter((k) => by[k] && by[k].status === STATUS.REQ);
     if (!via.length) continue;
-    out.push({ ...s, replaceWith: via.map((k) => getFacility(k).name).join(" / ") });
+    out.push({ ...s, viaKeys: via, replaceWith: via.map((k) => getFacility(k).name).join(" / ") });
   }
   return out;
 }
@@ -149,8 +149,14 @@ export default function Report({ rv, sv, mode, adminMode, author, sel: selIn, se
   // 안전관리 검토 — 소방안전관리대상물 2·3급은 최종 설치 목록(부칙 소급·강화기준 선택 반영)으로 판정
   const safety = useMemo(() => {
     const applied = new Map(list.filter((i) => i.kind !== "base").map((i) => [i.key, i.check ? null : true]));
+    // 자체점검용 '설치된 법정 설비': 설치 목록(대체된 설비는 빼고 대체 설비를 넣음, 주차장만 대체면 둘 다)
+    const installed = new Map();
+    for (const i of list) {
+      if (!i.sub || i.sub.partial) installed.set(i.key, i.check ? null : true);
+      if (i.sub) for (const k of i.sub.viaKeys || []) if (!installed.has(k) || installed.get(k) !== true) installed.set(k, true);
+    }
     try {
-      return safetyReview(rv, mode, applied);
+      return safetyReview(rv, mode, applied, installed);
     } catch (e) {
       return sv || null;
     }

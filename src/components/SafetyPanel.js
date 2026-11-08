@@ -23,8 +23,10 @@ function Card({ title, badge, status, lead, children }) {
 }
 
 export default function SafetyPanel({ sv }) {
-  const { grade, flame, lane } = sv;
-  const gBadge = grade.status === S.NA ? "해당없음" : grade.status === S.CHK ? (grade.grade ? `${grade.grade} 이상` : "확인 필요") : grade.grade || "해당없음";
+  const { grade, flame, lane, insp } = sv;
+  const gl = grade.label || grade.grade;
+  const gBadge = grade.status === S.NA ? "해당없음" : grade.status === S.CHK ? (gl ? `${gl} 이상` : "확인 필요") : gl || "해당없음";
+  const iBadge = !insp ? "" : insp.status === S.NA ? "제외" : insp.status === S.NO ? "비대상" : insp.status === S.CHK ? "확인 필요" : insp.top ? "종합(반기)" : insp.comp.length ? "종합+작동" : "작동";
   return (
     <div className="safety">
       <div className="facs-h">
@@ -66,6 +68,53 @@ export default function SafetyPanel({ sv }) {
         ))}
         <div className="det-ref">{grade.ref}</div>
       </Card>
+
+      {insp && (
+        <Card title="자체점검" badge={iBadge} status={insp.status === S.NO ? S.NA : insp.status} lead={insp.summary}>
+          {insp.comp.length > 0 && (
+            <div className="det-crit">
+              <div>종합점검 대상 — 별표3 제3호가목</div>
+              {insp.comp.map((c, i) => (
+                <div key={i} className="det-meta">
+                  {c}
+                </div>
+              ))}
+            </div>
+          )}
+          {insp.op !== undefined && (
+            <div className="det-crit">
+              <div>작동점검 {insp.top ? "제외(특급)" : insp.op === true ? "대상" : insp.op === null ? "확인 필요" : "비대상"} — 별표3 제2호가목</div>
+              <div className="det-meta">소방안전관리자 선임 대상{grade.label ? `(${grade.label})` : ""} · 위험물 제조소등·특급 소방안전관리대상물 제외</div>
+            </div>
+          )}
+          {insp.who.length > 0 && (
+            <div className="det-crit">
+              <div>점검자</div>
+              {insp.who.map((w, i) => (
+                <div key={i} className="det-meta">
+                  {w}
+                </div>
+              ))}
+            </div>
+          )}
+          {insp.when.length > 0 && (
+            <div className="det-crit">
+              <div>횟수·시기</div>
+              {insp.when.map((w, i) => (
+                <div key={i} className="det-meta">
+                  {w}
+                </div>
+              ))}
+            </div>
+          )}
+          {insp.notes.map((n, i) => (
+            <div key={i} className="det-line">
+              {n}
+            </div>
+          ))}
+          <div className="det-ref">{insp.ref}</div>
+        </Card>
+      )}
 
       <Card
         title="방염 대상"

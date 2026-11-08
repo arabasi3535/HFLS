@@ -130,6 +130,7 @@ function gradeFrom(rv, facts) {
   const input = rv.input;
   const u = rv.use;
   const f = input.f || {};
+  if (f.waterReelOnly) facts = { ...facts, water: false }; // 호스릴 방식 물분무등만 설치 → 2급 기준에서 제외
   const g = (...k) => k.some((kk) => u.g.includes(kk));
   const notes = new Set();
   const gf = num(input.gf) ?? 0;
@@ -206,16 +207,9 @@ export function fireSafetyGrade(rv, mode, applied) {
   if (u.g.includes("house")) {
     return { status: S.NA, grade: "", summary: "단독주택 — 특정소방대상물이 아니므로 소방안전관리대상물에 해당하지 않습니다.", levels: [], notes: [], ref: SAFETY_REFS.grade };
   }
-  if (f.publicOrg) {
-    return {
-      status: S.NA,
-      grade: "",
-      summary: "「공공기관의 소방안전관리에 관한 규정」을 적용받는 특정소방대상물 — 소방안전관리대상물에서 제외(같은 규정에 따라 소방안전관리자 선임).",
-      levels: [],
-      notes: [],
-      ref: SAFETY_REFS.grade,
-    };
-  }
+  // 공공기관: 「공공기관의 소방안전관리에 관한 규정」을 적용받음 — 등급 기준은 같고 '공공기관 ○급'으로 표시
+  const pub = !!f.publicOrg;
+  const P = pub ? "공공기관 " : "";
   const existing = mode === "existing";
   let extra = applied;
   if (!extra) {
@@ -231,13 +225,14 @@ export function fireSafetyGrade(rv, mode, applied) {
     const p = gradeFrom(rv, facFacts(rv.hist, rv.hist, extra));
     if (p.grade !== main.grade || p.status !== main.status) past = p;
   }
-  const label = (r) => (r.grade ? `${r.grade} 소방안전관리대상물` : "소방안전관리대상물 아님");
+  const label = (r) => (r.grade ? `${P}${r.grade} 소방안전관리대상물` : `${P}소방안전관리대상물 아님`);
   let summary = label(main);
   if (main.status === S.CHK) {
     const up = main.higherUnk.map((l) => l.grade).join("·");
-    summary = main.grade ? `${main.grade} 이상 — ${up} 해당 여부 확인 필요` : `${up} 해당 여부 확인 필요`;
+    summary = main.grade ? `${P}${main.grade} 이상 — ${up} 해당 여부 확인 필요` : `${P}${up} 해당 여부 확인 필요`;
   }
   const notes = [...main.notes];
+  if (pub) notes.unshift("공공기관 — 「공공기관의 소방안전관리에 관한 규정」을 적용받습니다(소방안전관리자 선임·자체점검 등).");
   if (alt) {
     notes.unshift(
       `현행 기준 시설을 모두 갖추면 「${alt.status === S.CHK ? "확인 필요" : label(alt)}」입니다. 강화됐지만 소급하지 않은 시설은 없는 것으로 보고 빼며, 부칙 소급·강화기준으로 갖추게 했다면 등급에 반영합니다(위 「강화기준 적용」 선택 시 자동 반영).`
@@ -249,7 +244,18 @@ export function fireSafetyGrade(rv, mode, applied) {
     );
   }
   if (existing && rv.retro.length) notes.push("부칙 소급(의무) 시설 중 반영한 것은 '설치해야 하는 설비'에 포함해 판정했습니다.");
-  return { status: main.status, grade: main.grade, summary, levels: main.levels, first: main.first, notes, alt, ref: SAFETY_REFS.grade };
+  return {
+    status: main.status,
+    grade: main.grade,
+    pub,
+    label: main.grade ? `${P}${main.grade}` : "",
+    summary,
+    levels: main.levels,
+    first: main.first,
+    notes,
+    alt,
+    ref: pub ? `${SAFETY_REFS.grade}, 「공공기관의 소방안전관리에 관한 규정」` : SAFETY_REFS.grade,
+  };
 }
 
 /** 방염성능기준 이상의 실내장식물 등을 설치해야 하는 특정소방대상물 (현행 시행령 제30조) */
@@ -373,7 +379,128 @@ export function fireLane(rv, mode) {
   return out(S.YES, `${what} — 각 동별 전면 또는 후면에 전용구역 1개소 이상`, { how: SAFETY_REFS.laneHow });
 }
 
-/** 세 항목 한꺼번에 */
-export function safetyReview(rv, mode, applied) {
-  return { grade: fireSafetyGrade(rv, mode, applied), flame: flameRetardant(rv, mode), lane: fireLane(rv, mode) };
+// ============================================================
+// 소방시설등 자체점검 — 소방시설법 제22조, 시행규칙 제20조제1항·[별표3] <개정 2025.12.1.>
+//  · '설치된' 설비 = 법정 설비(설치 대상 + 부칙 소급·강화기준 적용 + 별표5 대체 설비). 자진·임의 설비는 제외(관리자 운영 기준)
+//  · 공공기관: 연면적 1,000㎡ 이상 + 옥내소화전·자탐 설치 → 종합점검, 1,000㎡ 미만은 자탐 있으면(선임대상) 작동점검
+// ============================================================
+export const INSPECT_REF = "소방시설법 제22조, 같은 법 시행규칙 제20조제1항·[별표3](개정 2025.12.1.)";
+
+/** 설치된 법정 설비 Map(key → true|null) — 결과 화면 최종 목록이 없으면 판정 결과로 구성 */
+function defaultInstalled(rv) {
+  const m = new Map();
+  for (const r of rv.hist.rows) if (r.status === STATUS.REQ || r.status === STATUS.REQ_CHK) m.set(r.fac.key, r.status === STATUS.REQ ? true : null);
+  return m;
+}
+
+const monthName = (m) => `${((m - 1 + 120) % 12) + 1}월`;
+
+export function selfInspection(rv, mode, grade, installed) {
+  const u = rv.use;
+  const input = rv.input;
+  const f = input.f || {};
+  const g = (...k) => k.some((kk) => u.g.includes(kk));
+  const area = num(input.area);
+  const inst = installed || defaultInstalled(rv);
+  const has = (k) => (inst.has(k) ? inst.get(k) : false);
+  const notes = [];
+  const base = { ref: INSPECT_REF, notes, comp: [], compUnk: [], who: [], when: [] };
+
+  if (g("house")) return { ...base, status: S.NA, summary: "단독주택 — 특정소방대상물이 아님" };
+  if (u.id === "hazmat") return { ...base, status: S.NA, summary: "위험물 제조소등 — 자체점검 대상에서 제외(별표3 제2호가목2)·제3호가목3))" };
+
+  const top = grade.grade === "특급";
+  // ── 종합점검 대상 (별표3 제3호가목)
+  const comp = [];
+  const unk = [];
+  const push = (v, item) => (v === true ? comp.push(item) : v === null ? unk.push(item) : null);
+  push(has("spk"), "2) 스프링클러설비가 설치된 특정소방대상물");
+  if (!f.waterReelOnly) {
+    const w = has("water");
+    const a5 = area === null ? null : area >= 5000;
+    if (w !== false) push(w === true && a5 === true ? true : w === false || a5 === false ? false : null, `3) 물분무등소화설비(호스릴 방식만 설치한 경우 제외)가 설치된 연면적 5,000㎡ 이상(연면적 ${area === null ? "미입력" : fmtN(area) + "㎡"})`);
+  }
+  if (f.multiUse && f.multiUseHeavy) {
+    push(area === null ? null : area >= 2000, `4) 단란·유흥주점, 영화상영관·비디오물감상실·복합영상물제공업, 노래연습장, 산후조리업, 고시원, 안마시술소 영업장이 있는 연면적 2,000㎡ 이상(연면적 ${area === null ? "미입력" : fmtN(area) + "㎡"})`);
+    if (area !== null && area >= 2000) notes.push("사용승인 이후 다중이용업 영업장으로 종합점검 대상이 된 경우에는 그 다음 해부터 종합점검(별표3 제3호라목3)).");
+  }
+  if (g("tunnel")) push(has("smoke"), "5) 제연설비가 설치된 터널");
+  if (f.publicOrg) {
+    if (f.fireBrigade) notes.push("소방대가 근무하는 공공기관 — 별표3 제3호가목6) 종합점검 대상에서 제외.");
+    else {
+      const big = area === null ? null : area >= 1000;
+      const hf = has("hydrant") === true || has("afd") === true ? true : has("hydrant") === null || has("afd") === null ? null : false;
+      push(big === false ? false : hf === false ? false : big === true && hf === true ? true : null, `6) 공공기관으로서 연면적 1,000㎡ 이상 + 옥내소화전설비 또는 자동화재탐지설비 설치(연면적 ${area === null ? "미입력" : fmtN(area) + "㎡"})`);
+      if (big === true && hf === false) notes.push("공공기관 1,000㎡ 이상이지만 옥내소화전설비·자동화재탐지설비가 없어 제3호가목6)에 해당하지 않습니다 — 설치 여부를 확인하십시오.");
+      if (g("tunnel", "ugduct")) notes.push("공공기관 터널·지하구의 연면적은 길이 × 평균 폭으로 계산합니다.");
+    }
+  }
+  if (top && !comp.length) comp.push("특급 소방안전관리대상물(작동점검 제외 — 종합점검 반기 1회)");
+
+  // ── 작동점검 대상 (별표3 제2호가목): 소방안전관리자 선임 대상, 제조소등·특급 제외
+  let op;
+  if (top) op = false;
+  else if (grade.grade && grade.status === S.YES) op = true;
+  else if (grade.grade || grade.status === S.CHK) op = grade.grade ? true : null;
+  else op = false;
+
+  const compSt = comp.length ? true : unk.length ? null : false;
+  // 요약
+  let summary;
+  let status;
+  if (compSt === true) {
+    status = S.YES;
+    summary = top ? "종합점검 — 반기 1회 이상(특급: 작동점검 제외)" : "종합점검 + 작동점검";
+  } else if (op === true) {
+    status = compSt === null ? S.CHK : S.YES;
+    summary = compSt === null ? "작동점검 — 종합점검 해당 여부 확인 필요" : "작동점검";
+  } else if (op === null || compSt === null) {
+    status = S.CHK;
+    summary = "확인 필요 — 소방안전관리대상물 등급 또는 종합점검 기준 확인";
+  } else {
+    status = S.NO;
+    summary = "자체점검 대상 아님(소방안전관리자 선임 대상이 아니고 종합점검 기준에도 해당하지 않음)";
+  }
+
+  // ── 점검자 (별표3 제2호나목·제3호나목)
+  const who = [];
+  if (compSt !== false) who.push("종합점검: 관리업에 등록된 소방시설관리사, 소방안전관리자로 선임된 소방시설관리사·소방기술사");
+  if (op && !top) {
+    const light = grade.grade === "3급" && ((has("sspk") === true && !rv.hist.byKey.sspk.hits.every((h) => h.id === "sspk-row")) || has("afd") === true);
+    who.push(
+      light
+        ? "작동점검: 관계인, 관리업에 등록된 소방시설관리사, 특급점검자, 소방안전관리자로 선임된 소방시설관리사·소방기술사(간이스프링클러설비·자동화재탐지설비 설치 대상)"
+        : "작동점검: 관리업에 등록된 소방시설관리사, 소방안전관리자로 선임된 소방시설관리사·소방기술사"
+    );
+  }
+
+  // ── 시기·횟수 (별표3 제2호다목·라목, 제3호다목·라목, 비고)
+  const when = [];
+  const cd = input.completed && /^\d{4}-\d{2}-\d{2}$/.test(input.completed) ? input.completed : "";
+  const cm = cd ? Number(cd.slice(5, 7)) : 0;
+  if (compSt !== false) {
+    when.push(`종합점검: ${top ? "반기 1회 이상" : "연 1회 이상"}, 건축물 사용승인일이 속하는 달${cm ? `(${monthName(cm)})` : ""}${top && cm ? ` · ${monthName(cm + 6)}` : ""}`);
+    if (f.publicOrg && g("school")) when.push("학교(공공기관): 사용승인일이 1~6월이면 6월 30일까지 실시할 수 있음");
+  }
+  if (op && !top) {
+    if (compSt === true) when.push(`작동점검: 연 1회 이상, 종합점검(최초점검 제외)을 받은 달부터 6개월이 되는 달${cm ? `(${monthName(cm + 6)})` : ""}`);
+    else when.push(`작동점검: 연 1회 이상, 사용승인일이 속하는 달의 말일까지${cm ? `(${monthName(cm)} 말일)` : ""}`);
+  }
+  if (status !== S.NO) {
+    when.push("작동점검·종합점검(최초점검 제외)은 건축물 사용승인 후 그 다음 해부터 실시(비고2)");
+    if (mode === "new") when.push("최초점검: 소방시설이 신설된 경우 건축물을 사용할 수 있게 된 날부터 60일 이내 종합점검(법 제22조제1항제1호, 별표3 제1호나목1))");
+    if (!cd && mode === "existing") notes.push("사용승인일을 입력하면 점검 월을 표시합니다(건축물관리대장 기준).");
+  }
+  if (f.publicOrg) notes.push("공공기관: 외관점검 월 1회 이상(작동·종합점검을 한 달은 생략 가능), 결과 2년 보관(별표3 제4호).");
+  if (g("apt") && status !== S.NO) notes.push("아파트등 세대별 점검: 2년 주기로 모든 세대 점검. 원격점검이 불가능하면 1회 점검 시 작동점검만 하는 경우 전체 세대수의 50% 이상, 종합점검을 하는 경우 30% 이상(별표3 제6호).");
+  if (unk.length) notes.push("확인 필요: " + unk.join(" / "));
+  notes.push("설치 대상(법정) 설비와 별표5 대체 설비로 판정했습니다 — 의무 없이 자진·임의로 설치한 설비는 자체점검 대상 판단에 넣지 않습니다.");
+
+  return { ...base, status, summary, comp, compUnk: unk, op, top, who, when };
+}
+
+/** 네 항목 한꺼번에 */
+export function safetyReview(rv, mode, applied, installed) {
+  const grade = fireSafetyGrade(rv, mode, applied);
+  return { grade, flame: flameRetardant(rv, mode), lane: fireLane(rv, mode), insp: selfInspection(rv, mode, grade, installed) };
 }

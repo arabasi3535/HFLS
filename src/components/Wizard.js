@@ -154,7 +154,7 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
     lithium: g("factory"),
     radwaste: g("hazmat", "warehouse", "factory"),
     useArea: !!u && !g("house", "apt", "row", "multi", "tunnel", "ugduct", "heritage"),
-    completed: isExisting && g("noyu_res", "hosp", "nursing", "commonduct"),
+    completed: isExisting && !g("house"),
   };
 
   return (
@@ -319,7 +319,7 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
               </Field>
             )}
             {need.completed && (
-              <Field label="사용승인일(완공일)" hint="부칙 소급 대상 판정용">
+              <Field label="사용승인일(완공일)" hint="건축물대장 기준 — 부칙 소급·자체점검 시기 판정용">
                 <input type="date" value={input.completed || ""} onChange={(e) => set("completed", e.target.value)} />
               </Field>
             )}
@@ -397,8 +397,15 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
                 )}
               </div>
               <div className="w-checks">
-                <Check checked={input.f.publicOrg} onChange={(v) => setF("publicOrg", v)}>「공공기관의 소방안전관리에 관한 규정」 적용 대상(국가·지자체·공공기관 등)</Check>
+                <Check checked={input.f.publicOrg} onChange={(v) => setF("publicOrg", v)}>공공기관(「공공기관의 소방안전관리에 관한 규정」 적용)</Check>
+                {input.f.publicOrg && <Check checked={input.f.fireBrigade} onChange={(v) => setF("fireBrigade", v)}>소방대가 근무하는 공공기관(종합점검 제외)</Check>}
                 <Check checked={input.f.multiUse} onChange={(v) => setF("multiUse", v)}>다중이용업소 영업장 있음</Check>
+                {input.f.multiUse && (
+                  <Check checked={input.f.multiUseHeavy} onChange={(v) => setF("multiUseHeavy", v)}>
+                    단란·유흥주점, 영화상영관·비디오물감상실·복합영상물제공업, 노래연습장, 산후조리업, 고시원, 안마시술소 중 하나(종합점검 2,000㎡ 기준)
+                  </Check>
+                )}
+                {!noFloors && <Check checked={input.f.waterReelOnly} onChange={(v) => setF("waterReelOnly", v)}>물분무등소화설비를 호스릴 방식만 설치</Check>}
                 {g("culture", "religion", "sports") && (
                   <Check checked={input.f.outdoorFacility} onChange={(v) => setF("outdoorFacility", v)}>건축물 옥내에 있지 않은 시설(옥외 관람장 등)</Check>
                 )}
