@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import Wizard, { EMPTY } from "./components/Wizard";
 import Report from "./components/Report";
 import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
@@ -10,6 +10,8 @@ import { safetyReview } from "./law/safety";
 import { getUse } from "./law/uses";
 import { RULES_REV } from "./law/sources";
 import BUILD from "./buildInfo.json";
+
+const InspectionReport = lazy(() => import("./components/InspectionReport"));
 
 // 관리자 비밀번호
 //  - 배포 사이트: 서버 환경변수 ADMIN_PW로 확인(화면 코드에 비밀번호가 들어가지 않음)
@@ -97,6 +99,7 @@ export default function App() {
   const [stats, setStats] = useState(null);
   const [bug, setBug] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [reportSeed, setReportSeed] = useState(null);
   const [noteEdit, setNoteEdit] = useState(null); // 편집 중인 메모 문자열(null = 편집 안 함)
   const today = useMemo(todayKST, []);
 
@@ -198,6 +201,7 @@ export default function App() {
     ["new", "신축 건축물"],
     ["existing", "기존 건축물"],
     ["tools", "보조 계산기"],
+    ["report", "작동점검 보고서"],
     ["guide", "사용 안내"],
     ...(adminMode
       ? [
@@ -286,7 +290,16 @@ export default function App() {
             </aside>
             <section id="result-top" className="results">
               {rv ? (
-                <Report key={mode} rv={rv} sv={sv} mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)} />
+                <Report
+                  key={mode}
+                  rv={rv}
+                  sv={sv}
+                  onMakeReport={(s) => {
+                    setReportSeed(s);
+                    setTab("report");
+                    window.scrollTo(0, 0);
+                  }}
+                  mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)} />
               ) : (
                 <div className="empty">
                   <div className="empty-t">{mode === "new" ? "오늘 허가 신청하는 건축물" : "이미 허가받은 건축물"}</div>
@@ -306,6 +319,11 @@ export default function App() {
           </div>
         )}
         {tab === "tools" && <Tools />}
+        {tab === "report" && (
+          <Suspense fallback={<div className="empty">불러오는 중…</div>}>
+            <InspectionReport seed={reportSeed} />
+          </Suspense>
+        )}
         {tab === "guide" && <GuideTab adminMode={adminMode} />}
         {adminMode && tab === "history" && <HistoryTab />}
         {adminMode && tab === "rules" && <RulesTab adminMode={adminMode} overrides={overrides} setOverrides={setOverrides} />}

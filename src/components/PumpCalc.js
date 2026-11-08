@@ -1,5 +1,5 @@
 // ============================================================
-// 소화펌프 용량 산정기 — 스프링클러 펌프 양정 계산기(sp-yangjeong, 안동소방서 이제현) 원본 그대로 이식
+// 소화펌프 용량 산정기 — 스프링클러 펌프 양정 계산기(sp-yangjeong) 원본 그대로 이식
 //  · 계산 로직·데이터 표·화면은 원본(App.jsx)과 동일, 최상위 요소만 .pump-root 로 감쌈
 //  · 스타일: ./pump.css (원본 Tailwind 빌드 결과를 .pump-root 안으로 한정)
 // ============================================================
@@ -479,9 +479,6 @@ export default function PumpCalc() {
               <p className="text-gray-500 text-xs mt-0.5">
                 NFPC 103 · NFTC 103 기준 &nbsp;|&nbsp; 표 1-3-8(A/B) · 표 1-3-9 내장
               </p>
-            </div>
-            <div className="ml-auto flex gap-2">
-              <Badge color="orange">안동소방서 이제현</Badge>
             </div>
           </div>
         </div>

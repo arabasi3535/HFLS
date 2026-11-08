@@ -100,7 +100,7 @@ function Item({ it, open, onToggle, flash }) {
 
 const EMPTY_SEL = { retro: {}, strong: {}, sub: {} };
 
-export default function Report({ rv, sv, mode, adminMode, author, sel: selIn, setSel, provisional, onReport }) {
+export default function Report({ rv, sv, onMakeReport, mode, adminMode, author, sel: selIn, setSel, provisional, onReport }) {
   const existing = mode === "existing";
   const [open, setOpen] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
@@ -357,7 +357,40 @@ export default function Report({ rv, sv, mode, adminMode, author, sel: selIn, se
       )}
 
       {/* 안전관리 검토: 소방안전관리대상물 등급 · 방염 · 소방자동차 전용구역 */}
-      {safety && <SafetyPanel sv={safety} />}
+      {safety && (
+        <SafetyPanel
+          sv={safety}
+          onMakeReport={
+            onMakeReport
+              ? () => {
+                  const inst = list.filter((i) => !i.sub || i.sub.partial).map((i) => i.key);
+                  for (const i of list) if (i.sub) inst.push(...(i.sub.viaKeys || []));
+                  const f = rv.input.f || {};
+                  const parking = [];
+                  if (Number(f.ugParking) > 0) parking.push("지하");
+                  if (Number(f.parkingInside) > 0 && !(Number(f.ugParking) > 0)) parking.push("지상");
+                  if (Number(f.mechCars) > 0) parking.push("기계식");
+                  if (Number(f.rooftopParking) > 0) parking.push("옥상");
+                  onMakeReport({
+                    at: Date.now(),
+                    useLabel: useTitle,
+                    area: rv.input.area,
+                    gf: rv.input.gf,
+                    bf: rv.input.bf,
+                    households: f.households || "",
+                    height: f.height || "",
+                    permit: existing ? rv.input.date : "",
+                    approval: rv.input.completed || "",
+                    parking,
+                    facs: [...new Set(inst)],
+                    residential: ["apt", "row", "multi", "dorm", "officetel", "mixed_res"].some((k) => u.g.includes(k)),
+                    flame: safety.flame.status === "대상",
+                  });
+                }
+              : null
+          }
+        />
+      )}
 
       <div className="rep-actions no-print">
         <button type="button" className="w-run" onClick={() => window.print()}>

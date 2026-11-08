@@ -209,7 +209,7 @@ function Pump() {
   return (
     <div className="tl-body tl-pump">
       <div className="tl-intro tl-intro-row">
-        <span>스프링클러설비 펌프 양정(H = H₁ + H₂ + 10m)·토출량·전동기 출력·수원 용량 계산 — NFPC·NFTC 103 기준(제작: 안동소방서 이제현).</span>
+        <span>스프링클러설비 펌프 양정(H = H₁ + H₂ + 10m)·토출량·전동기 출력·수원 용량 계산 — NFPC·NFTC 103 기준.</span>
         <button type="button" className="w-reset" onClick={() => setK((x) => x + 1)}>
           초기화
         </button>

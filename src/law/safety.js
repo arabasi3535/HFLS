@@ -496,7 +496,9 @@ export function selfInspection(rv, mode, grade, installed) {
   if (unk.length) notes.push("확인 필요: " + unk.join(" / "));
   notes.push("설치 대상(법정) 설비와 별표5 대체 설비로 판정했습니다 — 의무 없이 자진·임의로 설치한 설비는 자체점검 대상 판단에 넣지 않습니다.");
 
-  return { ...base, status, summary, comp, compUnk: unk, op, top, who, when };
+  // 관계인 직접 점검 가능(3급, 간이SPK·자탐) + 종합점검 대상 아님 → 관계인 작동점검 보고서 작성 가능
+  const ownerOk = op === true && !top && compSt === false && grade.grade === "3급" && who.some((w) => w.includes("관계인"));
+  return { ...base, status, summary, comp, compUnk: unk, op, top, who, when, ownerOk };
 }
 
 /** 네 항목 한꺼번에 */
