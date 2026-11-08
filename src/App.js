@@ -3,6 +3,7 @@ import Wizard, { EMPTY } from "./components/Wizard";
 import Report from "./components/Report";
 import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
 import { BugReportModal, ReportsTab } from "./components/Feedback";
+import Tools from "./components/Tools";
 import { loadStats, adminAuth, loadNotice, saveNotice } from "./lib/remote";
 import { review } from "./law/engine";
 import { safetyReview } from "./law/safety";
@@ -196,6 +197,7 @@ export default function App() {
   const tabs = [
     ["new", "신축 건축물"],
     ["existing", "기존 건축물"],
+    ["tools", "보조 계산기"],
     ["guide", "사용 안내"],
     ...(adminMode
       ? [
@@ -303,6 +305,7 @@ export default function App() {
             </section>
           </div>
         )}
+        {tab === "tools" && <Tools />}
         {tab === "guide" && <GuideTab adminMode={adminMode} />}
         {adminMode && tab === "history" && <HistoryTab />}
         {adminMode && tab === "rules" && <RulesTab adminMode={adminMode} overrides={overrides} setOverrides={setOverrides} />}

@@ -506,3 +506,47 @@ select.w-big { font-size: 15px; padding: 11px 12px; font-weight: 600; }
   .sf-card, .sf-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .tag.t-noretro { background: #fff4e0; color: #8a5300; font-size: 10.5px; margin-left: 4px; }
+
+/* ===================== v2.9 — 보조 계산기 ===================== */
+.tools { max-width: 980px; margin: 0 auto; }
+.tl-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.tl-tabs button { font: inherit; font-size: 13.5px; font-weight: 600; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); border-radius: 999px; padding: 7px 16px; cursor: pointer; }
+.tl-tabs button.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.tl-body { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.tl-intro { font-size: 13px; color: var(--ink2); }
+.tl-intro a { color: var(--accent); }
+.tl-floor { border: 1px solid var(--line); border-left: 4px solid var(--none); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.tl-floor.wl { border-left-color: var(--req); }
+.tl-floor.ok { border-left-color: var(--v); }
+.tl-floor-h { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tl-floor-h b { font-size: 15px; }
+.tl-area { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink2); }
+.tl-area input { width: 120px; }
+.tl-badge { margin-left: auto; font-size: 12.5px; font-weight: 700; border-radius: 999px; padding: 3px 12px; background: var(--line2); color: var(--muted); }
+.tl-badge.wl { background: var(--req-bg); color: var(--req); }
+.tl-badge.ok { background: var(--v-bg); color: var(--v); }
+.tl-op { background: var(--line2); border-radius: 8px; padding: 6px 8px; }
+.tl-op-h { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 700; color: var(--ink2); margin-bottom: 4px; }
+.tl-op-row { display: grid; grid-template-columns: 1fr 1fr 70px 1.3fr 40px 24px; gap: 6px; align-items: center; padding: 2px 0; }
+.tl-op-row input[type="number"] { width: 100%; min-width: 0; }
+.tl-op-head { font-size: 11px; color: var(--muted); font-weight: 600; }
+.tl-op-row.off .tl-num { color: var(--muted); text-decoration: line-through; }
+.tl-num { font-size: 13px; font-variant-numeric: tabular-nums; }
+.tl-num em { display: block; font-style: normal; font-size: 10.5px; color: var(--rc); text-decoration: none; }
+.tl-x { font: inherit; font-size: 16px; line-height: 1; background: none; border: 0; color: var(--muted); cursor: pointer; }
+.tl-calc { font-size: 13px; color: var(--ink); }
+.tl-ratio { color: var(--muted); font-size: 12px; margin-left: 6px; }
+.tl-need { font-size: 12px; color: var(--req); margin-top: 2px; }
+.tl-actions { display: flex; gap: 8px; }
+.tl-ref { font-size: 12.5px; color: var(--ink2); }
+.tl-ref summary { cursor: pointer; font-weight: 600; }
+.tl-ref ul { margin: 6px 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.tl-result { background: var(--line2); border-radius: 10px; padding: 12px 14px; }
+.tl-big { font-size: 15px; }
+.tl-big b { font-size: 26px; color: var(--brand); margin: 0 4px; }
+.tl-steps { margin: 6px 0 0; padding-left: 20px; font-size: 12.5px; color: var(--ink2); }
+.tl-pump { padding: 10px; }
+.tl-frame { width: 100%; border: 0; border-radius: 8px; background: #030712; display: block; }
+@media (max-width: 640px) {
+  .tl-op-row { grid-template-columns: 1fr 1fr 52px 1fr 30px 20px; gap: 4px; }
+}

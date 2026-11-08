@@ -890,7 +890,7 @@ export const CRITERIA = [
   {
     id: "esc-noyu12", fac: "escape", from: D.B17, to: INF, cert: "M", src: "hist24,s2,cur4", cur: "",
     text: "노유자시설의 피난층이 아닌 지상 1층·2층 (2017.1.26. 개정, 2017.1.28. 시행)", scope: "해당 층",
-    when: (c) => c.g("noyu") && c.x.gf >= 2, basis: () => "노유자시설 지상 1·2층 중 피난층 아닌 층",
+    when: (c) => c.g("noyu") && c.x.gf >= 2, basis: (c) => escapeFloors(c),
   },
 
   // ───────────────────────── 인명구조기구 ─────────────────────────
@@ -1238,7 +1238,10 @@ function ugWlUseGE(c, t) {
 function escapeFloors(c) {
   const parts = [];
   if (c.x.bf > 0 && c.d >= D.P94) parts.push(`지하 1~${c.x.bf}층(피난층 제외)`);
-  if (c.x.gf >= 3) parts.push(`지상 3~${Math.min(c.x.gf, 10)}층`);
+  // 노유자시설: 2017.1.28.부터 피난층이 아닌 지상 1·2층도 대상(esc-noyu12) → 지상 2층부터 표시
+  const noyu12 = c.g("noyu") && c.d >= D.B17 && c.x.gf >= 2;
+  if (noyu12) parts.push(`지상 2~${Math.min(c.x.gf, 10)}층(피난층이 아닌 1층 포함)`);
+  else if (c.x.gf >= 3) parts.push(`지상 3~${Math.min(c.x.gf, 10)}층`);
   return parts.join(", ") || "해당 층 없음";
 }
 
