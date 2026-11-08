@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.12.1",
+  version: "2.13.0",
   date: "2026-11-08",
-  note: "신축 건축물 결과에 착공 검토(기술자 등급·감리 여부·감리원 등급) 추가, 착공 계산기 연결",
+  note: "위험물 지정수량 배수 판정(CAS 검색) 추가 · 착공·감리 판정 명칭 변경",
 };
 
 export const D = {

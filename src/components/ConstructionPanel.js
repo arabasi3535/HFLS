@@ -45,7 +45,7 @@ export default function ConstructionPanel({ seed, onOpen }) {
   return (
     <div className="safety cx-panel">
       <div className="facs-h">
-        <span>착공 검토 (소방시설공사)</span>
+        <span>소방공사 착공·감리 판정</span>
         <span className="facs-legend">신설 공사 기준 · 공사업법 시행령</span>
       </div>
 
@@ -111,7 +111,7 @@ export default function ConstructionPanel({ seed, onOpen }) {
           )}
 
           <div className="cx-pnote">
-            설치 목록 그대로 산정했습니다(물분무등 호스릴 방식·캐비닛형 간이스프링클러·소화수조 여부, 여러 동 현장 합계는 착공 계산기에서 조정).
+            설치 목록 그대로 산정했습니다(물분무등 호스릴 방식·캐비닛형 간이스프링클러·소화수조 여부, 여러 동 현장 합계는 보조 계산기의 「소방공사 착공·감리 판정」에서 조정).
             {seed.chk && seed.chk.length > 0 && <em> 확인 필요 설비 포함: {seed.chk.join(", ")}</em>}
           </div>
         </>
@@ -119,7 +119,7 @@ export default function ConstructionPanel({ seed, onOpen }) {
 
       {onOpen && (
         <button type="button" className="w-run sf-go no-print" onClick={onOpen}>
-          착공 계산기에서 자세히 보기·조정 →
+          자세히 보기·조정 (보조 계산기) →
         </button>
       )}
     </div>

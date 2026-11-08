@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import PumpCalc from "./PumpCalc";
 import ConstructionCalc from "./ConstructionCalc";
+import HazmatCalc from "./HazmatCalc";
 import { facsFromKeys } from "../law/construction";
 import { windowlessFloor, occupancy, OCC_TYPES } from "../law/tools";
 
 // ============================================================
-// 보조 계산기 탭 — 무창층 판정 · 수용인원 산정 · 소화펌프 용량 산정 · 착공 계산기
+// 보조 계산기 탭 — 무창층 판정 · 수용인원 산정 · 소화펌프 용량 산정 · 소방공사 착공·감리 판정 · 위험물 지정수량 배수 판정
 // ============================================================
 
 const KEY = "hfls_tools_v1";
@@ -225,7 +226,8 @@ const SUBS = [
   ["windowless", "무창층 판정"],
   ["occ", "수용인원 산정"],
   ["pump", "소화펌프 용량 산정"],
-  ["build", "착공 계산기"],
+  ["build", "소방공사 착공·감리 판정"],
+  ["haz", "위험물 지정수량 배수 판정"],
 ];
 
 export default function Tools({ seed, onGoNew }) {
@@ -261,6 +263,7 @@ export default function Tools({ seed, onGoNew }) {
   const [wl, setWl] = part("windowless");
   const [oc, setOc] = part("occ");
   const [bd, setBd] = part("build");
+  const [hz, setHz] = part("haz");
   return (
     <div className="tools">
       <nav className="tl-tabs">
@@ -273,6 +276,7 @@ export default function Tools({ seed, onGoNew }) {
       {sub === "windowless" && <Windowless st={wl} setSt={setWl} />}
       {sub === "occ" && <Occupancy st={oc} setSt={setOc} />}
       {sub === "build" && <ConstructionCalc st={bd} setSt={setBd} onGoNew={onGoNew} />}
+      {sub === "haz" && <HazmatCalc st={hz} setSt={setHz} />}
       {/* 펌프 계산기는 한 번 연 뒤에는 다른 계산기로 바꿔도 입력값 유지 */}
       {pumpSeen && (
         <div style={{ display: sub === "pump" ? "block" : "none" }}>

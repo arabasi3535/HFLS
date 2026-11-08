@@ -660,7 +660,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity
 .ir-link p { margin: 4px 0 0; font-size: 12.5px; color: var(--ink2); line-height: 1.55; }
 .ir-link .w-run { white-space: nowrap; }
 
-/* 착공 계산기 */
+/* 소방공사 착공·감리 판정 */
 .cx-go { margin: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .cx-go .w-run { white-space: nowrap; }
 .cx-seed { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -706,3 +706,49 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity
 .cx-panel .sf-det.open { display: flex; }
 .cx-pnote { margin: 2px 12px 6px 14px; font-size: 11.5px; color: var(--muted); }
 .cx-pnote em { font-style: normal; color: var(--chk); }
+
+/* 위험물 지정수량 배수 판정 */
+.hz-quick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--line2); border-radius: 10px; padding: 8px 10px; }
+.hz-quick > span { font-size: 12px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+.hz-quick button { font: inherit; font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.hz-quick button:hover { border-color: var(--brand); color: var(--brand); }
+.hz-row { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px; padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+.hz-row.off { border-left-color: var(--none); opacity: .75; }
+.hz-row-h { display: flex; align-items: center; gap: 8px; }
+.hz-row-h b { color: var(--muted); }
+.hz-row-t { font-weight: 700; flex: 1; }
+.hz-find { position: relative; }
+.hz-find input { width: 100%; box-sizing: border-box; }
+.hz-hits { margin-top: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); overflow: hidden; }
+.hz-hits button { width: 100%; display: grid; grid-template-columns: 1.2fr 1fr 1.6fr; gap: 8px; text-align: left; font: inherit; font-size: 13px; background: none; border: 0; border-top: 1px solid var(--line2); padding: 7px 10px; cursor: pointer; color: var(--ink); }
+.hz-hits button:first-child { border-top: 0; }
+.hz-hits button:hover { background: var(--line2); }
+.hz-hits span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.hz-hits em { font-style: normal; color: var(--accent); }
+.hz-not, .hz-miss { font-size: 12.5px; padding: 7px 10px; border-top: 1px solid var(--line2); color: var(--ink2); }
+.hz-not em { font-style: normal; color: var(--chk); }
+.hz-sub { font-size: 13px; color: var(--ink2); background: var(--m-bg); border-radius: 8px; padding: 6px 10px; }
+.hz-sub span { color: var(--muted); margin: 0 4px; }
+.hz-sub em { font-style: normal; color: var(--chk); }
+.hz-pick { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.hz-pick select { flex: 1 1 280px; min-width: 0; }
+.hz-flash { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 8px; align-items: end; background: var(--line2); border-radius: 8px; padding: 8px 10px; }
+.hz-flash-r { grid-column: 1 / -1; font-size: 13px; color: var(--ink2); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hz-q select { width: 100%; }
+.hz-cond { font-size: 12.5px; }
+.hz-amt { display: grid; grid-template-columns: 1.2fr 100px 100px 1.6fr; gap: 8px; align-items: end; }
+.hz-out { display: flex; flex-direction: column; align-items: flex-end; font-size: 12.5px; color: var(--ink2); padding-bottom: 4px; }
+.hz-out b { font-size: 18px; color: var(--brand); }
+.hz-out small { color: var(--muted); }
+.hz-need { color: var(--req); }
+.hz-ex { color: var(--muted); }
+.hz-total.over { border-left: 4px solid var(--req); }
+.hz-total.small { border-left: 4px solid var(--chk); }
+.hz-lv { margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
+@media (max-width: 640px) {
+  .hz-amt { grid-template-columns: 1fr 1fr; }
+  .hz-out { grid-column: 1 / -1; align-items: flex-start; }
+  .hz-flash { grid-template-columns: 1fr 1fr; }
+  .hz-hits button { grid-template-columns: 1fr 1fr; }
+  .hz-hits button em { grid-column: 1 / -1; }
+}

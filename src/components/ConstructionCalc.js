@@ -1,7 +1,7 @@
 import { construction, CX_FACS } from "../law/construction";
 
 // ============================================================
-// 보조 계산기 — 착공 계산기
+// 보조 계산기 — 소방공사 착공·감리 판정
 // 착공신고 대상 · 소방기술자 배치등급 · 공사감리 대상·종류 · 감리원 배치등급
 // ============================================================
 
@@ -62,7 +62,7 @@ export default function ConstructionCalc({ st, setSt, onGoNew }) {
         </div>
       ) : (
         <div className="ir-link cx-seed">
-          <span>신축 건축물 산정 결과 하단의 「착공 계산기로 보내기」를 누르면 용도·연면적·층수·설치 소방시설이 자동으로 채워집니다.</span>
+          <span>신축 건축물 결과의 「소방공사 착공·감리 판정」에서 「자세히 보기·조정 →」을 누르면 용도·연면적·층수·설치 소방시설이 자동으로 채워집니다.</span>
           {onGoNew && (
             <button type="button" className="w-link" onClick={onGoNew}>
               신축 건축물 산정으로 이동 →
