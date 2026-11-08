@@ -55,18 +55,22 @@ function substitutionsFor(rows, u) {
 function Item({ it, open, onToggle, flash, guide }) {
   const r = it.row;
   const items = r ? [...r.hits, ...r.maybes] : [];
-  const lead = items[0];
+  // 주차장 물분무등만 대체되고 전기실 등 다른 부분이 남으면 물분무등 그대로 표시(대체는 주차장 부분만)
+  const partial = !!(it.sub && it.sub.partial);
+  const lead = partial ? items.find((i) => !PARKING_WATER.includes(i.id)) || items[0] : items[0];
+  const fullSub = it.sub && !partial;
   return (
-    <li className={`it ${it.kind} ${it.sub ? "subbed" : ""} ${flash ? "flash" : ""}`}>
+    <li className={`it ${it.kind} ${fullSub ? "subbed" : ""} ${flash ? "flash" : ""}`}>
       <button type="button" className="it-main" onClick={onToggle}>
         <span className="it-name">{guide ? (guide.kind === "light" ? "유도등" : "유도표지") : it.name}</span>
         <span className="it-tags">
           {it.kind === "retro" && <span className="tag t-retro">소급</span>}
           {it.kind === "strong" && <span className="tag t-strong">강화기준</span>}
           {it.check && <span className="tag t-hist">연혁 확인</span>}
-          {it.sub && <span className="tag t-sub">대체</span>}
+          {fullSub && <span className="tag t-sub">대체</span>}
+          {partial && <span className="tag t-sub">주차장 부분 대체</span>}
         </span>
-        <span className="it-scope">{guide ? guide.items.join("·") : it.sub ? `→ ${it.sub.replaceWith || "대체 설비"}` : lead ? lead.scope : it.scope || ""}</span>
+        <span className="it-scope">{guide ? guide.items.join("·") : fullSub ? `→ ${it.sub.replaceWith || "대체 설비"}` : lead ? lead.scope : it.scope || ""}</span>
         <span className="it-caret">{open ? "▾" : "▸"}</span>
       </button>
       <div className={`it-det ${open ? "open" : ""}`}>
@@ -82,8 +86,15 @@ function Item({ it, open, onToggle, flash, guide }) {
         )}
         {it.sub && (
           <div className="det-line sub-line">
-            별표5 {it.sub.no}: {it.sub.text}
-            {it.sub.partial && " — 주차장 외 부분(전기실 등)은 물분무등소화설비 유지"}
+            {partial ? (
+              <>
+                주차장 부분만 별표5 {it.sub.no}에 따라 스프링클러설비로 대체({it.sub.text}). 전기실·발전실·변전실 등 주차장 외 부분은 스프링클러설비로 대체할 수 없어 <b>물분무등소화설비</b>를 설치합니다.
+              </>
+            ) : (
+              <>
+                별표5 {it.sub.no}: {it.sub.text}
+              </>
+            )}
           </div>
         )}
         {it.kind === "retro" && (
@@ -203,9 +214,9 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   // 조건 변경 시 추가·제외된 시설 잠시 강조
   const prevRef = useRef(null);
   const [flash, setFlash] = useState({ added: [], removed: [] });
-  const sig = list.map((i) => `${i.key}:${i.kind}:${i.sub ? 1 : 0}`).join("|");
+  const sig = list.map((i) => `${i.key}:${i.kind}:${i.sub && !i.sub.partial ? 1 : 0}`).join("|");
   useEffect(() => {
-    const now = new Map(list.filter((i) => !i.sub).map((i) => [i.key, i.name]));
+    const now = new Map(list.filter((i) => !i.sub || i.sub.partial).map((i) => [i.key, i.name]));
     const prev = prevRef.current;
     prevRef.current = now;
     if (!prev) return undefined;
@@ -316,7 +327,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       <div className="facs">
         <div className="facs-h">
           <span>
-            설치 대상 <b>{list.filter((i) => !i.sub).length}</b>종
+            설치 대상 <b>{list.filter((i) => !i.sub || i.sub.partial).length}</b>종
             {nRetro > 0 && <span className="legend-retro"> · 소급 {nRetro}종</span>}
           </span>
           <span className="facs-legend">
@@ -365,7 +376,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
                 <b>{getFacility(s.target).name}</b> ← {s.replaceWith}
                 <small>
                   {s.no}: {s.text}
-                  {s.partial ? " (주차장 부분만)" : ""}
+                  {s.partial ? " — 주차장 부분만 대체, 전기실 등 그 밖의 부분은 물분무등소화설비 유지" : ""}
                 </small>
               </span>
             </label>
@@ -483,7 +494,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       )}
       <div className="mobile-bar no-print">
         <span>
-          설치 <b>{list.filter((x) => !x.sub).length}</b>종{nRetro > 0 ? ` · 소급 ${nRetro}` : ""}
+          설치 <b>{list.filter((x) => !x.sub || x.sub.partial).length}</b>종{nRetro > 0 ? ` · 소급 ${nRetro}` : ""}
           {checks.length > 0 ? ` · 확인 필요 ${checks.length}` : ""}
           {provisional.length > 0 ? " · 잠정" : ""}
         </span>

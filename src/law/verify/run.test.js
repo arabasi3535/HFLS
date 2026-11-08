@@ -28,3 +28,18 @@ describe("검증 사례(법령 원문·운영매뉴얼 대조)", () => {
     expect({ 누락: r.missing, 과잉: r.extra, 확인필요: r.chkDiff }).toEqual({ 누락: [], 과잉: [], 확인필요: [] });
   });
 });
+
+describe("내부 차고·지하 주차장 입력(v2.14.5)", () => {
+  const base = { action: "new", date: "", grp: "2", use: "neigh", area: "3000", gf: "3", bf: "1", occ: "", useArea: "", floors: [], completed: "", extExceptions: {} };
+  test("지하 차고만 입력해도 내부 차고 200㎡ 기준(물분무등) 판단", () => {
+    const rv = evaluateAt({ ...base, f: { ugParking: "300" } }, "2026-11-08");
+    const w = rv.byKey.water;
+    expect(w.hits.map((h) => h.id)).toContain("wat-inpark");
+  });
+  test("내부 차고 합계 + 전기실 → 물분무등 근거 두 개", () => {
+    const rv = evaluateAt({ ...base, f: { parkingInside: "300", elecRoom: "400" } }, "2026-11-08");
+    const ids = rv.byKey.water.hits.map((h) => h.id);
+    expect(ids).toContain("wat-inpark");
+    expect(ids).toContain("wat-elec");
+  });
+});

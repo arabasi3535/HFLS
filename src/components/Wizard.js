@@ -441,10 +441,10 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
               {showMore && (
                 <div className="w-more-body">
                   <div className="w-grid2">
-                    <Field label="건물 내부 차고·주차장(㎡)">
+                    <Field label="건물 내부 차고·주차장 합계(㎡)" hint="지상+지하 합계 — 물분무등소화설비(200㎡ 이상) 판단">
                       <Num value={input.f.parkingInside} onChange={(v) => setF("parkingInside", v)} />
                     </Field>
-                    <Field label="지하 차고·주차장(㎡)">
+                    <Field label="그중 지하 차고·주차장(㎡)" hint="2026.3.1. 이후 신청분의 지하 주차장 기준(자동화재탐지·비상경보·연결살수 등) 판단 — 합계에 포함된 면적">
                       <Num value={input.f.ugParking} onChange={(v) => setF("ugParking", v)} />
                     </Field>
                     <Field label="기계식 주차 대수">

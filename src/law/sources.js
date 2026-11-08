@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.14.4",
+  version: "2.14.5",
   date: "2026-11-08",
-  note: "유도등·유도표지 구분만 표시(크기 구분 삭제)",
+  note: "주차장+전기실 동시 해당 시 물분무등 유지 표시, 차고 입력 정리",
 };
 
 export const D = {

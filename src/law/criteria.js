@@ -408,7 +408,8 @@ export const CRITERIA = [
     text: "건축물 내부 차고·주차장 바닥면적 합계 200㎡ 이상 — 1997.9.27.~2001.5.20. 아파트 부설 차고는 의무관리대상 공동주택(300세대 이상 등)만, 50세대 미만 연립·다세대 제외(법령집 2022.12.1. / 2024 용도별 자료 2018.1.26. — 그 사이 확인 필요)", scope: "해당 부분",
     when: (c) => {
       if (c.g("gas", "ugduct")) return F;
-      const base = ge(n0(c.f.parkingInside), 200);
+      // 지하 차고·주차장은 건축물 내부 차고에 포함 — 합계를 비워 두고 지하만 입력한 경우도 반영
+      const base = ge(Math.max(n0(c.f.parkingInside), n0(c.f.ugParking)), 200);
       if (base !== T) return base;
       if (c.g("apt") && c.d >= D.P97 && c.d < D.P01) {
         const hh = num(c.f.households);
@@ -422,7 +423,7 @@ export const CRITERIA = [
       }
       return T;
     },
-    basis: (c) => `내부 차고·주차장 ${fmt(n0(c.f.parkingInside))}㎡${c.f.households ? `, ${c.f.households}세대` : ""}`,
+    basis: (c) => `내부 차고·주차장 ${fmt(Math.max(n0(c.f.parkingInside), n0(c.f.ugParking)))}㎡${n0(c.f.ugParking) ? `(지하 ${fmt(n0(c.f.ugParking))}㎡ 포함)` : ""}${c.f.households ? `, ${c.f.households}세대` : ""}`,
   },
   {
     id: "wat-mech", fac: "water", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "4)",

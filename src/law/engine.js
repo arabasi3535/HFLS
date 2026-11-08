@@ -181,7 +181,7 @@ function inputChecklist(u, input, x) {
   if (g("culture", "religion", "sports") && !g("zoo") && num(f.stageArea) === null) out.push("무대부 바닥면적 미입력 → 스프링클러·제연설비 무대부 기준은 [확인 필요]. 무대부가 없으면 0을 입력하십시오.");
   if (g("factory", "warehouse") && !f.nonFireproof) out.push("지붕·외벽 불연재료/내화구조 여부 확인(아니면 '불연·내화 아님' 체크).");
   if (g("tunnel") && f.tunnelLen == null) out.push("터널 길이 미입력.");
-  if (!f.parkingInside && !g("tunnel", "ugduct")) out.push("건축물 내부 차고·주차장 면적(물분무등 200㎡)·지하 주차장 면적(2026.3.1. 기준) 해당 여부 확인.");
+  if (!f.parkingInside && !f.ugParking && !g("tunnel", "ugduct")) out.push("건축물 내부 차고·주차장 면적(물분무등 200㎡)·지하 주차장 면적(2026.3.1. 기준) 해당 여부 확인.");
   if (!f.elecRoom) out.push("전기실·발전실·변전실·통신기기실·전산실 바닥면적(물분무등 300㎡) 확인.");
   if (!f.specialStairs) out.push("특별피난계단·비상용승강기 승강장 설치 여부(제연설비) 확인.");
   return out;
