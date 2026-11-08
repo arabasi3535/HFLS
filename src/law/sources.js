@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.7.1",
-  date: "2026-11-06",
-  note: "관리자 비밀번호를 서버(ADMIN_PW)에서 확인 — 화면 코드에 비밀번호 미포함, 로그인 시도 제한",
+  version: "2.8.0",
+  date: "2026-11-08",
+  note: "소방안전관리대상물 등급(특급~3급)·방염 대상·소방자동차 전용구역 대상 판정 추가",
 };
 
 export const D = {

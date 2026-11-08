@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CATS, SUBSTITUTIONS, getFacility } from "../law/facilities";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
+import SafetyPanel from "./SafetyPanel";
+import { safetyReview } from "../law/safety";
 import { subName, groupLabel } from "./Wizard";
 import { USE_GROUPS } from "../law/uses";
 
@@ -98,7 +100,7 @@ function Item({ it, open, onToggle, flash }) {
 
 const EMPTY_SEL = { retro: {}, strong: {}, sub: {} };
 
-export default function Report({ rv, mode, adminMode, author, sel: selIn, setSel, provisional, onReport }) {
+export default function Report({ rv, sv, mode, adminMode, author, sel: selIn, setSel, provisional, onReport }) {
   const existing = mode === "existing";
   const [open, setOpen] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
@@ -144,6 +146,16 @@ export default function Report({ rv, mode, adminMode, author, sel: selIn, setSel
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hist, rv, existing, retroOn, strongOn, subOn, subs]);
 
+  // 안전관리 검토 — 소방안전관리대상물 2·3급은 최종 설치 목록(부칙 소급·강화기준 선택 반영)으로 판정
+  const safety = useMemo(() => {
+    const applied = new Map(list.filter((i) => i.kind !== "base").map((i) => [i.key, i.check ? null : true]));
+    try {
+      return safetyReview(rv, mode, applied);
+    } catch (e) {
+      return sv || null;
+    }
+  }, [rv, mode, list, sv]);
+
   // 조건 변경 시 추가·제외된 시설 잠시 강조
   const prevRef = useRef(null);
   const [flash, setFlash] = useState({ added: [], removed: [] });
@@ -176,7 +188,7 @@ export default function Report({ rv, mode, adminMode, author, sel: selIn, setSel
   return (
     <div className="report">
       <div className="print-head print-only">
-        <div className="ph-t">소방시설 적용 검토서</div>
+        <div className="ph-t">소방시설 적용·안전관리 검토서</div>
         <div className="ph-m">
           작성일 {fmtDate(rv.today)} · {author.org} {author.name}
         </div>
@@ -337,6 +349,9 @@ export default function Report({ rv, mode, adminMode, author, sel: selIn, setSel
           현행 기준이면 추가되지만 소급 의무가 없는 시설: {noRetroAdds.map((c) => c.fac.name).join(", ")} — 종전 기준 유지(소방시설법 제13조제1항 본문).
         </div>
       )}
+
+      {/* 안전관리 검토: 소방안전관리대상물 등급 · 방염 · 소방자동차 전용구역 */}
+      {safety && <SafetyPanel sv={safety} />}
 
       <div className="rep-actions no-print">
         <button type="button" className="w-run" onClick={() => window.print()}>

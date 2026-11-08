@@ -1,6 +1,6 @@
 {
   "appId": "kr.go.hfls.app",
-  "appName": "HFLS 소방시설 연혁",
+  "appName": "소방시설 검토",
   "webDir": "build",
   "android": {
     "allowMixedContent": false

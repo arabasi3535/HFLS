@@ -20,7 +20,7 @@ export function BugReportModal({ onClose, context, version }) {
 
   const summary = context && context.input ? describe(context) : "";
   const text = () =>
-    `[HFLS v${version}] ${type}\n${message}${contact ? `\n연락처: ${contact}` : ""}${attach && summary ? `\n\n첨부: ${summary}\n${JSON.stringify(context.input)}` : ""}`;
+    `[소방시설 검토 v${version}] ${type}\n${message}${contact ? `\n연락처: ${contact}` : ""}${attach && summary ? `\n\n첨부: ${summary}\n${JSON.stringify(context.input)}` : ""}`;
 
   const submit = async () => {
     if (message.trim().length < 5) {

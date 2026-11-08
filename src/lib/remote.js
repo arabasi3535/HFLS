@@ -72,3 +72,28 @@ export async function adminAuth(pw) {
     return { unreachable: true };
   }
 }
+
+/** 업데이트 메모 조회 — 저장소 미설정·로컬이면 null */
+export async function loadNotice() {
+  try {
+    const r = await json(await fetch("/api/notice"));
+    if (!r.ok || !r.body || !r.body.configured) return null;
+    return r.body.notice || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** 업데이트 메모 저장(관리자) → {ok, notice} | {error} */
+export async function saveNotice(pw, version, text) {
+  try {
+    const r = await json(
+      await fetch("/api/notice", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-pw": pw }, body: JSON.stringify({ version, text }) })
+    );
+    if (r.ok) return { ok: true, notice: r.body && r.body.notice };
+    if (r.status === 503 || r.status === 404) return { error: "저장소(Upstash Redis)가 연결되지 않아 저장할 수 없습니다." };
+    return { error: (r.body && r.body.error) || `오류 ${r.status}` };
+  } catch (e) {
+    return { error: "서버에 연결할 수 없습니다." };
+  }
+}

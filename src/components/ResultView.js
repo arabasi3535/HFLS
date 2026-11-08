@@ -98,7 +98,7 @@ export default function ResultView({ rv }) {
     const blob = new Blob([toCSV(rv)], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `HFLS_검토표_${rv.primaryDate}.csv`;
+    a.download = `소방시설_검토표_${rv.primaryDate}.csv`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };

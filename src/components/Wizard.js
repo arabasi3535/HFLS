@@ -147,7 +147,7 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
     gasUse: g("lodging", "noyu", "retail", "training", "medical", "culture", "sports", "religion", "transport", "logistics", "funeral", "factory"),
     tunnel: g("tunnel"),
     apt: g("apt"),
-    households: g("apt", "row", "multi"),
+    households: g("apt", "row", "multi", "mixed_res"),
     cooking: g("lodging") && between(D.B13, D.C),
     unmanned: g("office", "factory", "warehouse", "military", "power") && between(D.A, D.C),
     bigstore: g("bigstore"),
@@ -314,7 +314,7 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
               </Field>
             )}
             {need.households && (
-              <Field label="세대수">
+              <Field label={g("mixed_res") ? "주택 세대수" : "세대수"} hint={g("apt") ? "전용구역 100세대 · 의무관리대상 150/300세대(단지 전체)" : "의무관리대상 공동주택 판정(단지 전체 세대수)"}>
                 <Num value={input.f.households} onChange={(v) => setF("households", v)} />
               </Field>
             )}
@@ -342,6 +342,89 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
             {need.unmanned && <Check checked={input.f.unmanned} onChange={(v) => setF("unmanned", v)}>야간 무인경비시스템으로 관리</Check>}
             {need.bigstore && <Check checked={input.f.bigstoreRestaurant} onChange={(v) => setF("bigstoreRestaurant", v)}>입점 일반음식점 있음(후드·덕트 주방)</Check>}
           </div>
+
+          {!g("house") && (
+            <>
+              <div className="w-sub-h">안전관리 검토용 (소방안전관리대상물·방염·전용구역)</div>
+              <div className="w-grid2">
+                {!noFloors && (
+                  <Field label="건축물 높이(m)" hint="지상으로부터 높이 — 특급·1급(120m·200m) 판정, 20층 이상이면 입력">
+                    <Num value={input.f.height} onChange={(v) => setF("height", v)} />
+                  </Field>
+                )}
+                {g("gas", "factory", "warehouse") && (
+                  <Field label="가연성 가스 저장·취급량(톤)" hint="1급 1천톤 이상 / 2급 100톤 이상 — 없으면 0">
+                    <Num value={input.f.gasTon} onChange={(v) => setF("gasTon", v)} />
+                  </Field>
+                )}
+                {g("edu_dorm") && (
+                  <Field label="합숙소·기숙사 구분" hint="학교 기숙사는 공동주택 기숙사(별표2 교육연구시설에는 합숙소만 있음)">
+                    <select value={input.f.eduDormType || ""} onChange={(e) => setF("eduDormType", e.target.value || undefined)}>
+                      <option value="">— 선택 —</option>
+                      <option value="hapsuk">합숙소(교육연구시설)</option>
+                      <option value="dorm">기숙사(학교 기숙사 = 공동주택)</option>
+                    </select>
+                  </Field>
+                )}
+                {g("clinic") && (
+                  <Field label="의원 종류" hint="방염: 치과의원·한의원은 2024.12.31. 이후 설치·교체분부터">
+                    <select value={input.f.clinicType || ""} onChange={(e) => setF("clinicType", e.target.value || undefined)}>
+                      <option value="">— 선택 —</option>
+                      <option value="clinic">의원</option>
+                      <option value="dental">치과의원</option>
+                      <option value="oriental">한의원</option>
+                    </select>
+                  </Field>
+                )}
+                {g("midwife") && (
+                  <Field label="조산원·산후조리원 구분">
+                    <select value={input.f.midwifeType || ""} onChange={(e) => setF("midwifeType", e.target.value || undefined)}>
+                      <option value="">— 선택 —</option>
+                      <option value="midwife">조산원</option>
+                      <option value="postnatal">산후조리원</option>
+                    </select>
+                  </Field>
+                )}
+                {g("neigh") && !g("clinic", "midwife", "bath") && (
+                  <Field label="방염 대상 근린생활시설" hint="해당 없으면 비워 둠">
+                    <select value={input.f.neighFlame || ""} onChange={(e) => setF("neighFlame", e.target.value || undefined)}>
+                      <option value="">해당 없음</option>
+                      <option value="gym">체력단련장</option>
+                      <option value="perf">공연장</option>
+                      <option value="religion">종교집회장</option>
+                    </select>
+                  </Field>
+                )}
+              </div>
+              <div className="w-checks">
+                <Check checked={input.f.publicOrg} onChange={(v) => setF("publicOrg", v)}>「공공기관의 소방안전관리에 관한 규정」 적용 대상(국가·지자체·공공기관 등)</Check>
+                <Check checked={input.f.multiUse} onChange={(v) => setF("multiUse", v)}>다중이용업소 영업장 있음</Check>
+                {g("culture", "religion", "sports") && (
+                  <Check checked={input.f.outdoorFacility} onChange={(v) => setF("outdoorFacility", v)}>건축물 옥내에 있지 않은 시설(옥외 관람장 등)</Check>
+                )}
+                {g("sports") && <Check checked={input.f.poolOnly} onChange={(v) => setF("poolOnly", v)}>수영장</Check>}
+                {g("broadcast") && !g("bstation") && <Check checked={input.f.studio} onChange={(v) => setF("studio", v)}>촬영소</Check>}
+                {g("warehouse") && (
+                  <Check checked={input.f.nonCombustibleStore} onChange={(v) => setF("nonCombustibleStore", v)}>철강 등 불연성 물품을 저장·취급하는 창고</Check>
+                )}
+                {g("gas", "factory", "warehouse") && (
+                  <Check checked={input.f.cityGas} onChange={(v) => setF("cityGas", v)}>가스 제조설비를 갖추고 도시가스사업 허가를 받아야 하는 시설</Check>
+                )}
+                {g("apt", "row", "multi", "mixed_res") && (
+                  <>
+                    <Check checked={input.f.elevator} onChange={(v) => setF("elevator", v)}>승강기 설치(의무관리대상 150세대 기준)</Check>
+                    <Check checked={input.f.centralHeat} onChange={(v) => setF("centralHeat", v)}>중앙집중식 난방(지역난방 포함)</Check>
+                    <Check checked={input.f.mmConsent} onChange={(v) => setF("mmConsent", v)}>입주자등 동의로 의무관리대상 전환(공동주택관리법 제2조①2 마목)</Check>
+                  </>
+                )}
+                {(g("apt", "dorm") || (g("edu_dorm") && input.f.eduDormType === "dorm")) && (
+                  <Check checked={input.f.laneException} onChange={(v) => setF("laneException", v)}>
+                    하나의 대지에 1개 동 + 정차·주차금지 편도 2차선 이상 도로에 직접 접해 도로에서 직접 소방활동 가능(전용구역 제외)
+                  </Check>
+                )}
+              </div>
+            </>
+          )}
 
           {!g("house", "tunnel", "ugduct") && (
             <div className="w-more">

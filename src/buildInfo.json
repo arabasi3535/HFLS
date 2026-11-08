@@ -1,6 +1,6 @@
 {
-  "version": "2.7.1",
-  "builtAt": "2026-11-06 01:39",
-  "commit": "local",
+  "version": "2.8.0",
+  "builtAt": "2026-11-08 10:19",
+  "commit": "9e0cd77a",
   "env": "local"
 }

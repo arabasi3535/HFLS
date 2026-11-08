@@ -3,8 +3,9 @@ import Wizard, { EMPTY } from "./components/Wizard";
 import Report from "./components/Report";
 import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
 import { BugReportModal, ReportsTab } from "./components/Feedback";
-import { loadStats, adminAuth } from "./lib/remote";
+import { loadStats, adminAuth, loadNotice, saveNotice } from "./lib/remote";
 import { review } from "./law/engine";
+import { safetyReview } from "./law/safety";
 import { getUse } from "./law/uses";
 import { RULES_REV } from "./law/sources";
 import BUILD from "./buildInfo.json";
@@ -94,7 +95,30 @@ export default function App() {
   const [adminPw, setAdminPw] = useState("");
   const [stats, setStats] = useState(null);
   const [bug, setBug] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [noteEdit, setNoteEdit] = useState(null); // 편집 중인 메모 문자열(null = 편집 안 함)
   const today = useMemo(todayKST, []);
+
+  // 업데이트 메모: 서버 저장값(현재 버전용)이 있으면 그것, 없으면 기본 메모
+  useEffect(() => {
+    let alive = true;
+    loadNotice().then((n) => alive && setNotice(n));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const defaultNote = RULES_REV.version === BUILD.version ? RULES_REV.note : "";
+  const relNote = notice && notice.version === BUILD.version ? notice.text : defaultNote;
+  const saveNote = async () => {
+    if (!adminPw) {
+      alert("메모 저장은 서버 관리자 비밀번호(Vercel 환경변수 ADMIN_PW)로 로그인한 경우에만 가능합니다.");
+      return;
+    }
+    const r = await saveNotice(adminPw, BUILD.version, noteEdit || "");
+    if (r.error) return alert(r.error);
+    setNotice(r.notice || null);
+    setNoteEdit(null);
+  };
 
   // 사용 횟수(접속 기준, 같은 탭은 1회) — 저장소 미설정이면 표시하지 않음
   useEffect(() => {
@@ -126,6 +150,14 @@ export default function App() {
       return null;
     }
   }, [live, missing, mode, today, overrides]);
+  const sv = useMemo(() => {
+    if (!rv) return null;
+    try {
+      return safetyReview(rv, mode);
+    } catch (e) {
+      return null;
+    }
+  }, [rv, mode]);
   const provisional = useMemo(() => (rv ? provisionalReasons(rv, live) : []), [rv, live]);
   const setSel = (upd) => setSels((p) => ({ ...p, [mode]: typeof upd === "function" ? upd(p[mode]) : upd }));
   // 날짜 형식 오류만 입력란에 표시(미입력은 결과 영역에서 안내)
@@ -180,17 +212,50 @@ export default function App() {
         <div className="top-in">
           <div className="brand-col">
             <div className="brand-row">
-              <span className="brand">HFLS</span>
-              <span className="ver-badge" title={`빌드 ${BUILD.builtAt} KST · 커밋 ${BUILD.commit} · ${BUILD.env}\n판정규칙 ${RULES_REV.date}: ${RULES_REV.note}`}>
+              <span className="ver-badge" title={`빌드 ${BUILD.builtAt} KST · 커밋 ${BUILD.commit} · ${BUILD.env}\n판정규칙 ${RULES_REV.date}`}>
                 v{BUILD.version}
               </span>
+              {noteEdit !== null ? (
+                <span className="rel-form">
+                  <input
+                    value={noteEdit}
+                    maxLength={120}
+                    placeholder="이번 버전에서 추가·변경된 내용 (한 줄, 120자)"
+                    onChange={(e) => setNoteEdit(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveNote();
+                      if (e.key === "Escape") setNoteEdit(null);
+                    }}
+                    autoFocus
+                  />
+                  <button type="button" className="ok" onClick={saveNote}>
+                    저장
+                  </button>
+                  <button type="button" className="cancel" onClick={() => setNoteEdit(null)}>
+                    취소
+                  </button>
+                </span>
+              ) : (
+                <>
+                  {relNote && (
+                    <span className="rel-note" title={notice && notice.version === BUILD.version ? `${relNote}\n(${notice.at} 작성)` : relNote}>
+                      {relNote}
+                    </span>
+                  )}
+                  {adminMode && (
+                    <button type="button" className="rel-edit" onClick={() => setNoteEdit(relNote || "")} title="버전 옆 업데이트 메모 수정(관리자)">
+                      메모 수정
+                    </button>
+                  )}
+                </>
+              )}
               {stats && (
                 <span className="usage" title={`접속 기준(같은 탭 새로고침은 1회) · ${stats.date} 한국시간`}>
                   오늘 {stats.today.toLocaleString("ko-KR")} · 누적 {stats.total.toLocaleString("ko-KR")}
                 </span>
               )}
             </div>
-            <h1>소방시설 적용 검토</h1>
+            <h1>소방시설 적용·안전관리 검토 시스템</h1>
           </div>
           <div className="top-right">
             <div className="author" title="제작">
@@ -219,7 +284,7 @@ export default function App() {
             </aside>
             <section id="result-top" className="results">
               {rv ? (
-                <Report key={mode} rv={rv} mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)} />
+                <Report key={mode} rv={rv} sv={sv} mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)} />
               ) : (
                 <div className="empty">
                   <div className="empty-t">{mode === "new" ? "오늘 허가 신청하는 건축물" : "이미 허가받은 건축물"}</div>
@@ -260,7 +325,7 @@ export default function App() {
         <span className="ver-line">
           v{BUILD.version} · 빌드 {BUILD.builtAt} KST{adminMode ? ` · ${BUILD.commit} · 판정규칙 ${RULES_REV.date}` : ""}
         </span>
-        <span>현행 기준: 소방시설 설치 및 관리에 관한 법률 시행령 별표4(2025.11.25. 개정) · 판정일 {today}</span>
+        <span>현행 기준: 소방시설법 시행령 별표4(2025.11.25. 개정)·제30조, 화재예방법 시행령 별표4, 소방기본법 시행령 제7조의12 · 판정일 {today}</span>
         <span>업무 참고용(법적 효력 없음)</span>
         <button type="button" className="fb-btn" onClick={() => setBug(true)}>
           오류 신고 · 의견 보내기
@@ -275,7 +340,10 @@ export default function App() {
               ? {
                   mode,
                   input: live,
-                  result: rv.hist.rows.filter((r) => r.status !== "해당없음").map((r) => `${r.fac.name}:${r.status}`),
+                  result: [
+                    ...rv.hist.rows.filter((r) => r.status !== "해당없음").map((r) => `${r.fac.name}:${r.status}`),
+                    ...(sv ? [`소방안전관리:${sv.grade.grade || sv.grade.status}`, `방염:${sv.flame.status}`, `전용구역:${sv.lane.status}`] : []),
+                  ],
                 }
               : isInput
               ? { mode, input: live }
