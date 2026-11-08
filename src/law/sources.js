@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.14.5",
+  version: "2.15.0",
   date: "2026-11-08",
-  note: "주차장+전기실 동시 해당 시 물분무등 유지 표시, 차고 입력 정리",
+  note: "보조 계산기에 학원 다중이용업소 판단 추가",
 };
 
 export const D = {

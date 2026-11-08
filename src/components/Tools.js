@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import PumpCalc from "./PumpCalc";
 import ConstructionCalc from "./ConstructionCalc";
 import HazmatCalc from "./HazmatCalc";
+import AcademyCalc, { newUnit } from "./AcademyCalc";
 import { facsFromKeys } from "../law/construction";
 import { windowlessFloor, occupancy, OCC_TYPES } from "../law/tools";
 
 // ============================================================
-// 보조 계산기 탭 — 무창층 판정 · 수용인원 산정 · 소화펌프 용량 산정 · 소방공사 착공·감리 판정 · 위험물 지정수량 배수 판정
+// 보조 계산기 탭 — 무창층 판정 · 수용인원 산정 · 소화펌프 용량 산정 · 소방공사 착공·감리 판정 · 위험물 지정수량 배수 판정 · 학원 다중이용업소 판단
 // ============================================================
 
 const KEY = "hfls_tools_v1";
@@ -134,7 +135,7 @@ function Windowless({ st, setSt }) {
   );
 }
 
-function Occupancy({ st, setSt }) {
+function Occupancy({ st, setSt, onToAcademy }) {
   const v = { type: "etc", area: "", excl: "", staff: "", beds1: "", beds2: "", seatArea: "", fixedSeats: "", benchWidth: "", ...st };
   const set = (k, x) => setSt({ ...v, [k]: x });
   const r = occupancy(v);
@@ -190,6 +191,11 @@ function Occupancy({ st, setSt }) {
         <button type="button" className="w-reset" onClick={() => setSt({ type: v.type })}>
           초기화
         </button>
+        {onToAcademy && v.type === "class" && r.ok && (
+          <button type="button" className="w-run" onClick={() => onToAcademy(v.area, v.excl)}>
+            학원 다중이용업소 판단에 학원으로 추가 →
+          </button>
+        )}
       </div>
       <details className="tl-ref">
         <summary>산정 기준 — 소방시설법 시행령 제17조 [별표7]</summary>
@@ -227,6 +233,7 @@ const SUBS = [
   ["occ", "수용인원 산정"],
   ["build", "소방공사 착공·감리 판정"],
   ["haz", "위험물 지정수량 배수 판정"],
+  ["academy", "학원 다중이용업소 판단"],
   ["pump", "소화펌프 용량 산정"],
 ];
 
@@ -264,6 +271,15 @@ export default function Tools({ seed, onGoNew }) {
   const [oc, setOc] = part("occ");
   const [bd, setBd] = part("build");
   const [hz, setHz] = part("haz");
+  const [ac, setAc] = part("academy");
+  const toAcademy = (area, excl) => {
+    const floors = ac.floors && ac.floors.length ? ac.floors : [{ id: "f0", name: "1층", fireFloor: false, units: [] }];
+    const f0 = floors[0];
+    const blank = f0.units.length === 1 && f0.units[0].kind === "academy" && !f0.units[0].area && !f0.units[0].name;
+    const u = newUnit({ area: area ?? "", excl: excl ?? "" });
+    setAc({ ...ac, floors: [{ ...f0, units: blank ? [u] : [...f0.units, u] }, ...floors.slice(1)] });
+    setSub("academy");
+  };
   return (
     <div className="tools">
       <nav className="tl-tabs">
@@ -274,9 +290,10 @@ export default function Tools({ seed, onGoNew }) {
         ))}
       </nav>
       {sub === "windowless" && <Windowless st={wl} setSt={setWl} />}
-      {sub === "occ" && <Occupancy st={oc} setSt={setOc} />}
+      {sub === "occ" && <Occupancy st={oc} setSt={setOc} onToAcademy={toAcademy} />}
       {sub === "build" && <ConstructionCalc st={bd} setSt={setBd} onGoNew={onGoNew} />}
       {sub === "haz" && <HazmatCalc st={hz} setSt={setHz} />}
+      {sub === "academy" && <AcademyCalc st={ac} setSt={setAc} />}
       {/* 펌프 계산기는 한 번 연 뒤에는 다른 계산기로 바꿔도 입력값 유지 */}
       {pumpSeen && (
         <div style={{ display: sub === "pump" ? "block" : "none" }}>
