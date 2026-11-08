@@ -100,6 +100,7 @@ export default function App() {
   const [bug, setBug] = useState(false);
   const [notice, setNotice] = useState(null);
   const [reportSeed, setReportSeed] = useState(null);
+  const [buildSeed, setBuildSeed] = useState(null);
   const [noteEdit, setNoteEdit] = useState(null); // 편집 중인 메모 문자열(null = 편집 안 함)
   const today = useMemo(todayKST, []);
 
@@ -299,6 +300,15 @@ export default function App() {
                     setTab("report");
                     window.scrollTo(0, 0);
                   }}
+                  onMakeConstruction={
+                    mode === "new"
+                      ? (s) => {
+                          setBuildSeed(s);
+                          setTab("tools");
+                          window.scrollTo(0, 0);
+                        }
+                      : null
+                  }
                   mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)} />
               ) : (
                 <div className="empty">
@@ -318,7 +328,15 @@ export default function App() {
             </section>
           </div>
         )}
-        {tab === "tools" && <Tools />}
+        {tab === "tools" && (
+          <Tools
+            seed={buildSeed}
+            onGoNew={() => {
+              setTab("new");
+              window.scrollTo(0, 0);
+            }}
+          />
+        )}
         {tab === "report" && (
           <Suspense fallback={<div className="empty">불러오는 중…</div>}>
             <InspectionReport

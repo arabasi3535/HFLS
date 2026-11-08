@@ -3,6 +3,7 @@ import { CATS, SUBSTITUTIONS, getFacility } from "../law/facilities";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
 import SafetyPanel from "./SafetyPanel";
+import ConstructionPanel from "./ConstructionPanel";
 import { safetyReview } from "../law/safety";
 import { subName, groupLabel } from "./Wizard";
 import { USE_GROUPS } from "../law/uses";
@@ -100,7 +101,7 @@ function Item({ it, open, onToggle, flash }) {
 
 const EMPTY_SEL = { retro: {}, strong: {}, sub: {} };
 
-export default function Report({ rv, sv, onMakeReport, mode, adminMode, author, sel: selIn, setSel, provisional, onReport }) {
+export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode, adminMode, author, sel: selIn, setSel, provisional, onReport }) {
   const existing = mode === "existing";
   const [open, setOpen] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
@@ -161,6 +162,31 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, author, 
       return sv || null;
     }
   }, [rv, mode, list, sv]);
+
+  // 착공 검토(신축) — 최종 설치 목록(대체 설비 포함)으로 산정
+  const buildSeed = useMemo(() => {
+    if (existing) return null;
+    const inst = list.filter((i) => !i.sub || i.sub.partial).map((i) => i.key);
+    for (const i of list) if (i.sub) inst.push(...(i.sub.viaKeys || []));
+    const f = rv.input.f || {};
+    const grp0 = USE_GROUPS.find((x) => x.no === u.no);
+    const sn0 = subName(u, "");
+    const gl0 = grp0 && grp0.no !== "-" ? groupLabel(grp0.no, grp0.label, "") : "";
+    return {
+      at: 0,
+      useLabel: gl0 && gl0 !== sn0 ? `${gl0} — ${sn0}` : sn0,
+      apt: u.id === "apt",
+      mixedRes: u.g.includes("mixed_res"),
+      ugduct: u.g.includes("ugduct"),
+      hazmat: u.id === "hazmat",
+      area: rv.input.area,
+      gf: rv.input.gf,
+      bf: rv.input.bf,
+      households: f.households || "",
+      facs: [...new Set(inst)],
+      chk: list.filter((i) => i.check).map((i) => i.name),
+    };
+  }, [existing, list, rv, u]);
 
   // 조건 변경 시 추가·제외된 시설 잠시 강조
   const prevRef = useRef(null);
@@ -389,6 +415,13 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, author, 
                 }
               : null
           }
+        />
+      )}
+
+      {buildSeed && (
+        <ConstructionPanel
+          seed={buildSeed}
+          onOpen={onMakeConstruction ? () => onMakeConstruction({ ...buildSeed, at: Date.now() }) : null}
         />
       )}
 

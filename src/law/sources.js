@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.11.2",
+  version: "2.12.1",
   date: "2026-11-08",
-  note: "작동점검 보고서 — 산정 결과 연계 안내, 경북 관할 소방서 자동 지정",
+  note: "신축 건축물 결과에 착공 검토(기술자 등급·감리 여부·감리원 등급) 추가, 착공 계산기 연결",
 };
 
 export const D = {

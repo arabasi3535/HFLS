@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import PumpCalc from "./PumpCalc";
+import ConstructionCalc from "./ConstructionCalc";
+import { facsFromKeys } from "../law/construction";
 import { windowlessFloor, occupancy, OCC_TYPES } from "../law/tools";
 
 // ============================================================
-// 보조 계산기 탭 — 무창층 판정 · 수용인원 산정 · 소화펌프 용량 산정
+// 보조 계산기 탭 — 무창층 판정 · 수용인원 산정 · 소화펌프 용량 산정 · 착공 계산기
 // ============================================================
 
 const KEY = "hfls_tools_v1";
@@ -223,11 +225,33 @@ const SUBS = [
   ["windowless", "무창층 판정"],
   ["occ", "수용인원 산정"],
   ["pump", "소화펌프 용량 산정"],
+  ["build", "착공 계산기"],
 ];
 
-export default function Tools() {
+export default function Tools({ seed, onGoNew }) {
   const [all, setAll] = useState(load);
-  const [sub, setSub] = useState(all.sub || "windowless");
+  const [sub, setSub] = useState(seed ? "build" : all.sub || "windowless");
+  // 신축 건축물 산정 결과 → 착공 계산기 (새로 보낸 결과만 반영)
+  useEffect(() => {
+    if (!seed || (all.build && all.build.seed && all.build.seed.at === seed.at)) return;
+    const f = facsFromKeys(seed.facs);
+    setAll((p) => ({
+      ...p,
+      build: {
+        kind: seed.ugduct ? "ug" : seed.apt ? "apt" : "gen",
+        hazmat: !!seed.hazmat,
+        area: seed.area ?? "",
+        gf: seed.gf ?? "",
+        bf: seed.bf ?? "",
+        households: seed.households ?? "",
+        facs: f,
+        mixedRes: !!seed.mixedRes,
+        seed: { at: seed.at, useLabel: seed.useLabel, chk: (seed.chk || []).filter((x) => x) },
+      },
+    }));
+    setSub("build");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed]);
   useEffect(() => save({ ...all, sub }), [all, sub]);
   const part = (k) => [all[k] || {}, (v) => setAll((p) => ({ ...p, [k]: v }))];
   const [pumpSeen, setPumpSeen] = useState(sub === "pump");
@@ -236,6 +260,7 @@ export default function Tools() {
   }, [sub]);
   const [wl, setWl] = part("windowless");
   const [oc, setOc] = part("occ");
+  const [bd, setBd] = part("build");
   return (
     <div className="tools">
       <nav className="tl-tabs">
@@ -247,6 +272,7 @@ export default function Tools() {
       </nav>
       {sub === "windowless" && <Windowless st={wl} setSt={setWl} />}
       {sub === "occ" && <Occupancy st={oc} setSt={setOc} />}
+      {sub === "build" && <ConstructionCalc st={bd} setSt={setBd} onGoNew={onGoNew} />}
       {/* 펌프 계산기는 한 번 연 뒤에는 다른 계산기로 바꿔도 입력값 유지 */}
       {pumpSeen && (
         <div style={{ display: sub === "pump" ? "block" : "none" }}>
