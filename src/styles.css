@@ -773,3 +773,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity
 .sf-rule b { color: var(--ink); }
 .sf-ok { color: var(--v); font-weight: 600; }
 .cx-opt .w-label { flex-basis: 100%; }
+.sf-gos { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 6px 8px; }
+.sf-gos > button { flex: 1 1 220px; }
+.guide-t td { vertical-align: top; }
+.guide-t ul.plain { margin: 0; padding-left: 16px; }
+.guide-t ul.plain li { margin: 2px 0; }

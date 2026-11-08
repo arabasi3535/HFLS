@@ -13,13 +13,13 @@ const SUBS = Object.values(VARIANTS);
 export default function SelfInspection({ seed, onGoExisting }) {
   const [sub, setSub] = useState(() => {
     try {
-      return (seed && "owner") || localStorage.getItem(KEY) || "owner";
+      return (seed && (seed.variant || "owner")) || localStorage.getItem(KEY) || "owner";
     } catch (e) {
       return "owner";
     }
   });
   useEffect(() => {
-    if (seed && seed.at) setSub("owner");
+    if (seed && seed.at) setSub(VARIANTS[seed.variant] ? seed.variant : "owner");
   }, [seed]);
   useEffect(() => {
     try {
@@ -37,7 +37,7 @@ export default function SelfInspection({ seed, onGoExisting }) {
           </button>
         ))}
       </nav>
-      <InspectionReport key={sub} variant={sub} seed={sub === "owner" ? seed : null} onGoExisting={onGoExisting} onCopyFrom={(id) => loadReport(id)} />
+      <InspectionReport key={sub} variant={sub} seed={seed && (seed.variant || "owner") === sub ? seed : null} onGoExisting={onGoExisting} onCopyFrom={(id) => loadReport(id)} />
     </div>
   );
 }

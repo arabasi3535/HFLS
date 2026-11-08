@@ -370,13 +370,12 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
           </div>
         )}
 
-        {vr.id === "owner" && (
         <div className="ir-link">
           <div>
             <b>소방시설 산정 결과 연계</b>
             <p>
-              「기존 건축물」에서 건축허가일과 용도·규모를 입력해 소방시설을 산정하면, 그 결과(용도·연면적·층수·설치 소방시설)를 이 보고서에 그대로 옮겨 올 수 있습니다. 산정 결과
-              「안전관리 검토 → 자체점검」에서 <b>「관계인 작동점검 보고서 작성 →」</b>을 누르십시오.
+              「기존 건축물」{vr.first ? "(또는 「신축 건축물」)" : ""}에서 용도·규모를 입력해 소방시설을 산정하면, 그 결과(용도·연면적·층수·세대수·설치 소방시설{pro ? "·소방안전관리등급" : ""})를 이 보고서에 그대로 옮겨 올 수 있습니다. 산정 결과
+              「안전관리 검토 → 자체점검」에서 <b>「{vr.id === "owner" ? "관계인 작동점검" : vr.comp ? (vr.first ? "종합점검(최초점검)" : "종합점검") : "작동점검(관리업)"} 보고서 작성 →」</b>을 누르십시오.
             </p>
           </div>
           {onGoExisting && (
@@ -385,7 +384,6 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
             </button>
           )}
         </div>
-        )}
 
         <Sec title="1. 대상물·점검기간" sub="필수">
           <div className="w-grid2">

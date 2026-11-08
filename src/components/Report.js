@@ -386,9 +386,10 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       {safety && (
         <SafetyPanel
           sv={safety}
+          mode={mode}
           onMakeReport={
             onMakeReport
-              ? () => {
+              ? (variant = "owner") => {
                   const inst = list.filter((i) => !i.sub || i.sub.partial).map((i) => i.key);
                   for (const i of list) if (i.sub) inst.push(...(i.sub.viaKeys || []));
                   const f = rv.input.f || {};
@@ -397,8 +398,11 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
                   if (Number(f.parkingInside) > 0 && !(Number(f.ugParking) > 0)) parking.push("지상");
                   if (Number(f.mechCars) > 0) parking.push("기계식");
                   if (Number(f.rooftopParking) > 0) parking.push("옥상");
+                  const gg = safety.grade;
                   onMakeReport({
                     at: Date.now(),
+                    variant,
+                    grade: gg && gg.status === "대상" && ["특급", "1급", "2급", "3급"].includes(gg.grade) ? gg.grade : "",
                     useLabel: useTitle,
                     area: rv.input.area,
                     gf: rv.input.gf,

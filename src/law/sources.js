@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.14.1",
+  version: "2.14.2",
   date: "2026-11-08",
-  note: "관리업·종합점검 보고서에 점검인력 배치·점검일수 산정(별표4) 추가",
+  note: "관리업·종합점검 보고서도 산정 결과 연계, 사용 안내 개편",
 };
 
 export const D = {

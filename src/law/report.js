@@ -253,6 +253,7 @@ export function applySeed(rep, seed) {
   const r = { ...rep, bld: { ...rep.bld }, rows: {}, mRows: { ...rep.mRows } };
   r.useLabel = seed.useLabel || r.useLabel;
   if (!rep.kind || rep.kind === "owner") r.grade = "3급";
+  else if (seed.grade) r.grade = seed.grade;
   r.bld.area = seed.area ?? r.bld.area;
   r.bld.gf = seed.gf ?? r.bld.gf;
   r.bld.bf = seed.bf ?? r.bld.bf;
