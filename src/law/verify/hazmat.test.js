@@ -56,3 +56,22 @@ describe("위험물 지정수량 — 별표1", () => {
     expect(class4ByFlash({ flash: "250" }).item).toBe(null);
   });
 });
+
+describe("팔레트 계산", () => {
+  const { palletQty, hzRow, HZ_QUICK } = require("../hazmat");
+  test("18L × 12캔 × 4층 = 864L/팔레트 × 5팔레트 + 낱개 3캔 = 4,374L", () => {
+    const p = palletQty({ cap: "18", per: "12", layers: "4", pals: "5", extra: "3" }, "L");
+    expect(p.perPallet).toBe(864);
+    expect(p.total).toBe(4374);
+    expect(p.cans).toBe(243);
+  });
+  test("윤활유(제4석유류) 팔레트 → 배수", () => {
+    const r = hzRow({ item: "4-4", pallet: { on: true, cap: "18", per: "12", layers: "4", pals: "5" } });
+    expect(r.qty).toBe(4320);
+    expect(r.ratio).toBeCloseTo(0.72);
+    expect(hzRow({ item: "4-4", pallet: { on: true, cap: "18", per: "12" } }).ok).toBe(false);
+  });
+  test("빠른 선택 7종", () => {
+    expect(HZ_QUICK.map((s) => s.id)).toEqual(["gasoline", "diesel", "kerosene", "lube", "thinner", "ethanol", "methanol"]);
+  });
+});

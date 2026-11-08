@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.13.0",
+  version: "2.13.1",
   date: "2026-11-08",
-  note: "위험물 지정수량 배수 판정(CAS 검색) 추가 · 착공·감리 판정 명칭 변경",
+  note: "위험물 배수 판정 — 팔레트 적재 수량 계산 추가, 자주 쓰는 제4류 7종으로 정리",
 };
 
 export const D = {

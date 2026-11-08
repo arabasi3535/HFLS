@@ -1,4 +1,4 @@
-import { HZ_ITEMS, HZ_CLASSES, HZ_QUICK, hzItem, hzSub, hzSearch, hzTotal, hzFmt, class4ByFlash, casValid, isCasLike } from "../law/hazmat";
+import { HZ_ITEMS, HZ_CLASSES, HZ_QUICK, hzItem, hzSub, hzSearch, hzTotal, hzFmt, class4ByFlash, casValid, isCasLike, palletQty } from "../law/hazmat";
 
 // ============================================================
 // 보조 계산기 — 위험물 지정수량 배수 판정
@@ -17,6 +17,10 @@ function Row({ i, row, res, set, remove }) {
   const casTyped = isCasLike(row.query);
   const pick = (s) => set({ sub: s.id, item: s.item, q: "", query: "", unit: hzItem(s.item).u, off: false, flashMode: false });
   const fl = row.flashMode ? class4ByFlash(row) : null;
+  const pal = { on: false, cap: "18", per: "", layers: "", pals: "", extra: "", ...(row.pallet || {}) };
+  const setPal = (p) => set({ pallet: { ...pal, ...p } });
+  const unit = row.unit || (it ? it.u : "L");
+  const pq = palletQty(pal, unit);
   return (
     <div className={`hz-row ${res.ok && res.excluded ? "off" : ""}`}>
       <div className="hz-row-h">
@@ -143,8 +147,17 @@ function Row({ i, row, res, set, remove }) {
           )}
           <div className="hz-amt">
             <label className="w-field">
-              <span className="w-label">저장·취급량</span>
-              <input type="number" inputMode="decimal" value={row.amount} onChange={(e) => set({ amount: e.target.value })} />
+              <span className="w-label hz-amt-l">
+                저장·취급량
+                <button type="button" className={`hz-pal-btn ${pal.on ? "on" : ""}`} onClick={() => setPal({ on: !pal.on })}>
+                  {pal.on ? "직접 입력" : "팔레트 계산"}
+                </button>
+              </span>
+              {pal.on ? (
+                <input type="text" readOnly value={pq.ok ? hzFmt(pq.total) : ""} placeholder="아래 팔레트 입력" />
+              ) : (
+                <input type="number" inputMode="decimal" value={row.amount} onChange={(e) => set({ amount: e.target.value })} />
+              )}
             </label>
             <label className="w-field">
               <span className="w-label">단위</span>
@@ -175,6 +188,48 @@ function Row({ i, row, res, set, remove }) {
               )}
             </div>
           </div>
+          {pal.on && (
+            <div className="hz-pal">
+              <div className="hz-pal-g">
+                <label className="w-field">
+                  <span className="w-label">용기 1개 용량({unit})</span>
+                  <input type="number" inputMode="decimal" value={pal.cap} onChange={(e) => setPal({ cap: e.target.value })} />
+                </label>
+                <label className="w-field">
+                  <span className="w-label">한 층 용기 수(개)</span>
+                  <input type="number" inputMode="numeric" value={pal.per} onChange={(e) => setPal({ per: e.target.value })} />
+                </label>
+                <label className="w-field">
+                  <span className="w-label">적재 층수(단)</span>
+                  <input type="number" inputMode="numeric" value={pal.layers} onChange={(e) => setPal({ layers: e.target.value })} />
+                </label>
+                <label className="w-field">
+                  <span className="w-label">팔레트 수(개)</span>
+                  <input type="number" inputMode="numeric" value={pal.pals} onChange={(e) => setPal({ pals: e.target.value })} />
+                </label>
+                <label className="w-field">
+                  <span className="w-label">낱개 용기(선택)</span>
+                  <input type="number" inputMode="numeric" value={pal.extra} onChange={(e) => setPal({ extra: e.target.value })} placeholder="팔레트 밖" />
+                </label>
+              </div>
+              <div className="hz-pal-r">
+                {pq.ok ? (
+                  <>
+                    <span>
+                      팔레트 1개 <b>{hzFmt(pq.perPallet)}{unit}</b>
+                      {res.ok && !res.excluded && pq.total > 0 && <> (= {hzFmt((pq.perPallet * (res.qty / pq.total)) / res.q)}배)</>}
+                    </span>
+                    <span>
+                      용기 {hzFmt(pq.cans)}개 · 합계 <b>{hzFmt(pq.total)}{unit}</b>
+                    </span>
+                    <small>{pq.text}</small>
+                  </>
+                ) : (
+                  <span className="hz-need">{pq.msg}</span>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -242,7 +297,8 @@ export default function HazmatCalc({ st, setSt }) {
             {t.rows.map((r, i) =>
               r.ok && !r.excluded ? (
                 <li key={i}>
-                  {rows[i].sub ? hzSub(rows[i].sub).name : itemLabel(r.it)}: {hzFmt(r.qty)}
+                  {rows[i].sub ? hzSub(rows[i].sub).name : itemLabel(r.it)}: {r.pal ? `[팔레트] ${r.pal.text}${r.conv ? ` → ${r.conv}` : ""} → ` : ""}
+                  {hzFmt(r.qty)}
                   {r.it.u} ÷ {Number(r.q).toLocaleString("ko-KR")}
                   {r.it.u} = {hzFmt(r.ratio)}
                 </li>

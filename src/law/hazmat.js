@@ -83,18 +83,18 @@ export const HZ_SUBS = [
   { id: "gasoline", name: "휘발유", alias: ["가솔린", "gasoline", "petrol"], cas: "86290-81-5", item: "4-1n", quick: 1, note: "비고 13 예시" },
   { id: "diesel", name: "경유", alias: ["디젤", "diesel"], cas: "68334-30-5", item: "4-2n", quick: 2, note: "비고 15 예시" },
   { id: "kerosene", name: "등유", alias: ["kerosene", "보일러등유"], cas: "8008-20-6", item: "4-2n", quick: 3, note: "비고 15 예시" },
-  { id: "heavy", name: "중유", alias: ["벙커C유", "bunker", "fuel oil"], cas: "68476-33-5", item: "4-3n", quick: 4, note: "비고 16 예시 — CAS는 제품마다 다름" },
-  { id: "lube", name: "윤활유·엔진오일", alias: ["엔진오일", "윤활유", "유압유", "작동유"], cas: "", item: "4-4", quick: 5, note: "제품 인화점으로 확인 — 70~200℃ 제3석유류, 200~250℃ 제4석유류, 250℃ 이상은 위험물 아님" },
+  { id: "heavy", name: "중유", alias: ["벙커C유", "bunker", "fuel oil"], cas: "68476-33-5", item: "4-3n", note: "비고 16 예시 — CAS는 제품마다 다름" },
+  { id: "lube", name: "윤활유·엔진오일", alias: ["엔진오일", "윤활유", "유압유", "작동유"], cas: "", item: "4-4", quick: 4, note: "제품 인화점으로 확인 — 70~200℃ 제3석유류, 200~250℃ 제4석유류, 250℃ 이상은 위험물 아님" },
   { id: "gear", name: "기어유·실린더유", alias: ["기어유", "실린더유"], cas: "", item: "4-4", note: "비고 17 예시 — 인화점 200℃ 이상 250℃ 미만" },
-  { id: "thinner", name: "시너(신나)", alias: ["신나", "thinner", "희석제"], cas: "", item: "4-1n", quick: 6, note: "혼합물 — MSDS 인화점(21℃ 미만 여부)·수용성 확인" },
-  { id: "ethanol", name: "에탄올(에틸알코올)", alias: ["에틸알코올", "주정", "ethanol", "소독용 알코올"], cas: "64-17-5", item: "4-al", quick: 7, note: "60중량퍼센트 미만 수용액은 알코올류 제외(비고 14 가)" },
-  { id: "methanol", name: "메탄올(메틸알코올)", alias: ["메틸알코올", "methanol"], cas: "67-56-1", item: "4-al", quick: 8 },
-  { id: "ipa", name: "아이소프로필알코올(IPA)", alias: ["이소프로필알코올", "IPA", "isopropanol", "2-프로판올"], cas: "67-63-0", item: "4-al", quick: 9 },
+  { id: "thinner", name: "시너(신나)", alias: ["신나", "thinner", "희석제"], cas: "", item: "4-1n", quick: 5, note: "혼합물 — MSDS 인화점(21℃ 미만 여부)·수용성 확인" },
+  { id: "ethanol", name: "에탄올(에틸알코올)", alias: ["에틸알코올", "주정", "ethanol", "소독용 알코올"], cas: "64-17-5", item: "4-al", quick: 6, note: "60중량퍼센트 미만 수용액은 알코올류 제외(비고 14 가)" },
+  { id: "methanol", name: "메탄올(메틸알코올)", alias: ["메틸알코올", "methanol"], cas: "67-56-1", item: "4-al", quick: 7 },
+  { id: "ipa", name: "아이소프로필알코올(IPA)", alias: ["이소프로필알코올", "IPA", "isopropanol", "2-프로판올"], cas: "67-63-0", item: "4-al" },
   { id: "npa", name: "1-프로판올(n-프로필알코올)", alias: ["프로필알코올", "propanol"], cas: "71-23-8", item: "4-al" },
-  { id: "acetone", name: "아세톤", alias: ["acetone"], cas: "67-64-1", item: "4-1w", quick: 10, note: "비고 13 예시" },
-  { id: "toluene", name: "톨루엔", alias: ["toluene"], cas: "108-88-3", item: "4-1n", quick: 11 },
-  { id: "xylene", name: "크실렌(자일렌)", alias: ["자일렌", "xylene", "크시렌"], cas: "1330-20-7", item: "4-2n", quick: 12 },
-  { id: "veg", name: "식용유 등 동식물유", alias: ["식용유", "콩기름", "들기름", "참기름", "동식물유"], cas: "", item: "4-veg", quick: 13 },
+  { id: "acetone", name: "아세톤", alias: ["acetone"], cas: "67-64-1", item: "4-1w", note: "비고 13 예시" },
+  { id: "toluene", name: "톨루엔", alias: ["toluene"], cas: "108-88-3", item: "4-1n" },
+  { id: "xylene", name: "크실렌(자일렌)", alias: ["자일렌", "xylene", "크시렌"], cas: "1330-20-7", item: "4-2n" },
+  { id: "veg", name: "식용유 등 동식물유", alias: ["식용유", "콩기름", "들기름", "참기름", "동식물유"], cas: "", item: "4-veg" },
   { id: "benzene", name: "벤젠", alias: ["benzene"], cas: "71-43-2", item: "4-1n" },
   { id: "hexane", name: "노말헥세인(n-헥산)", alias: ["헥산", "hexane"], cas: "110-54-3", item: "4-1n" },
   { id: "cyclohexane", name: "사이클로헥세인", alias: ["시클로헥산", "cyclohexane"], cas: "110-82-7", item: "4-1n" },
@@ -235,15 +235,44 @@ export function class4ByFlash(p) {
  * 배수 계산
  * row: { item, q?(복수 지정수량 선택), amount, unit('L'|'kg'), sg(비중), off(조건 미충족) }
  */
+/**
+ * 팔레트 적재 수량: 용기 1개 용량 × 한 층 용기 수 × 층수 = 팔레트 1개 수량, × 팔레트 수 (+ 낱개 용기)
+ * p: { cap, per, layers, pals, extra }
+ */
+export function palletQty(p, unit = "") {
+  const v = (x) => (x === "" || x === undefined || x === null ? null : Number(x));
+  const cap = v(p && p.cap);
+  const per = v(p && p.per);
+  const layers = v(p && p.layers);
+  const pals = v(p && p.pals);
+  const extra = v(p && p.extra) || 0;
+  const bad = [cap, per, layers, pals].some((x) => x === null || !Number.isFinite(x) || x < 0) || !Number.isFinite(extra) || extra < 0;
+  if (bad) return { ok: false, msg: "용기 용량·한 층 용기 수·층수·팔레트 수 입력 필요" };
+  const perPallet = cap * per * layers;
+  const total = perPallet * pals + cap * extra;
+  const f = (x) => round(x).toLocaleString("ko-KR");
+  const text =
+    `${f(cap)}${unit} × ${f(per)}개 × ${f(layers)}층 = ${f(perPallet)}${unit}/팔레트` +
+    ` × ${f(pals)}팔레트${extra ? ` + 낱개 ${f(extra)}개 × ${f(cap)}${unit}` : ""} = ${f(total)}${unit}`;
+  return { ok: true, perPallet, total, cans: per * layers * pals + extra, text };
+}
+
 export function hzRow(row) {
   const it = ITEM[row.item];
   if (!it) return { ok: false, msg: "품명 선택 필요" };
   const q = it.opts ? Number(row.q) || null : it.q;
   if (!q) return { ok: false, it, msg: it.cls === 5 ? "시험 결과 종(제1종·제2종) 선택 필요" : "지정수량 선택 필요" };
   if (row.off) return { ok: true, it, q, ratio: 0, qty: 0, excluded: true };
-  const a = Number(row.amount);
-  if (row.amount === "" || row.amount === undefined || !Number.isFinite(a) || a < 0) return { ok: false, it, q, msg: "수량 입력 필요" };
   const unit = row.unit || it.u;
+  let pal = null;
+  let amount = row.amount;
+  if (row.pallet && row.pallet.on) {
+    pal = palletQty(row.pallet, unit);
+    if (!pal.ok) return { ok: false, it, q, msg: pal.msg };
+    amount = pal.total;
+  }
+  const a = Number(amount);
+  if (amount === "" || amount === undefined || !Number.isFinite(a) || a < 0) return { ok: false, it, q, msg: "수량 입력 필요" };
   let qty = a;
   let conv = "";
   if (unit !== it.u) {
@@ -252,7 +281,7 @@ export function hzRow(row) {
     qty = it.u === "kg" ? a * sg : a / sg;
     conv = `${a.toLocaleString("ko-KR")}${unit} ${it.u === "kg" ? "×" : "÷"} 비중 ${sg} = ${round(qty).toLocaleString("ko-KR")}${it.u}`;
   }
-  return { ok: true, it, q, qty, conv, ratio: qty / q };
+  return { ok: true, it, q, qty, conv, pal, ratio: qty / q };
 }
 const round = (x, d = 4) => Math.round(x * 10 ** d) / 10 ** d;
 

@@ -752,3 +752,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity
   .hz-hits button { grid-template-columns: 1fr 1fr; }
   .hz-hits button em { grid-column: 1 / -1; }
 }
+.hz-amt-l { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.hz-pal-btn { font: inherit; font-size: 11.5px; font-weight: 700; border: 1px solid var(--accent); color: var(--accent); background: var(--panel); border-radius: 999px; padding: 1px 9px; cursor: pointer; }
+.hz-pal-btn.on { background: var(--accent); color: #fff; }
+.hz-pal { background: var(--m-bg); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.hz-pal-g { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.hz-pal-g input { width: 100%; box-sizing: border-box; }
+.hz-pal-r { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--ink2); }
+.hz-pal-r b { color: var(--ink); }
+.hz-pal-r small { flex-basis: 100%; color: var(--muted); }
+@media (max-width: 640px) { .hz-pal-g { grid-template-columns: 1fr 1fr; } }
