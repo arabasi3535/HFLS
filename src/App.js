@@ -321,7 +321,13 @@ export default function App() {
         {tab === "tools" && <Tools />}
         {tab === "report" && (
           <Suspense fallback={<div className="empty">불러오는 중…</div>}>
-            <InspectionReport seed={reportSeed} />
+            <InspectionReport
+              seed={reportSeed}
+              onGoExisting={() => {
+                setTab("existing");
+                window.scrollTo(0, 0);
+              }}
+            />
           </Suspense>
         )}
         {tab === "guide" && <GuideTab adminMode={adminMode} />}
