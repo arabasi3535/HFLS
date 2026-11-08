@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReportForm from "./ReportForm";
-import { ROWS_L, ROWS_R, ROWS_M_L, ROWS_M_R, rowItems, defectText, emptyReport, applySeed, missingFields, stationFor, defects, daysInclusive } from "../law/report";
+import { ROWS_L, ROWS_R, ROWS_M_L, ROWS_M_R, rowItems, defectText, emptyReport, applySeed, missingFields, stationFor, defects, daysInclusive, todayStr } from "../law/report";
 
 // ============================================================
 // 관계인 작동점검 보고서 작성기
@@ -143,6 +143,64 @@ export default function InspectionReport({ seed }) {
   const setRow = (id, st) => setRep((r) => ({ ...r, rows: { ...r.rows, [id]: st } }));
   const setMRow = (id, st) => setRep((r) => ({ ...r, mRows: { ...r.mRows, [id]: st } }));
   const setInsp = (i, k, v) => setRep((r) => ({ ...r, inspectors: r.inspectors.map((p, j) => (j === i ? { ...p, [k]: v } : p)) }));
+  const addInsp = () => setRep((r) => (r.inspectors.length >= 6 ? r : { ...r, inspectors: [...r.inspectors, { role: "보조 점검인력", name: "", qual: "관계인", no: "", days: "" }] }));
+  const delInsp = (i) => setRep((r) => (r.inspectors.length <= 3 ? r : { ...r, inspectors: r.inspectors.filter((_, j) => j !== i) }));
+
+  // 입력 내용 파일 저장·불러오기(매년 다시 쓰기)
+  const fileRef = useRef(null);
+  const exportFile = () => {
+    const data = JSON.stringify({ type: "hfls-op-report", v: 1, savedAt: todayStr(), data: rep }, null, 1);
+    const blob = new Blob([data], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `작동점검_입력내용_${(rep.name || "대상물").replace(/[\\/:*?"<>|\s]+/g, "_")}_${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 1000);
+  };
+  const importFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        const j = JSON.parse(fr.result);
+        if (!j || j.type !== "hfls-op-report" || !j.data) throw new Error("형식");
+        const e0 = emptyReport();
+        const d = j.data;
+        const t = todayStr();
+        // 날짜(점검기간·작성일)는 오늘로, 불량·이행계획은 비움(모두 양호) — 나머지는 그대로
+        const clean = (rows) => Object.fromEntries(Object.entries(rows || {}).map(([k, st]) => [k, { on: !!(st && st.on), bad: {} }]));
+        setRep({
+          ...e0,
+          ...d,
+          owner: { ...e0.owner, ...d.owner },
+          email: { ...e0.email, ...d.email },
+          manager: { ...e0.manager, ...d.manager },
+          bld: { ...e0.bld, ...d.bld },
+          detail: { ...e0.detail, ...d.detail },
+          insurance: { ...e0.insurance, ...d.insurance },
+          inspectors: Array.isArray(d.inspectors) && d.inspectors.length >= 3 ? d.inspectors.map((p) => ({ ...p, days: "" })) : e0.inspectors,
+          rows: clean(d.rows),
+          mRows: clean(d.mRows),
+          plan10: e0.plan10,
+          from: t,
+          to: t,
+          reportDate: t,
+          prevOp: "실시",
+          v: 1,
+        });
+        setMsg(`${j.savedAt || ""} 저장한 입력 내용을 불러왔습니다. 점검기간·작성일은 오늘로, 점검 결과는 모두 「양호」로 바꿨습니다 — 날짜와 불량 사항만 확인하십시오.`);
+      } catch (err) {
+        alert("작동점검 입력 내용 파일(.json)이 아닙니다.");
+      }
+    };
+    fr.readAsText(file, "utf-8");
+  };
 
   const missing = missingFields(rep);
   const station = stationFor(rep.addr, rep.station);
@@ -230,6 +288,16 @@ export default function InspectionReport({ seed }) {
         <div className="ir-intro">
           <b>관계인 작동점검 보고서</b> — 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비)을 관계인이 직접 점검한 결과를 「소방시설등 자체점검 실시결과 보고서」(시행규칙 별지 제9호서식)로 만듭니다. 기본값은 모두 <b>양호</b>이고, 불량인 설비만 고르면 점검번호와 불량내용이 자동으로 들어갑니다.
         </div>
+        <div className="ir-file">
+          <button type="button" className="w-reset" onClick={exportFile}>
+            입력 내용 파일로 저장
+          </button>
+          <button type="button" className="w-reset" onClick={() => fileRef.current && fileRef.current.click()}>
+            저장한 파일 불러오기
+          </button>
+          <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={importFile} />
+          <span className="w-hint">1년에 한 번 제출 — 올해 입력한 내용을 파일로 받아 두었다가 내년에 불러오면 날짜만 고치면 됩니다.</span>
+        </div>
         {msg && <div className="note">{msg}</div>}
 
         <Sec title="1. 대상물·점검기간" sub="필수">
@@ -277,7 +345,14 @@ export default function InspectionReport({ seed }) {
           <div className="ir-insp">
             {rep.inspectors.map((p, i) => (
               <div key={i} className="ir-insp-row">
-                <b>{i === 0 ? "주된" : "보조"}</b>
+                <b>
+                  {i === 0 ? "주된" : "보조"}
+                  {i >= 3 && (
+                    <button type="button" className="tl-x" title="삭제" onClick={() => delInsp(i)}>
+                      ×
+                    </button>
+                  )}
+                </b>
                 <input placeholder={`점검자 ${i + 1} 성명 *`} value={p.name} onChange={(e) => setInsp(i, "name", e.target.value)} />
                 <select value={QUALS.includes(p.qual) ? p.qual : "직접입력"} onChange={(e) => setInsp(i, "qual", e.target.value === "직접입력" ? "" : e.target.value)}>
                   {QUALS.map((q) => (
@@ -289,6 +364,11 @@ export default function InspectionReport({ seed }) {
                 <input placeholder="자격번호(있으면)" value={p.no} onChange={(e) => setInsp(i, "no", e.target.value)} />
               </div>
             ))}
+            {rep.inspectors.length < 6 && (
+              <button type="button" className="w-link" onClick={addInsp}>
+                + 점검자 추가 (최대 6명 — 주된 1, 보조 5)
+              </button>
+            )}
             {rep.owner.name && !rep.inspectors[0].name && (
               <button type="button" className="w-link" onClick={() => setInsp(0, "name", rep.owner.name)}>
                 관계인({rep.owner.name})을 주된 점검인력으로
@@ -323,25 +403,20 @@ export default function InspectionReport({ seed }) {
               <input type="date" value={rep.manager.edu} onChange={(e) => setIn("manager", "edu", e.target.value)} />
             </F>
           </div>
-          <div className="ir-opts">
-            <span>
-              소방안전관리등급 <Seg value={rep.grade} options={["3급", "2급", "1급", "특급"]} onChange={(v) => set("grade", v)} />
-            </span>
-            <span>
-              소방계획서 <Seg value={rep.plan} options={["작성보관", "작성미보관", "미작성"]} onChange={(v) => set("plan", v)} />
-            </span>
-            <span>
-              전년도 작동점검 <Seg value={rep.prevOp} options={["실시", "미실시"]} onChange={(v) => set("prevOp", v)} />
-            </span>
-            <span>
-              전년도 종합점검 <Seg value={rep.prevComp} options={["실시", "미실시"]} onChange={(v) => set("prevComp", v)} />
-            </span>
-            <span>
-              소방안전교육 <Seg value={rep.edu} options={["실시", "미실시"]} onChange={(v) => set("edu", v)} />
-            </span>
-            <span>
-              소방훈련 <Seg value={rep.drill} options={["실시", "미실시"]} onChange={(v) => set("drill", v)} />
-            </span>
+          <div className="ir-optgrid">
+            {[
+              ["소방안전관리등급", "grade", ["3급", "2급", "1급", "특급"]],
+              ["소방계획서", "plan", ["작성보관", "작성미보관", "미작성"]],
+              ["전년도 작동점검", "prevOp", ["실시", "미실시"]],
+              ["전년도 종합점검", "prevComp", ["실시", "미실시"]],
+              ["소방안전교육", "edu", ["실시", "미실시"]],
+              ["소방훈련", "drill", ["실시", "미실시"]],
+            ].map(([label, k, opts]) => (
+              <div key={k} className="ir-optrow">
+                <span className="ir-optlabel">{label}</span>
+                <Seg value={rep[k]} options={opts} onChange={(v) => set(k, v)} />
+              </div>
+            ))}
           </div>
           {rep.grade !== "3급" && <div className="note warn">관계인 점검은 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비 설치)만 할 수 있습니다(시행규칙 별표3 제2호나목).</div>}
           <label className="w-check">

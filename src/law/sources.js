@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.11.0",
+  version: "2.11.1",
   date: "2026-11-08",
-  note: "관계인 작동점검 보고서 작성기(별지 제9호·제10호서식 PDF) 추가 — 검토 결과에서 바로 이동",
+  note: "작동점검 보고서 입력 내용 파일 저장·불러오기, 점검자 추가, PC 날짜 달력 표시",
 };
 
 export const D = {
