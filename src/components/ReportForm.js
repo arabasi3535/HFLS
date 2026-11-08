@@ -225,6 +225,12 @@ function Detail({ rep }) {
 
 export default function ReportForm({ rep }) {
   const st = stationFor(rep.addr, rep.station) || "○○ 소방서장";
+  const kind = rep.kind || "owner";
+  const isComp = kind === "comp" || kind === "compFirst";
+  const ck = rep.checker || "owner";
+  const firm = rep.firm || { name: "", tel: "" };
+  const signer = ck === "mgmt" ? firm.name : ck === "manager" ? rep.manager.name : rep.owner.name;
+  const toLine = (rep.toWhom || "소방서") === "관계인" ? `관계인 ${rep.owner.name}` : st;
   const days = daysInclusive(rep.from, rep.to);
   const defs = defects(rep);
   const hasMulti = Object.values(rep.multi || {}).some((x) => Number(x) > 0);
@@ -240,7 +246,9 @@ export default function ReportForm({ rep }) {
       {/* 제1쪽 */}
       <Page no={1} total={total}>
         <div className="rp-titlebox">
-          <div className="rp-kind">[√] 작동점검, [  ] 종합점검([  ]최초점검, [  ]그 밖의 종합점검)</div>
+          <div className="rp-kind">
+            {C(!isComp)} 작동점검, {C(isComp)} 종합점검({C(kind === "compFirst")}최초점검, {C(kind === "comp")}그 밖의 종합점검)
+          </div>
           <div className="rp-title">소방시설등 자체점검 실시결과 보고서</div>
         </div>
         <div className="rp-small">※ [ ]에는 해당되는 곳에 √표를 합니다.</div>
@@ -273,14 +281,16 @@ export default function ReportForm({ rep }) {
             <tr>
               <th rowSpan={4}>점검자</th>
               <td colSpan={4}>
-                [√]관계인 (성명: {rep.owner.name}, 전화번호: {rep.owner.tel})
+                {ck === "owner" ? `[√]관계인 (성명: ${rep.owner.name}, 전화번호: ${rep.owner.tel})` : `[  ]관계인 (성명:${v("", 10)}, 전화번호:${v("", 14)})`}
               </td>
             </tr>
             <tr>
-              <td colSpan={4}>[  ]소방안전관리자 (성명:{v("", 10)}, 전화번호:{v("", 14)})</td>
+              <td colSpan={4}>
+                {ck === "manager" ? `[√]소방안전관리자 (성명: ${rep.manager.name}, 전화번호: ${rep.manager.tel})` : `[  ]소방안전관리자 (성명:${v("", 10)}, 전화번호:${v("", 14)})`}
+              </td>
             </tr>
             <tr>
-              <td colSpan={4}>[  ]소방시설관리업자 (업체명:{v("", 10)}, 전화번호:{v("", 14)})</td>
+              <td colSpan={4}>{ck === "mgmt" ? `[√]소방시설관리업자 (업체명: ${firm.name}, 전화번호: ${firm.tel})` : `[  ]소방시설관리업자 (업체명:${v("", 10)}, 전화번호:${v("", 14)})`}</td>
             </tr>
             <tr>
               <td colSpan={4} className="rp-email">
@@ -330,9 +340,9 @@ export default function ReportForm({ rep }) {
         </div>
         <div className="rp-date">{ymd(rep.reportDate)}</div>
         <div className="rp-sign">
-          소방시설관리업자ㆍ소방안전관리자ㆍ<b>관계인</b>: {rep.owner.name} &nbsp;&nbsp;(서명 또는 인)
+          {ck === "mgmt" ? <b>소방시설관리업자</b> : "소방시설관리업자"}ㆍ{ck === "manager" ? <b>소방안전관리자</b> : "소방안전관리자"}ㆍ{ck === "owner" ? <b>관계인</b> : "관계인"}: {signer} &nbsp;&nbsp;(서명 또는 인)
         </div>
-        <div className="rp-to">{st} 귀하</div>
+        <div className="rp-to">{toLine} 귀하</div>
         <table className="rp-t rp-att">
           <colgroup>
             <col style={{ width: "28%" }} />

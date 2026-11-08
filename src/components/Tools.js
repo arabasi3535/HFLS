@@ -225,9 +225,9 @@ function Pump() {
 const SUBS = [
   ["windowless", "무창층 판정"],
   ["occ", "수용인원 산정"],
-  ["pump", "소화펌프 용량 산정"],
   ["build", "소방공사 착공·감리 판정"],
   ["haz", "위험물 지정수량 배수 판정"],
+  ["pump", "소화펌프 용량 산정"],
 ];
 
 export default function Tools({ seed, onGoNew }) {

@@ -11,7 +11,7 @@ import { getUse } from "./law/uses";
 import { RULES_REV } from "./law/sources";
 import BUILD from "./buildInfo.json";
 
-const InspectionReport = lazy(() => import("./components/InspectionReport"));
+const SelfInspection = lazy(() => import("./components/SelfInspection"));
 
 // 관리자 비밀번호
 //  - 배포 사이트: 서버 환경변수 ADMIN_PW로 확인(화면 코드에 비밀번호가 들어가지 않음)
@@ -202,7 +202,7 @@ export default function App() {
     ["new", "신축 건축물"],
     ["existing", "기존 건축물"],
     ["tools", "보조 계산기"],
-    ["report", "작동점검 보고서"],
+    ["report", "자체점검 보고서"],
     ["guide", "사용 안내"],
     ...(adminMode
       ? [
@@ -339,7 +339,7 @@ export default function App() {
         )}
         {tab === "report" && (
           <Suspense fallback={<div className="empty">불러오는 중…</div>}>
-            <InspectionReport
+            <SelfInspection
               seed={reportSeed}
               onGoExisting={() => {
                 setTab("existing");

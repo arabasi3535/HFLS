@@ -65,3 +65,45 @@ describe("자동화", () => {
     expect(d[0]).toMatchObject({ cat: "소화설비", code: "1-A-007" });
   });
 });
+
+describe("자체점검 보고서 종류(v2.14)", () => {
+  const { VARIANTS, mainQualWarn } = require("../report");
+  const row = (id) => ALL_ROWS.find((r) => r.id === id);
+  test("종합점검은 ● 항목 포함", () => {
+    const op = rowItems(row("spk"));
+    const cp = rowItems(row("spk"), true);
+    expect(op.every((x) => x.k === "○")).toBe(true);
+    expect(cp.length).toBeGreaterThan(op.length);
+    expect(cp.some((x) => x.k === "●")).toBe(true);
+  });
+  test("관리업 기본값·필수 입력", () => {
+    const r = emptyReport("mgmt");
+    expect(r.kind).toBe("mgmt");
+    expect(r.checker).toBe("mgmt");
+    expect(r.toWhom).toBe("관계인");
+    const m = missingFields(r);
+    expect(m).toContain("관리업자 업체명");
+    expect(m).toContain("소방안전관리등급");
+    expect(m).not.toContain("제출할 소방서");
+    expect(m).not.toContain("관계인 전화번호");
+  });
+  test("최초점검 기본값: 전년도 점검 미실시", () => {
+    const r = emptyReport("compFirst");
+    expect(r.prevOp).toBe("미실시");
+    expect(r.prevComp).toBe("미실시");
+    expect(emptyReport("comp").prevComp).toBe("실시");
+  });
+  test("주된 점검인력 자격(별표3)", () => {
+    const r = emptyReport("mgmt");
+    expect(mainQualWarn(r)).toBe("");
+    r.inspectors[0].qual = "특급점검자";
+    expect(mainQualWarn(r)).toBe("");
+    const c = emptyReport("comp");
+    c.inspectors[0].qual = "특급점검자";
+    expect(mainQualWarn(c)).not.toBe("");
+    c.checker = "manager";
+    c.inspectors[0].qual = "소방기술사";
+    expect(mainQualWarn(c)).toBe("");
+    expect(Object.keys(VARIANTS)).toEqual(["owner", "mgmt", "compFirst", "comp"]);
+  });
+});

@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.13.1",
+  version: "2.14.1",
   date: "2026-11-08",
-  note: "위험물 배수 판정 — 팔레트 적재 수량 계산 추가, 자주 쓰는 제4류 7종으로 정리",
+  note: "관리업·종합점검 보고서에 점검인력 배치·점검일수 산정(별표4) 추가",
 };
 
 export const D = {

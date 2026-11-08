@@ -1,28 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReportForm from "./ReportForm";
-import { ROWS_L, ROWS_R, ROWS_M_L, ROWS_M_R, rowItems, defectText, emptyReport, applySeed, missingFields, stationFor, stationInfo, defects, daysInclusive, todayStr } from "../law/report";
+import StaffingCalc from "./StaffingCalc";
+import { ROWS_L, ROWS_R, ROWS_M_L, ROWS_M_R, rowItems, defectText, emptyReport, applySeed, missingFields, stationFor, stationInfo, defects, daysInclusive, todayStr, VARIANTS, QUALS_OWNER, QUALS_PRO, mainQualWarn } from "../law/report";
 
 // ============================================================
-// 관계인 작동점검 보고서 작성기
-//  · 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비) 관계인 점검 전용
-//  · 기본값: 모두 양호, 3급, 소방계획서 작성·보관, 전년도 작동점검·교육·훈련 실시
-//  · 입력값은 이 브라우저에만 저장(서버 전송 없음)
+// 자체점검 실시결과 보고서 작성기 — variant: owner(관계인 작동점검) · mgmt(관리업 작동점검) · compFirst(최초점검) · comp(그 밖의 종합점검)
+//  · 관계인: 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비) 관계인 점검
+//  · 기본값: 모두 양호, 소방계획서 작성·보관, 교육·훈련 실시
+//  · 입력값은 이 브라우저에만 저장(서버 전송 없음) — 보고서 종류별로 따로 저장
 // ============================================================
 
-const KEY = "hfls_report_v1";
-const load = () => {
+export const loadReport = (kind) => {
+  const vr = VARIANTS[kind] || VARIANTS.owner;
   try {
-    const v = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (!v || v.v !== 1) return emptyReport();
-    const e = emptyReport();
-    return { ...e, ...v, owner: { ...e.owner, ...v.owner }, email: { ...e.email, ...v.email }, manager: { ...e.manager, ...v.manager }, bld: { ...e.bld, ...v.bld }, detail: { ...e.detail, ...v.detail }, insurance: { ...e.insurance, ...v.insurance }, plan10: { ...e.plan10, ...v.plan10 } };
+    const v = JSON.parse(localStorage.getItem(vr.store) || "null");
+    if (!v || v.v !== 1) return emptyReport(vr.id);
+    const e = emptyReport(vr.id);
+    return { ...e, ...v, kind: vr.id, firm: { ...e.firm, ...v.firm }, owner: { ...e.owner, ...v.owner }, email: { ...e.email, ...v.email }, manager: { ...e.manager, ...v.manager }, bld: { ...e.bld, ...v.bld }, detail: { ...e.detail, ...v.detail }, insurance: { ...e.insurance, ...v.insurance }, plan10: { ...e.plan10, ...v.plan10 } };
   } catch (e) {
-    return emptyReport();
+    return emptyReport(vr.id);
   }
 };
-const save = (v) => {
+const save = (kind, v) => {
   try {
-    localStorage.setItem(KEY, JSON.stringify(v));
+    localStorage.setItem((VARIANTS[kind] || VARIANTS.owner).store, JSON.stringify(v));
   } catch (e) {
     /* 저장 불가 */
   }
@@ -33,7 +34,6 @@ const MULTI = [
   "찜질방업", "게임제공업", "인터넷컴퓨터게임시설제공업", "복합유통게임제공업", "노래연습장업", "산후조리업", "고시원업", "권총사격장", "가상체험 체육시설업", "안마시술소", "전화방업",
   "화상대화방업", "수면방업", "콜라텍업",
 ];
-const QUALS = ["관계인", "소방안전관리자", "소방안전관리보조자", "직원"];
 
 function F({ label, children, hint, req, wide }) {
   return (
@@ -73,8 +73,8 @@ function Sec({ title, sub, children, open: open0 = true }) {
 }
 
 /** 설비 한 줄: 설치 여부 · 양호/불량 · 불량 항목 선택 */
-function FacRow({ row, st, onChange }) {
-  const items = useMemo(() => rowItems(row), [row]);
+function FacRow({ row, st, onChange, comp }) {
+  const items = useMemo(() => rowItems(row, comp), [row, comp]);
   const bad = (st && st.bad) || {};
   const isBad = st && st.badMode;
   const setBad = (code, val) => {
@@ -94,7 +94,7 @@ function FacRow({ row, st, onChange }) {
       </div>
       {(isBad || Object.keys(bad).length > 0) && (
         <div className="ir-items">
-          {items.length === 0 && <div className="w-hint">점검표에 작동점검 항목이 없는 설비입니다 — 비고란에 내용을 적어 주십시오.</div>}
+          {items.length === 0 && <div className="w-hint">점검표에 {comp ? "" : "작동점검 "}항목이 없는 설비입니다 — 비고란에 내용을 적어 주십시오.</div>}
           {items.map((it) => {
             const b = bad[it.code];
             return (
@@ -102,6 +102,7 @@ function FacRow({ row, st, onChange }) {
                 <label>
                   <input type="checkbox" checked={!!b} onChange={(e) => setBad(it.code, e.target.checked ? { text: defectText(it.text), qty: "" } : null)} />
                   <span className="ir-code">{it.code}</span>
+                  {comp && <span className={`ir-k ${it.k === "●" ? "c" : ""}`} title={it.k === "●" ? "종합점검 항목" : "작동·종합점검 공통 항목"}>{it.k}</span>}
                   <span>
                     {it.head ? `[${it.head}] ` : ""}
                     {it.text}
@@ -122,12 +123,15 @@ function FacRow({ row, st, onChange }) {
   );
 }
 
-export default function InspectionReport({ seed, onGoExisting }) {
-  const [rep, setRep] = useState(load);
+export default function InspectionReport({ variant = "owner", seed, onGoExisting, onCopyFrom }) {
+  const vr = VARIANTS[variant] || VARIANTS.owner;
+  const pro = vr.id !== "owner";
+  const QUALS = pro ? QUALS_PRO : QUALS_OWNER;
+  const [rep, setRep] = useState(() => loadReport(vr.id));
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const lastSeed = useRef(null);
-  useEffect(() => save(rep), [rep]);
+  useEffect(() => save(vr.id, rep), [vr.id, rep]);
   useEffect(() => {
     if (seed && seed.at && seed.at !== lastSeed.current && seed.at !== rep.seededAt) {
       lastSeed.current = seed.at;
@@ -143,7 +147,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
   const setRow = (id, st) => setRep((r) => ({ ...r, rows: { ...r.rows, [id]: st } }));
   const setMRow = (id, st) => setRep((r) => ({ ...r, mRows: { ...r.mRows, [id]: st } }));
   const setInsp = (i, k, v) => setRep((r) => ({ ...r, inspectors: r.inspectors.map((p, j) => (j === i ? { ...p, [k]: v } : p)) }));
-  const addInsp = () => setRep((r) => (r.inspectors.length >= 6 ? r : { ...r, inspectors: [...r.inspectors, { role: "보조 점검인력", name: "", qual: "관계인", no: "", days: "" }] }));
+  const addInsp = () => setRep((r) => (r.inspectors.length >= 6 ? r : { ...r, inspectors: [...r.inspectors, { role: "보조 점검인력", name: "", qual: pro ? "초급점검자" : "관계인", no: "", days: "" }] }));
   const delInsp = (i) => setRep((r) => (r.inspectors.length <= 3 ? r : { ...r, inspectors: r.inspectors.filter((_, j) => j !== i) }));
 
   // 입력 내용 파일 저장·불러오기(매년 다시 쓰기)
@@ -153,7 +157,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
     const blob = new Blob([data], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `작동점검_입력내용_${(rep.name || "대상물").replace(/[\\/:*?"<>|\s]+/g, "_")}_${todayStr()}.json`;
+    a.download = `${vr.file}_입력내용_${(rep.name || "대상물").replace(/[\\/:*?"<>|\s]+/g, "_")}_${todayStr()}.json`;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => {
@@ -170,33 +174,39 @@ export default function InspectionReport({ seed, onGoExisting }) {
       try {
         const j = JSON.parse(fr.result);
         if (!j || j.type !== "hfls-op-report" || !j.data) throw new Error("형식");
-        const e0 = emptyReport();
+        const e0 = emptyReport(vr.id);
         const d = j.data;
+        const sameKind = (d.kind || "owner") === vr.id || (pro && (d.kind || "owner") !== "owner");
         const t = todayStr();
         // 날짜(점검기간·작성일)는 오늘로, 불량·이행계획은 비움(모두 양호) — 나머지는 그대로
         const clean = (rows) => Object.fromEntries(Object.entries(rows || {}).map(([k, st]) => [k, { on: !!(st && st.on), bad: {} }]));
         setRep({
           ...e0,
           ...d,
+          kind: vr.id,
+          checker: sameKind ? d.checker || e0.checker : e0.checker,
+          toWhom: sameKind ? d.toWhom || e0.toWhom : e0.toWhom,
+          firm: { ...e0.firm, ...d.firm },
           owner: { ...e0.owner, ...d.owner },
           email: { ...e0.email, ...d.email },
           manager: { ...e0.manager, ...d.manager },
           bld: { ...e0.bld, ...d.bld },
           detail: { ...e0.detail, ...d.detail },
           insurance: { ...e0.insurance, ...d.insurance },
-          inspectors: Array.isArray(d.inspectors) && d.inspectors.length >= 3 ? d.inspectors.map((p) => ({ ...p, days: "" })) : e0.inspectors,
+          inspectors: sameKind && Array.isArray(d.inspectors) && d.inspectors.length >= 3 ? d.inspectors.map((p) => ({ ...p, days: "" })) : e0.inspectors,
           rows: clean(d.rows),
           mRows: clean(d.mRows),
           plan10: e0.plan10,
           from: t,
           to: t,
           reportDate: t,
-          prevOp: "실시",
+          prevOp: vr.first ? d.prevOp || e0.prevOp : "실시",
+          prevComp: vr.comp && !vr.first ? "실시" : d.prevComp || e0.prevComp,
           v: 1,
         });
         setMsg(`${j.savedAt || ""} 저장한 입력 내용을 불러왔습니다. 점검기간·작성일은 오늘로, 점검 결과는 모두 「양호」로 바꿨습니다 — 날짜와 불량 사항만 확인하십시오.`);
       } catch (err) {
-        alert("작동점검 입력 내용 파일(.json)이 아닙니다.");
+        alert("자체점검 보고서 입력 내용 파일(.json)이 아닙니다.");
       }
     };
     fr.readAsText(file, "utf-8");
@@ -259,7 +269,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
         }
       }
       document.body.removeChild(host);
-      const fname = `작동점검보고서_${(rep.name || "대상물").replace(/[\\/:*?"<>|\s]+/g, "_")}_${rep.to || ""}.pdf`;
+      const fname = `${vr.file}보고서_${(rep.name || "대상물").replace(/[\\/:*?"<>|\s]+/g, "_")}_${rep.to || ""}.pdf`;
       doc.save(fname);
     } catch (e) {
       alert("PDF를 만들지 못했습니다. 「인쇄」에서 PDF로 저장을 이용하십시오.");
@@ -278,7 +288,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
   };
   const reset = () => {
     if (!window.confirm("입력한 내용을 모두 지우고 새로 작성할까요?")) return;
-    setRep(emptyReport());
+    setRep(emptyReport(vr.id));
     setMsg("");
   };
 
@@ -286,7 +296,23 @@ export default function InspectionReport({ seed, onGoExisting }) {
     <div className="ir">
       <div className="ir-form no-print">
         <div className="ir-intro">
-          <b>관계인 작동점검 보고서</b> — 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비)을 관계인이 직접 점검한 결과를 「소방시설등 자체점검 실시결과 보고서」(시행규칙 별지 제9호서식)로 만듭니다. 기본값은 모두 <b>양호</b>이고, 불량인 설비만 고르면 점검번호와 불량내용이 자동으로 들어갑니다.
+          {vr.id === "owner" && (
+            <>
+              <b>관계인 작동점검 보고서</b> — 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비)을 관계인이 직접 점검한 결과를 「소방시설등 자체점검 실시결과 보고서」(시행규칙 별지 제9호서식)로 만듭니다.
+            </>
+          )}
+          {vr.id === "mgmt" && (
+            <>
+              <b>작동점검 보고서(관리업)</b> — 소방시설관리업자(관리업에 등록된 소방시설관리사·특급점검자) 또는 소방안전관리자로 선임된 소방시설관리사·소방기술사가 작동점검한 결과를 별지 제9호서식으로 만듭니다.
+            </>
+          )}
+          {vr.comp && (
+            <>
+              <b>{vr.title}</b> — 관리업에 등록된 소방시설관리사 또는 소방안전관리자로 선임된 소방시설관리사·소방기술사가 종합점검한 결과를 별지 제9호서식으로 만듭니다. 불량 항목은 고시 점검표의 작동(○)·종합(●) 항목에서 고릅니다.
+              {vr.first && " 최초점검은 소방시설이 신설된 경우 건축물을 사용할 수 있게 된 날부터 60일 이내 실시합니다(시행규칙 별표3 제1호나목1)·제3호나목)."}
+            </>
+          )}{" "}
+          기본값은 모두 <b>양호</b>이고, 불량인 설비만 고르면 점검번호와 불량내용이 자동으로 들어갑니다.
         </div>
         <div className="ir-file">
           <button type="button" className="w-reset" onClick={exportFile}>
@@ -300,6 +326,51 @@ export default function InspectionReport({ seed, onGoExisting }) {
         </div>
         {msg && <div className="note">{msg}</div>}
 
+        {pro && onCopyFrom && (
+          <div className="ir-copy">
+            <span>다른 보고서에서 대상물 정보 가져오기:</span>
+            {Object.values(VARIANTS)
+              .filter((x) => x.id !== vr.id)
+              .map((x) => (
+                <button
+                  key={x.id}
+                  type="button"
+                  className="w-link"
+                  onClick={() => {
+                    const src = onCopyFrom(x.id);
+                    if (!src || !src.name) {
+                      alert(`「${x.tab}」에 입력된 대상물이 없습니다.`);
+                      return;
+                    }
+                    setRep((r) => ({
+                      ...r,
+                      name: src.name,
+                      useLabel: src.useLabel,
+                      addr: src.addr,
+                      station: src.station,
+                      owner: src.owner,
+                      manager: src.manager,
+                      grade: src.grade,
+                      plan: src.plan,
+                      edu: src.edu,
+                      drill: src.drill,
+                      insurance: src.insurance,
+                      multi: src.multi,
+                      bld: src.bld,
+                      detail: src.detail,
+                      rows: Object.fromEntries(Object.entries(src.rows || {}).map(([k, st]) => [k, { on: !!(st && st.on), bad: {} }])),
+                      mRows: Object.fromEntries(Object.entries(src.mRows || {}).map(([k, st]) => [k, { on: !!(st && st.on), bad: {} }])),
+                    }));
+                    setMsg(`「${x.tab}」의 대상물·관계인·건축물·설치 소방시설 정보를 가져왔습니다(점검 결과는 모두 양호로).`);
+                  }}
+                >
+                  {x.tab}
+                </button>
+              ))}
+          </div>
+        )}
+
+        {vr.id === "owner" && (
         <div className="ir-link">
           <div>
             <b>소방시설 산정 결과 연계</b>
@@ -314,6 +385,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
             </button>
           )}
         </div>
+        )}
 
         <Sec title="1. 대상물·점검기간" sub="필수">
           <div className="w-grid2">
@@ -326,7 +398,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
             <F label="소재지(도로명주소)" req wide>
               <input value={rep.addr} onChange={(e) => set("addr", e.target.value)} placeholder="예: 경상북도 안동시 ○○로 00" />
             </F>
-            <F label="제출할 소방서" req={!stationInfo(rep.addr).station} hint={stationInfo(rep.addr).station ? "주소로 자동 지정 — 다르면 직접 입력" : "예: ○○소방서장"}>
+            <F label="제출할 소방서" req={rep.toWhom !== "관계인" && !stationInfo(rep.addr).station} hint={stationInfo(rep.addr).station ? "주소로 자동 지정 — 다르면 직접 입력" : "예: ○○소방서장"}>
               <input value={rep.station} placeholder={stationInfo(rep.addr).station || "○○소방서장"} onChange={(e) => set("station", e.target.value)} />
             </F>
             <F label="점검 시작일" req>
@@ -339,13 +411,43 @@ export default function InspectionReport({ seed, onGoExisting }) {
               <input type="date" value={rep.reportDate} onChange={(e) => set("reportDate", e.target.value)} />
             </F>
           </div>
+          {pro && (
+            <div className="ir-optrow">
+              <span className="ir-optlabel">보고서 제출처</span>
+              <Seg value={rep.toWhom} options={["관계인", "소방서"]} onChange={(x) => set("toWhom", x)} />
+            </div>
+          )}
           <div className="w-hint">
-            제출처: {station ? `${station} 귀하` : "소재지를 입력하십시오"}
-            {!rep.station && stationInfo(rep.addr).note ? ` — ${stationInfo(rep.addr).note}` : ""}
+            {rep.toWhom === "관계인"
+              ? `제출처: 관계인 ${rep.owner.name || "(성명)"} 귀하 — 관리업자 등은 점검이 끝난 날부터 10일 이내 관계인에게 제출하고, 관계인은 15일 이내 소방서장에게 보고합니다(시행규칙 제23조).`
+              : `제출처: ${station ? `${station} 귀하` : "소재지를 입력하십시오"}${!rep.station && stationInfo(rep.addr).note ? ` — ${stationInfo(rep.addr).note}` : ""}`}
           </div>
         </Sec>
 
-        <Sec title="2. 관계인·점검자" sub="점검자 3명 필수">
+        <Sec title="2. 관계인·점검자" sub={pro ? "점검인력 1단위(주된 1·보조 2) 필수" : "점검자 3명 필수"}>
+          {pro && (
+            <>
+              <div className="ir-optrow">
+                <span className="ir-optlabel">점검자</span>
+                <Seg
+                  value={rep.checker === "manager" ? "소방안전관리자(관리사·기술사)" : "소방시설관리업자"}
+                  options={["소방시설관리업자", "소방안전관리자(관리사·기술사)"]}
+                  onChange={(x) => set("checker", x === "소방시설관리업자" ? "mgmt" : "manager")}
+                />
+              </div>
+              {rep.checker === "mgmt" && (
+                <div className="w-grid2">
+                  <F label="관리업자 업체명" req>
+                    <input value={rep.firm.name} onChange={(e) => setIn("firm", "name", e.target.value)} />
+                  </F>
+                  <F label="관리업자 전화번호" req>
+                    <input value={rep.firm.tel} inputMode="tel" onChange={(e) => setIn("firm", "tel", e.target.value)} />
+                  </F>
+                </div>
+              )}
+              {rep.checker === "manager" && <div className="w-hint">소방안전관리자 성명·전화번호는 「3. 소방안전관리」에 입력합니다.</div>}
+            </>
+          )}
           <div className="w-grid2">
             <F label="관계인 구분">
               <Seg value={rep.owner.kind} options={["소유자", "관리자", "점유자"]} onChange={(v) => setIn("owner", "kind", v)} />
@@ -354,7 +456,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
             <F label="관계인 성명" req>
               <input value={rep.owner.name} onChange={(e) => setIn("owner", "name", e.target.value)} />
             </F>
-            <F label="관계인 전화번호" req>
+            <F label="관계인 전화번호" req={!pro}>
               <input value={rep.owner.tel} inputMode="tel" onChange={(e) => setIn("owner", "tel", e.target.value)} />
             </F>
           </div>
@@ -385,7 +487,8 @@ export default function InspectionReport({ seed, onGoExisting }) {
                 + 점검자 추가 (최대 6명 — 주된 1, 보조 5)
               </button>
             )}
-            {rep.owner.name && !rep.inspectors[0].name && (
+            {mainQualWarn(rep) && <div className="note warn">{mainQualWarn(rep)}</div>}
+            {!pro && rep.owner.name && !rep.inspectors[0].name && (
               <button type="button" className="w-link" onClick={() => setInsp(0, "name", rep.owner.name)}>
                 관계인({rep.owner.name})을 주된 점검인력으로
               </button>
@@ -434,7 +537,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
               </div>
             ))}
           </div>
-          {rep.grade !== "3급" && <div className="note warn">관계인 점검은 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비 설치)만 할 수 있습니다(시행규칙 별표3 제2호나목).</div>}
+          {!pro && rep.grade !== "3급" && <div className="note warn">관계인 점검은 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비 설치)만 할 수 있습니다(시행규칙 별표3 제2호나목).</div>}
           <label className="w-check">
             <input type="checkbox" checked={rep.insurance.on} onChange={(e) => setIn("insurance", "on", e.target.checked)} />
             <span>화재보험 가입</span>
@@ -525,9 +628,9 @@ export default function InspectionReport({ seed, onGoExisting }) {
 
         <Sec title="5. 소방시설 점검 결과" sub={`설치 ${onRows.length}종 · 불량 ${defs.length}건`}>
           <div className="w-hint">설치된 시설은 모두 「양호」가 기본입니다. 문제가 있는 시설만 「불량」을 누르고 해당 점검항목을 고르십시오.</div>
-          {onRows.length === 0 && <div className="note warn">설치된 소방시설이 없습니다. 아래 「시설 추가」에서 고르거나, 신축·기존 건축물 탭의 검토 결과에서 「작동점검 보고서 작성」을 누르십시오.</div>}
+          {onRows.length === 0 && <div className="note warn">설치된 소방시설이 없습니다. 아래 「시설 추가」에서 고르거나, {pro ? "위 「다른 보고서에서 대상물 정보 가져오기」를 이용하십시오." : "기존 건축물 탭의 검토 결과에서 「관계인 작동점검 보고서 작성」을 누르십시오."}</div>}
           {onRows.map((row) => (
-            <FacRow key={row.id} row={row} st={rep.rows[row.id]} onChange={(st) => setRow(row.id, st)} />
+            <FacRow key={row.id} row={row} comp={vr.comp} st={rep.rows[row.id]} onChange={(st) => setRow(row.id, st)} />
           ))}
           <details className="ir-add">
             <summary>시설 추가 (검토 결과에 없는 설비)</summary>
@@ -685,7 +788,7 @@ export default function InspectionReport({ seed, onGoExisting }) {
               <div className="w-sub-h">다중이용업소 안전시설등 점검 결과</div>
               {[...ROWS_M_L, ...ROWS_M_R].map((row) =>
                 rep.mRows[row.id] && rep.mRows[row.id].on ? (
-                  <FacRow key={row.id} row={row} st={rep.mRows[row.id]} onChange={(st) => setMRow(row.id, st)} />
+                  <FacRow key={row.id} row={row} comp={vr.comp} st={rep.mRows[row.id]} onChange={(st) => setMRow(row.id, st)} />
                 ) : (
                   <button key={row.id} type="button" className="ir-addbtn" onClick={() => setMRow(row.id, { on: true, bad: {} })}>
                     + {row.label}
@@ -695,6 +798,12 @@ export default function InspectionReport({ seed, onGoExisting }) {
             </>
           )}
         </Sec>
+
+        {pro && (
+          <Sec title="점검인력 배치·점검일수 산정" sub="시행규칙 별표4 — 보고서 입력값으로 자동 계산">
+            <StaffingCalc rep={rep} setRep={setRep} comp={vr.comp} />
+          </Sec>
+        )}
 
         {defs.length > 0 && (
           <Sec title="8. 이행계획서(별지 제10호서식)" sub={`불량 ${defs.length}건 — 함께 출력`}>
@@ -740,6 +849,11 @@ export default function InspectionReport({ seed, onGoExisting }) {
               초기화
             </button>
           </div>
+          {pro && (
+            <div className="w-hint">
+              첨부: 관계인에게는 소방시설등 점검표(고시 별지 제4호서식), 관계인이 소방서에 보고할 때는 {rep.checker === "mgmt" ? "점검인력 배치확인서와 " : ""}불량 시 이행계획서(별지 제10호서식)를 함께 냅니다.
+            </div>
+          )}
           <div className="w-hint">입력 내용은 이 기기의 브라우저에만 저장되며 서버로 전송되지 않습니다. 출력 후 서명 또는 날인하십시오.</div>
         </div>
       </div>

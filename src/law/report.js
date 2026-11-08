@@ -5,6 +5,34 @@
 //  · 점검번호·점검항목: 소방시설 자체점검사항 등에 관한 고시 [별지 제4호서식] 점검표 중 작동점검(○) 항목
 // ============================================================
 import { CL_ITEMS } from "./checklist";
+import { CL_ITEMS_C } from "./checklistComp";
+
+/**
+ * 자체점검 보고서 종류 — 시행규칙 [별지 제9호서식] 첫머리 구분, 별표3 점검자 자격
+ *  owner: 관계인 작동점검(3급), mgmt: 관리업 작동점검, compFirst: 종합점검(최초점검), comp: 그 밖의 종합점검
+ */
+export const VARIANTS = {
+  owner: { id: "owner", tab: "작동점검(관계인)", title: "관계인 작동점검 보고서", comp: false, first: false, store: "hfls_report_v1", checker: "owner", file: "작동점검(관계인)" },
+  mgmt: { id: "mgmt", tab: "작동점검(관리업)", title: "작동점검 보고서(소방시설관리업자 등)", comp: false, first: false, store: "hfls_report_mgmt_v1", checker: "mgmt", file: "작동점검(관리업)" },
+  compFirst: { id: "compFirst", tab: "종합점검(최초점검)", title: "종합점검 보고서 — 최초점검", comp: true, first: true, store: "hfls_report_compf_v1", checker: "mgmt", file: "종합점검(최초)" },
+  comp: { id: "comp", tab: "종합점검(그 밖의 종합점검)", title: "종합점검 보고서 — 그 밖의 종합점검", comp: true, first: false, store: "hfls_report_comp_v1", checker: "mgmt", file: "종합점검" },
+};
+export const QUALS_OWNER = ["관계인", "소방안전관리자", "소방안전관리보조자", "직원"];
+export const QUALS_PRO = ["소방시설관리사", "특급점검자", "고급점검자", "중급점검자", "초급점검자", "소방기술사"];
+
+/**
+ * 주된 점검인력 자격 확인 — 시행규칙 별표3 제1호다목·제2호다목
+ *  작동점검(관리업): 관리업에 등록된 소방시설관리사·특급점검자 / 소방안전관리자로 선임된 관리사·기술사
+ *  종합점검: 관리업에 등록된 소방시설관리사 / 소방안전관리자로 선임된 관리사·기술사
+ */
+export function mainQualWarn(rep) {
+  const q = ((rep.inspectors && rep.inspectors[0]) || {}).qual || "";
+  const v = VARIANTS[rep.kind] || VARIANTS.owner;
+  if (v.id === "owner") return "";
+  const ok = rep.checker === "manager" ? ["소방시설관리사", "소방기술사"] : v.comp ? ["소방시설관리사"] : ["소방시설관리사", "특급점검자"];
+  if (!q || ok.includes(q)) return "";
+  return `${v.comp ? "종합점검" : "작동점검"}의 주된 점검인력은 ${rep.checker === "manager" ? "소방안전관리자로 선임된 소방시설관리사·소방기술사" : `관리업에 등록된 ${ok.join("·")}`}이어야 합니다(시행규칙 별표3).`;
+}
 
 /**
  * 제3쪽 「1. 소방시설등 점검 결과」 행
@@ -94,18 +122,20 @@ export const M_ROWS = [...ROWS_M_L, ...ROWS_M_R];
 export const DEFECT_CATS = ["소화설비", "경보설비", "피난구조설비", "소화용수설비", "소화활동설비", "기타", "안전시설등"];
 
 /** 행의 작동점검 항목 목록 [{code, unit, head, text}] */
-export function rowItems(row) {
+export function rowItems(row, comp = false) {
   const out = [];
   for (const c of row.cl || []) {
     const [prefix, head, codes] = Array.isArray(c) ? c : [c, null, null];
     const top = prefix.split("-")[0];
-    for (const [code, unit, h, text] of CL_ITEMS[top] || []) {
+    const src = [...(CL_ITEMS[top] || []).map((x) => [...x, "○"]), ...(comp ? (CL_ITEMS_C[top] || []).map((x) => [...x, "●"]) : [])];
+    for (const [code, unit, h, text, k] of src) {
       if (!code.startsWith(prefix.endsWith("-") ? prefix : prefix + "-") && code !== prefix) continue;
       if (head && h !== head) continue;
       if (codes && !codes.includes(code)) continue;
-      out.push({ code, unit, head: h, text });
+      out.push({ code, unit, head: h, text, k });
     }
   }
+  if (comp) out.sort((a, b) => a.code.localeCompare(b.code, "en", { numeric: true }));
   return out;
 }
 
@@ -162,10 +192,17 @@ export function todayStr() {
 }
 
 /** 빈 보고서 */
-export function emptyReport() {
+export function emptyReport(kind = "owner") {
   const t = todayStr();
+  const vr = VARIANTS[kind] || VARIANTS.owner;
+  const pro = vr.id !== "owner";
   return {
     v: 1,
+    kind: vr.id,
+    checker: vr.checker, // owner | mgmt(소방시설관리업자) | manager(소방안전관리자로 선임된 관리사·기술사)
+    firm: { name: "", tel: "" },
+    staff: {}, // 점검인력 배치 산정 — 보고서 값과 다르게 바꾼 항목만
+    toWhom: pro ? "관계인" : "소방서", // 보고서 제출처: 관리업자 등 → 관계인(10일 이내), 관계인 → 소방서(15일 이내)
     name: "",
     useLabel: "",
     addr: "",
@@ -176,15 +213,15 @@ export function emptyReport() {
     owner: { kind: "소유자", name: "", tel: "" },
     email: { agree: false, addr: "" },
     inspectors: [
-      { role: "주된 점검인력", name: "", qual: "관계인", no: "", days: "" },
-      { role: "보조 점검인력", name: "", qual: "관계인", no: "", days: "" },
-      { role: "보조 점검인력", name: "", qual: "관계인", no: "", days: "" },
+      { role: "주된 점검인력", name: "", qual: pro ? "소방시설관리사" : "관계인", no: "", days: "" },
+      { role: "보조 점검인력", name: "", qual: pro ? "초급점검자" : "관계인", no: "", days: "" },
+      { role: "보조 점검인력", name: "", qual: pro ? "초급점검자" : "관계인", no: "", days: "" },
     ],
-    grade: "3급",
+    grade: pro ? "" : "3급",
     manager: { type: "소방안전관리자수첩", name: "", tel: "", edu: "" },
     plan: "작성보관", // 작성보관 | 작성미보관 | 미작성
-    prevOp: "실시",
-    prevComp: "미실시",
+    prevOp: vr.first ? "미실시" : "실시",
+    prevComp: vr.comp && !vr.first ? "실시" : "미실시",
     edu: "실시",
     drill: "실시",
     insurance: { on: false, company: "", from: "", to: "", person: "", property: "" },
@@ -215,7 +252,7 @@ export function applySeed(rep, seed) {
   if (!seed) return rep;
   const r = { ...rep, bld: { ...rep.bld }, rows: {}, mRows: { ...rep.mRows } };
   r.useLabel = seed.useLabel || r.useLabel;
-  r.grade = "3급";
+  if (!rep.kind || rep.kind === "owner") r.grade = "3급";
   r.bld.area = seed.area ?? r.bld.area;
   r.bld.gf = seed.gf ?? r.bld.gf;
   r.bld.bf = seed.bf ?? r.bld.bf;
@@ -276,15 +313,19 @@ export function missingFields(rep) {
   if (!rep.name.trim()) m.push("명칭(상호)");
   if (!rep.useLabel.trim()) m.push("대상물 구분(용도)");
   if (!rep.addr.trim()) m.push("소재지");
-  if (!stationFor(rep.addr, rep.station)) m.push("제출할 소방서");
+  if ((rep.toWhom || "소방서") === "소방서" && !stationFor(rep.addr, rep.station)) m.push("제출할 소방서");
   if (!rep.from || !rep.to || rep.to < rep.from) m.push("점검기간");
   if (!rep.owner.name.trim()) m.push("관계인 성명");
-  if (!rep.owner.tel.trim()) m.push("관계인 전화번호");
+  if ((rep.checker || "owner") === "owner" && !rep.owner.tel.trim()) m.push("관계인 전화번호");
+  if (rep.checker === "mgmt" && !(rep.firm && rep.firm.name.trim())) m.push("관리업자 업체명");
+  if (rep.checker === "mgmt" && !(rep.firm && rep.firm.tel.trim())) m.push("관리업자 전화번호");
+  if (!rep.grade) m.push("소방안전관리등급");
   rep.inspectors.forEach((p, i) => {
     if (!p.name.trim()) m.push(`점검자 ${i + 1} 성명`);
     if (!p.qual.trim()) m.push(`점검자 ${i + 1} 자격구분`);
   });
   if (!rep.manager.name.trim()) m.push("소방안전관리자 성명");
+  if (rep.checker === "manager" && !rep.manager.tel.trim()) m.push("소방안전관리자 전화번호");
   if (!ALL_ROWS.some((r) => !r.group && rep.rows[r.id] && rep.rows[r.id].on)) m.push("설치된 소방시설(1개 이상)");
   if (rep.email.agree && !rep.email.addr.trim()) m.push("전자우편 주소");
   return m;
