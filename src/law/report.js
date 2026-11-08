@@ -269,6 +269,12 @@ export function applySeed(rep, seed) {
     r.rows[row.id] = { on, bad: {} };
   }
   if (inst.has("autoext")) r.rows[seed.residential ? "auto_res" : "auto_com"] = { on: true, bad: {} };
+  // 유도등·유도표지 구분(NFTC 303 표 2.1.1) — 결과의 「유도등(피난구·통로) 및 유도표지」를 하나로 나눔
+  if (inst.has("guide") && seed.guideKind) {
+    r.rows.guide = { on: seed.guideKind === "light", bad: {} };
+    r.rows.sign = { on: seed.guideKind === "sign", bad: {} };
+    if (inst.has("seatguide")) r.rows.guide = { on: true, bad: {} };
+  }
   r.rows.exit = { on: true, bad: {} };
   r.rows.door = { on: !!seed.door, bad: {} };
   r.rows.flame = { on: !!seed.flame, bad: {} };

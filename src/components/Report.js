@@ -5,6 +5,7 @@ import ResultView from "./ResultView";
 import SafetyPanel from "./SafetyPanel";
 import ConstructionPanel from "./ConstructionPanel";
 import { safetyReview } from "../law/safety";
+import { guideKind } from "../law/guide";
 import { subName, groupLabel } from "./Wizard";
 import { USE_GROUPS } from "../law/uses";
 
@@ -51,24 +52,34 @@ function substitutionsFor(rows, u) {
   return out;
 }
 
-function Item({ it, open, onToggle, flash }) {
+function Item({ it, open, onToggle, flash, guide }) {
   const r = it.row;
   const items = r ? [...r.hits, ...r.maybes] : [];
   const lead = items[0];
   return (
     <li className={`it ${it.kind} ${it.sub ? "subbed" : ""} ${flash ? "flash" : ""}`}>
       <button type="button" className="it-main" onClick={onToggle}>
-        <span className="it-name">{it.name}</span>
+        <span className="it-name">{guide ? (guide.kind === "light" ? "유도등" : "유도표지") : it.name}</span>
         <span className="it-tags">
           {it.kind === "retro" && <span className="tag t-retro">소급</span>}
           {it.kind === "strong" && <span className="tag t-strong">강화기준</span>}
           {it.check && <span className="tag t-hist">연혁 확인</span>}
           {it.sub && <span className="tag t-sub">대체</span>}
         </span>
-        <span className="it-scope">{it.sub ? `→ ${it.sub.replaceWith || "대체 설비"}` : lead ? lead.scope : it.scope || ""}</span>
+        <span className="it-scope">{guide ? guide.items.join("·") : it.sub ? `→ ${it.sub.replaceWith || "대체 설비"}` : lead ? lead.scope : it.scope || ""}</span>
         <span className="it-caret">{open ? "▾" : "▸"}</span>
       </button>
       <div className={`it-det ${open ? "open" : ""}`}>
+        {guide && (
+          <div className="det-line guide-line">
+            <b>{guide.kind === "light" ? "유도등" : "유도표지"}</b> — {guide.no === "별도 기준" ? guide.why : `${guide.ref} ${guide.no}: ${guide.why} → ${guide.items.join("·")}`}
+            {guide.notes.map((n) => (
+              <div key={n} className="det-meta">
+                {n}
+              </div>
+            ))}
+          </div>
+        )}
         {it.sub && (
           <div className="det-line sub-line">
             별표5 {it.sub.no}: {it.sub.text}
@@ -122,6 +133,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   const rOn = (id) => retroOn[id] !== false; // 의무 소급: 기본 반영
   const sOn = (k) => !!strongOn[k]; // 강화기준: 기본 미반영
   const subs = useMemo(() => substitutionsFor(hist.rows, u), [hist, u]);
+  const gk = useMemo(() => guideKind(rv), [rv]);
   const subIsOn = (s) => (subOn[s.id] === undefined ? SUB_DEFAULT_ON.has(s.id) : subOn[s.id]);
 
   // 설치 목록 구성
@@ -332,7 +344,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
               <div className="cat-h">{cat}</div>
               <ul>
                 {items.map((it) => (
-                  <Item key={it.key} it={it} flash={flash.added.includes(it.key)} open={!!open[it.key]} onToggle={() => toggle(it.key)} />
+                  <Item key={it.key} it={it} guide={it.key === "guide" ? gk : null} flash={flash.added.includes(it.key)} open={!!open[it.key]} onToggle={() => toggle(it.key)} />
                 ))}
               </ul>
             </div>
@@ -402,6 +414,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
                   onMakeReport({
                     at: Date.now(),
                     variant,
+                    guideKind: gk.kind,
                     grade: gg && gg.status === "대상" && ["특급", "1급", "2급", "3급"].includes(gg.grade) ? gg.grade : "",
                     useLabel: useTitle,
                     area: rv.input.area,

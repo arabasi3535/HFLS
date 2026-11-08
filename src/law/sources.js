@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.14.2",
+  version: "2.14.4",
   date: "2026-11-08",
-  note: "관리업·종합점검 보고서도 산정 결과 연계, 사용 안내 개편",
+  note: "유도등·유도표지 구분만 표시(크기 구분 삭제)",
 };
 
 export const D = {

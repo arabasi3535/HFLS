@@ -778,3 +778,4 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity
 .guide-t td { vertical-align: top; }
 .guide-t ul.plain { margin: 0; padding-left: 16px; }
 .guide-t ul.plain li { margin: 2px 0; }
+.guide-line { background: var(--m-bg); border-radius: 6px; padding: 6px 8px; }
