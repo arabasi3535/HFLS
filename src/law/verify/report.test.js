@@ -28,10 +28,18 @@ describe("자동화", () => {
   test("불량내용 기본 문구", () => {
     expect(defectText("지시압력계(녹색범위)의 적정 여부")).toBe("지시압력계(녹색범위) 불량");
   });
-  test("소재지 안동 → 안동소방서장, 그 밖은 직접 입력", () => {
+  test("경북 시·군 → 관할 소방서 자동", () => {
     expect(stationFor("경상북도 안동시 경동로 1")).toBe("안동소방서장");
-    expect(stationFor("경상북도 영주시 1")).toBe("");
-    expect(stationFor("경상북도 영주시 1", "영주소방서장")).toBe("영주소방서장");
+    expect(stationFor("경상북도 영주시 대학로 1")).toBe("영주소방서장");
+    expect(stationFor("경북 칠곡군 왜관읍 1")).toBe("칠곡소방서장");
+    expect(stationFor("경상북도 포항시 남구 지곡로 1")).toBe("포항남부소방서장");
+    expect(stationFor("경상북도 포항시 북구 중앙로 1")).toBe("포항북부소방서장");
+    expect(stationFor("경상북도 포항시 중앙로 1")).toBe("");
+    expect(stationFor("경상북도 울릉군 울릉읍 1")).toBe("포항남부소방서장");
+    expect(stationFor("대구광역시 군위군 군위읍 1")).toBe("");
+    expect(stationFor("경상북도 영양군 영양읍 1")).toBe("영양소방서장");
+    expect(stationFor("서울특별시 종로구 1")).toBe("");
+    expect(stationFor("경상북도 영주시 1", "직접소방서장")).toBe("직접소방서장");
   });
   test("검토 결과 반영: 소화기·자탐·유도등 → 설치 체크, 비상구 기본 체크", () => {
     const r = applySeed(emptyReport(), { at: 1, useLabel: "근린생활시설", area: 900, gf: 3, facs: ["ext", "afd", "visual", "guide", "escape"] });

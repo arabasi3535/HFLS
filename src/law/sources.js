@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.11.1",
+  version: "2.11.2",
   date: "2026-11-08",
-  note: "작동점검 보고서 입력 내용 파일 저장·불러오기, 점검자 추가, PC 날짜 달력 표시",
+  note: "작동점검 보고서 — 산정 결과 연계 안내, 경북 관할 소방서 자동 지정",
 };
 
 export const D = {

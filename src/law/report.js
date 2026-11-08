@@ -118,11 +118,31 @@ export function defectText(text) {
   return `${t} 불량`;
 }
 
-/** 소재지 → 제출처(소방서장) — 안동은 자동, 그 밖은 직접 입력 */
+/**
+ * 소재지 → 관할 소방서(경상북도 22개 소방서만 자동)
+ *  · 시·군마다 소방서 1곳, 포항시만 남구(포항남부)·북구(포항북부)로 나뉨, 울릉군은 소방서가 없어 포항남부 관할
+ *  · 군위군은 2023.7.1. 대구광역시로 편입 — 경북 밖 주소와 같이 직접 입력
+ *  출처: 경상북도소방본부 소방서현황(관할구역), 관리자 확인(2026.11.)
+ */
+const GB_CITY = ["경주", "김천", "안동", "구미", "영주", "영천", "상주", "문경", "경산"];
+const GB_GUN = ["의성", "청송", "영양", "영덕", "청도", "고령", "성주", "칠곡", "예천", "봉화", "울진"];
+export function stationInfo(addr) {
+  const a = (addr || "").replace(/\s+/g, " ");
+  if (!a.trim()) return { station: "", note: "" };
+  if (/포항/.test(a)) {
+    if (/남구/.test(a)) return { station: "포항남부소방서장", note: "포항시 남구" };
+    if (/북구/.test(a)) return { station: "포항북부소방서장", note: "포항시 북구" };
+    return { station: "", note: "포항시는 남구(포항남부소방서)·북구(포항북부소방서)를 주소에 적어 주십시오." };
+  }
+  if (/울릉/.test(a)) return { station: "포항남부소방서장", note: "울릉군은 포항남부소방서 관할(울릉119안전센터) — 울릉소방서 개서 후에는 바꿔 적으십시오." };
+  for (const c of GB_CITY) if (new RegExp(`${c}(시|\\s|$)`).test(a)) return { station: `${c}소방서장`, note: `${c}시` };
+  for (const g of GB_GUN) if (new RegExp(`${g}(군|\\s|$)`).test(a)) return { station: `${g}소방서장`, note: `${g}군` };
+  return { station: "", note: "경상북도 밖(대구 군위군 포함)의 주소는 제출할 소방서를 직접 적어 주십시오." };
+}
+/** 제출처(소방서장): 직접 입력이 있으면 그것, 없으면 주소로 자동 */
 export function stationFor(addr, manual) {
   if (manual && manual.trim()) return manual.trim();
-  if (/안동/.test(addr || "")) return "안동소방서장";
-  return "";
+  return stationInfo(addr).station;
 }
 
 /** 날짜 차이(포함 일수) */

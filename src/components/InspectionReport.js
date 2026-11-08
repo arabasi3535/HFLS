@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReportForm from "./ReportForm";
-import { ROWS_L, ROWS_R, ROWS_M_L, ROWS_M_R, rowItems, defectText, emptyReport, applySeed, missingFields, stationFor, defects, daysInclusive, todayStr } from "../law/report";
+import { ROWS_L, ROWS_R, ROWS_M_L, ROWS_M_R, rowItems, defectText, emptyReport, applySeed, missingFields, stationFor, stationInfo, defects, daysInclusive, todayStr } from "../law/report";
 
 // ============================================================
 // 관계인 작동점검 보고서 작성기
@@ -326,11 +326,9 @@ export default function InspectionReport({ seed, onGoExisting }) {
             <F label="소재지(도로명주소)" req wide>
               <input value={rep.addr} onChange={(e) => set("addr", e.target.value)} placeholder="예: 경상북도 안동시 ○○로 00" />
             </F>
-            {!/안동/.test(rep.addr) && (
-              <F label="제출할 소방서" req hint="예: ○○소방서장">
-                <input value={rep.station} onChange={(e) => set("station", e.target.value)} />
-              </F>
-            )}
+            <F label="제출할 소방서" req={!stationInfo(rep.addr).station} hint={stationInfo(rep.addr).station ? "주소로 자동 지정 — 다르면 직접 입력" : "예: ○○소방서장"}>
+              <input value={rep.station} placeholder={stationInfo(rep.addr).station || "○○소방서장"} onChange={(e) => set("station", e.target.value)} />
+            </F>
             <F label="점검 시작일" req>
               <input type="date" value={rep.from} onChange={(e) => set("from", e.target.value)} />
             </F>
@@ -341,7 +339,10 @@ export default function InspectionReport({ seed, onGoExisting }) {
               <input type="date" value={rep.reportDate} onChange={(e) => set("reportDate", e.target.value)} />
             </F>
           </div>
-          <div className="w-hint">제출처: {station ? `${station} 귀하` : "소재지를 입력하십시오"}</div>
+          <div className="w-hint">
+            제출처: {station ? `${station} 귀하` : "소재지를 입력하십시오"}
+            {!rep.station && stationInfo(rep.addr).note ? ` — ${stationInfo(rep.addr).note}` : ""}
+          </div>
         </Sec>
 
         <Sec title="2. 관계인·점검자" sub="점검자 3명 필수">
