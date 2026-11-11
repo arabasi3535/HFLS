@@ -15,6 +15,7 @@ import BUILD from "./buildInfo.json";
 const SelfInspection = lazy(() => import("./components/SelfInspection"));
 const WmInspection = lazy(() => import("./components/WmInspection"));
 const MuInspection = lazy(() => import("./components/MuInspection"));
+const VideoTab = lazy(() => import("./components/VideoTab"));
 
 // 관리자 비밀번호
 //  - 배포 사이트: 서버 환경변수 ADMIN_PW로 확인(화면 코드에 비밀번호가 들어가지 않음)
@@ -205,7 +206,8 @@ export default function App() {
     ["new", "신축 건축물"],
     ["existing", "기존 건축물"],
     ["tools", "보조 계산기"],
-    ["report", "자체점검 보고서"], ["wm", "위험물 정기점검"], ["mu", "다중이용업 세부점검"],
+    ["report", "자체점검"], ["wm", "위험물 정기점검"], ["mu", "다중이용업 세부점검"],
+    ["video", "영상 자료"],
     ["guide", "사용 안내"],
     ...(adminMode
       ? [
@@ -386,6 +388,25 @@ export default function App() {
         {tab === "mu" && (
           <Suspense fallback={<div className="empty">불러오는 중…</div>}>
             <MuInspection />
+          </Suspense>
+        )}
+        {tab === "video" && (
+          <Suspense fallback={<div className="empty">불러오는 중…</div>}>
+            <VideoTab
+              onGo={(t, sub) => {
+                if (t === "tools" && sub) {
+                  try {
+                    const k = "hfls_tools_v1";
+                    const v = JSON.parse(localStorage.getItem(k) || "null") || {};
+                    localStorage.setItem(k, JSON.stringify({ ...v, sub }));
+                  } catch (e) {
+                    /* 저장 불가 환경 */
+                  }
+                }
+                setTab(t);
+                window.scrollTo(0, 0);
+              }}
+            />
           </Suspense>
         )}
         {tab === "guide" && <GuideTab adminMode={adminMode} />}

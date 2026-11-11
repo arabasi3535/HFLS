@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.18.1",
+  version: "2.19.1",
   date: "2026-11-11",
-  note: "다중이용업 세부점검표 — 점검결과 직접 선택(기본 빈칸), 영업장 현황 판단 삭제",
+  note: "「영상 강의」 탭 이름 → 「영상 자료」",
 };
 
 export const D = {
