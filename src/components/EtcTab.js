@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import VideoTab from "./VideoTab";
+import PaperTab from "./PaperTab";
 
 // ============================================================
-// 기타 자료 탭 — 하위 탭으로 자료 종류를 늘려 감(현재: 영상 자료)
+// 기타 자료 탭 — 하위 탭으로 자료 종류를 늘려 감(현재: 영상 자료·논문 자료)
 //  새 자료: SUBS에 [id, 이름] 추가하고 아래에 화면 연결
 // ============================================================
 const KEY = "hfls_etc_sub";
-const SUBS = [["video", "영상 자료"]];
+const SUBS = [
+  ["video", "영상 자료"],
+  ["paper", "논문 자료"],
+];
 
 export default function EtcTab({ onGo }) {
   const [sub, setSub] = useState(() => {
@@ -34,6 +38,7 @@ export default function EtcTab({ onGo }) {
         ))}
       </nav>
       {sub === "video" && <VideoTab onGo={onGo} />}
+      {sub === "paper" && <PaperTab />}
     </div>
   );
 }
