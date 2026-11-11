@@ -12,6 +12,7 @@ import { RULES_REV } from "./law/sources";
 import BUILD from "./buildInfo.json";
 
 const SelfInspection = lazy(() => import("./components/SelfInspection"));
+const WmInspection = lazy(() => import("./components/WmInspection"));
 
 // 관리자 비밀번호
 //  - 배포 사이트: 서버 환경변수 ADMIN_PW로 확인(화면 코드에 비밀번호가 들어가지 않음)
@@ -202,7 +203,7 @@ export default function App() {
     ["new", "신축 건축물"],
     ["existing", "기존 건축물"],
     ["tools", "보조 계산기"],
-    ["report", "자체점검 보고서"],
+    ["report", "자체점검 보고서"], ["wm", "위험물 정기점검"],
     ["guide", "사용 안내"],
     ...(adminMode
       ? [
@@ -346,6 +347,11 @@ export default function App() {
                 window.scrollTo(0, 0);
               }}
             />
+          </Suspense>
+        )}
+        {tab === "wm" && (
+          <Suspense fallback={<div className="empty">불러오는 중…</div>}>
+            <WmInspection />
           </Suspense>
         )}
         {tab === "guide" && <GuideTab adminMode={adminMode} />}

@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.15.0",
-  date: "2026-11-08",
-  note: "보조 계산기에 학원 다중이용업소 판단 추가",
+  version: "2.16.2",
+  date: "2026-11-10",
+  note: "위험물 정기점검 — 스프링클러·물분무(별지 제19호) 추가, 교재 작성예시 기준 해당없음 기본값",
 };
 
 export const D = {
