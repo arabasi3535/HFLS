@@ -7,16 +7,16 @@ import { HZ_SUBS, hzItem } from "../law/hazmat";
 
 // UN 번호는 확인된 것만 자동 입력(그 밖은 직접 입력)
 const UN = { gasoline: "1203", diesel: "1202", kerosene: "1223" };
-const CHEM = [
+export const CHEM = [
   ["toxic", "유독물질"],
   ["accident", "사고대비물질"],
   ["etc", "기타"],
 ];
-const GUN = [
+export const GUN = [
   ["powder", "화약"],
   ["explosive", "폭약"],
 ];
-const FEAT = [
+export const FEAT = [
   ["water", "금수성"],
   ["explode", "폭발성"],
   ["flam", "가연성"],
@@ -26,7 +26,7 @@ const FEAT = [
   ["skin", "눈·피부 접촉시 위험성"],
   ["river", "하천 등 유입 주의"],
 ];
-const STATE = [
+export const STATE = [
   ["solid", "고체"],
   ["liquid", "액체"],
   ["gas", "기체"],

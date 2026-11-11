@@ -163,21 +163,3 @@ export function emptyCard() {
   };
 }
 
-/**
- * 정기점검 결과 제출기한 — 법 제18조제2항: 점검을 한 날부터 30일 이내 시·도지사(소방서)에 제출
- * 기한: 점검일의 다음 날을 기산일로 하여 30일이 되는 날(시행령 별표9 과태료 개별기준) = 점검일 + 30일.
- * 말일이 토요일·공휴일이면 다음 날 만료(행정기본법 제6조① → 민법 제161조). 과태료: 법 제39조제1항제7호의2.
- * 공휴일 달력은 반영하지 않으므로 주말만 자동 표시(공휴일은 사용자 확인).
- */
-export function submitDue(done) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(done || "");
-  if (!m) return null;
-  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + 30));
-  const s = (x) => x.toISOString().slice(0, 10);
-  const DOW = "일월화수목금토";
-  const due = s(d);
-  const w = d.getUTCDay();
-  let next = null;
-  if (w === 6 || w === 0) next = s(new Date(d.getTime() + (w === 6 ? 2 : 1) * 864e5));
-  return { due, dow: DOW[w], next, nextDow: next ? "월" : null };
-}

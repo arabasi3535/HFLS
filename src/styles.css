@@ -867,9 +867,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity
 .wm-parties td { text-align: left; }
 .wm-card .wm-o td.wm-item-c { font-size: 9pt; font-weight: 600; }
 
-/* 위험물 정기점검 — 점검결과 제출기한 */
-.wm-due { margin-top: 8px; background: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #ea580c; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; color: var(--ink2); line-height: 1.55; }
-.wm-due b { color: #9a3412; }
-.wm-due-d { margin-top: 4px; color: var(--ink); }
-.wm-due-d small { color: var(--ink3, #6b7280); }
+/* 위험물 정기점검 — 점검결과 제출 안내(서식 칸 모양) */
+.wm-due { display: flex; margin-top: 8px; border: 1px solid #9ca3af; font-size: 13px; }
+.wm-due-l { flex: 0 0 auto; background: #f3f4f6; border-right: 1px solid #9ca3af; padding: 6px 12px; font-weight: 600; color: var(--ink); }
+.wm-due-v { padding: 6px 12px; color: var(--ink); }
+.wm-due-v small { color: var(--ink3, #6b7280); }
 .wm-ex { font-style: normal; font-size: 10.5px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+
+/* 입력 내용 저장·엑셀 서식·불러오기 줄 */
+aside .fb { margin-bottom: 10px; }
+.fb-msg { margin: 6px 0 10px; }

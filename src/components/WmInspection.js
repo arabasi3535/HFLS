@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { WM_FORMS, wmForm, wmRows, optVals, results, emptyWm, emptyCard, KFSI, RESULTS, submitDue } from "../law/wm";
+import { WM_FORMS, wmForm, wmRows, optVals, results, emptyWm, emptyCard, KFSI, RESULTS } from "../law/wm";
 import { HZ_ITEMS, HZ_CLASSES, hzItem, hzTotal, hzFmt } from "../law/hazmat";
 import WmDoc from "./WmDoc";
 import { CardEditor, CardDoc } from "./WmCard";
+import FileBar from "./FileBar";
 
 // ============================================================
 // 위험물 정기점검 탭 — 제조소등 일반점검표 · 소방시설 일반점검표 · 위험물안전카드
@@ -27,18 +28,14 @@ const FAC = WM_FORMS.filter((f) => f.kind === "facility");
 const FIRE = WM_FORMS.filter((f) => f.kind === "fire");
 const COMMON = ["checker", "owner", "manager", "biz", "loc", "permitDate", "permitNo"];
 
-function Due({ done }) {
-  const d = submitDue(done);
+/** 점검결과 제출 안내 — 서식 칸 모양 */
+function Due() {
   return (
     <div className="wm-due">
-      <b>점검결과 제출</b> 점검을 한 날부터 <b>30일 이내</b> 관할 소방서(시·도지사)에 제출해야 합니다(위험물안전관리법 제18조제2항, 기간 내 미제출 시 500만원 이하 과태료 — 같은 법 제39조제1항제7호의2).
-      {d && (
-        <div className="wm-due-d">
-          제출기한: <b>{d.due}({d.dow})까지</b>
-          {d.next && ` — 토·일요일이므로 ${d.next}(${d.nextDow})까지(행정기본법 제6조①, 민법 제161조)`}
-          <small> · 점검 종료일의 다음 날부터 30일째 되는 날(위험물안전관리법 시행령 별표9 과태료 개별기준). 공휴일이면 다음 날로 연장되니 달력을 확인하십시오.</small>
-        </div>
-      )}
+      <span className="wm-due-l">점검결과 제출</span>
+      <span className="wm-due-v">
+        점검을 한 날부터 30일 이내 관할 소방서 제출 <small>(위험물안전관리법 제18조제2항)</small>
+      </span>
     </div>
   );
 }
@@ -204,7 +201,7 @@ function FormEditor({ f, st, setSt, all }) {
           {I("점검 종료일", "to", "date")}
           {I(f.form === "13" ? "점검자(위험물운송자 등)" : "점검자(안전관리자 등)", "checker")}
         </div>
-        <Due done={h.to || h.from} />
+        <Due />
         {f.opts.length > 0 && (
           <div className="ir-optgrid">
             {f.opts.map((x) => (
@@ -362,7 +359,6 @@ export default function WmInspection() {
   }, [all]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
-  const fileRef = useRef(null);
   const sub = all.sub;
   const f = sub === "card" ? null : wmForm(sub) || WM_FORMS[0];
   const st = f ? { ...emptyWm(), ...(all.forms[f.id] || {}) } : null;
@@ -408,42 +404,58 @@ export default function WmInspection() {
     a.download = name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    setMsg(every ? "모든 점검표(위험물안전카드 포함)를 한 파일로 저장했습니다." : "이 점검표 입력 내용을 파일로 저장했습니다.");
+    return every ? "모든 점검표(위험물안전카드 포함)를 한 파일로 저장했습니다." : "이 점검표 입력 내용을 파일로 저장했습니다.";
+  };
+  const blankBook = async () => {
+    const [{ wmBook }, { downloadBytes }] = await Promise.all([import("../lib/sheets/wm"), import("../lib/xlsx")]);
+    downloadBytes(wmBook(sub), `${f ? f.tab : "위험물안전카드"}_입력서식.xlsx`);
+    return `「${f ? f.tab : "위험물안전카드"}」 빈 서식(엑셀)을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리십시오.`;
   };
   // 다른 날 저장한 파일 → 점검기간은 오늘로, 점검결과·비고는 기본값으로(작년 내용 재사용). 같은 날 저장한 파일 → 그대로 복원.
-  const loadFile = (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    const rd = new FileReader();
-    rd.onload = () => {
-      let j;
-      try {
-        j = JSON.parse(rd.result);
-        if (j.type !== "hfls-wm") throw new Error("x");
-      } catch (err) {
-        alert("위험물 정기점검 입력 내용 파일(.json)이 아닙니다.");
-        return;
-      }
-      const same = j.savedAt === today();
-      const renew = (d) => (same || !d ? d : { ...d, res: {}, note: {}, hdr: { ...(d.hdr || {}), from: today(), to: today() } });
-      if (j.scope === "all") {
-        const forms = Object.fromEntries(Object.entries(j.forms || {}).map(([id, d]) => [id, renew(d)]));
-        setAll((a) => ({ ...a, sub: j.sub || a.sub, forms: { ...a.forms, ...forms }, card: j.card || a.card }));
-        const n = Object.keys(forms).length;
-        setMsg(`${j.savedAt || ""} 저장한 점검표 ${n}종${j.card ? "과 위험물안전카드" : ""}를 불러왔습니다.` + (same ? "" : " 점검기간은 오늘로, 점검결과는 기본값(적합·해당없음)으로 바꿨습니다 — 날짜와 불량 사항만 확인하십시오."));
-        return;
-      }
-      if (!j.data) {
-        alert("위험물 정기점검 입력 내용 파일(.json)이 아닙니다.");
-        return;
-      }
-      if (j.sub === "card") setAll((a) => ({ ...a, sub: "card", card: j.data }));
-      else setAll((a) => ({ ...a, sub: j.sub, forms: { ...a.forms, [j.sub]: renew(j.data) } }));
-      const nm = j.sub === "card" ? "위험물안전카드" : (wmForm(j.sub) || {}).tab;
-      setMsg(`${j.savedAt || ""} 저장한 「${nm}」 입력 내용을 불러왔습니다.` + (same || j.sub === "card" ? "" : " 점검기간은 오늘로, 점검결과는 기본값(적합·해당없음)으로 바꿨습니다 — 날짜와 불량 사항만 확인하십시오."));
-    };
-    rd.readAsText(file);
+  const loadFile = async (file) => {
+    if (/\.xlsx$/i.test(file.name)) {
+      const [{ readWmBook }, { fileBuffer }] = await Promise.all([import("../lib/sheets/wm"), import("../lib/sheetForm")]);
+      const { list, warn } = readWmBook(await fileBuffer(file));
+      const used = list.filter((x) => (x.sub === "card" ? all.card && all.card.name1 : all.forms[x.sub] && (all.forms[x.sub].hdr || {}).from));
+      if (used.length && !window.confirm(`${used.map((x) => (x.sub === "card" ? "위험물안전카드" : wmForm(x.sub).tab)).join("·")}에 입력한 내용을 올린 엑셀 서식 내용으로 바꿀까요?`)) return "";
+      setAll((a) => {
+        const forms = { ...a.forms };
+        let c = a.card;
+        for (const x of list) {
+          if (x.sub === "card") c = x.data;
+          else forms[x.sub] = x.data;
+        }
+        return { ...a, sub: list[0].sub, forms, card: c };
+      });
+      const names = list.map((x) => (x.sub === "card" ? "위험물안전카드" : wmForm(x.sub).tab)).join("·");
+      return `엑셀 서식 「${file.name}」(${names})을 불러왔습니다.` + (warn.length ? ` 확인할 점: ${warn.join(" / ")}` : "");
+    }
+    const text = await new Promise((res, rej) => {
+      const rd = new FileReader();
+      rd.onload = () => res(rd.result);
+      rd.onerror = () => rej(rd.error);
+      rd.readAsText(file);
+    });
+    let j;
+    try {
+      j = JSON.parse(text);
+      if (j.type !== "hfls-wm") throw new Error("x");
+    } catch (err) {
+      throw new Error("위험물 정기점검 입력 내용 파일(.json) 또는 엑셀 서식(.xlsx)이 아닙니다.");
+    }
+    const same = j.savedAt === today();
+    const renew = (d) => (same || !d ? d : { ...d, res: {}, note: {}, hdr: { ...(d.hdr || {}), from: today(), to: today() } });
+    if (j.scope === "all") {
+      const forms = Object.fromEntries(Object.entries(j.forms || {}).map(([id, d]) => [id, renew(d)]));
+      setAll((a) => ({ ...a, sub: j.sub || a.sub, forms: { ...a.forms, ...forms }, card: j.card || a.card }));
+      const n = Object.keys(forms).length;
+      return `${j.savedAt || ""} 저장한 점검표 ${n}종${j.card ? "과 위험물안전카드" : ""}를 불러왔습니다.` + (same ? "" : " 점검기간은 오늘로, 점검결과는 기본값(적합·해당없음)으로 바꿨습니다 — 날짜와 불량 사항만 확인하십시오.");
+    }
+    if (!j.data) throw new Error("위험물 정기점검 입력 내용 파일(.json)이 아닙니다.");
+    if (j.sub === "card") setAll((a) => ({ ...a, sub: "card", card: j.data }));
+    else setAll((a) => ({ ...a, sub: j.sub, forms: { ...a.forms, [j.sub]: renew(j.data) } }));
+    const nm = j.sub === "card" ? "위험물안전카드" : (wmForm(j.sub) || {}).tab;
+    return `${j.savedAt || ""} 저장한 「${nm}」 입력 내용을 불러왔습니다.` + (same || j.sub === "card" ? "" : " 점검기간은 오늘로, 점검결과는 기본값(적합·해당없음)으로 바꿨습니다 — 날짜와 불량 사항만 확인하십시오.");
   };
   const reset = () => {
     if (!window.confirm("이 점검표의 입력 내용을 모두 지울까요?")) return;
@@ -485,20 +497,18 @@ export default function WmInspection() {
               </>
             )}
           </div>
-          <div className="ir-file">
-            <button type="button" className="w-reset" onClick={() => saveFile(false)}>
-              입력 내용 파일로 저장
-            </button>
-            <button type="button" className="w-reset" onClick={() => saveFile(true)}>
-              모든 점검표 한 파일로 저장
-            </button>
-            <button type="button" className="w-reset" onClick={() => fileRef.current && fileRef.current.click()}>
-              저장한 파일 불러오기
-            </button>
-            <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={loadFile} />
-            <span className="w-hint">연 1회 이상 점검 — 올해 입력한 내용을 파일로 받아 두었다가 내년에 불러오면 날짜와 불량 사항만 고치면 됩니다.</span>
-          </div>
-          {msg && <div className="note">{msg}</div>}
+          <FileBar
+            saveLabel="입력 내용 파일로 저장"
+            onSave={() => saveFile(false)}
+            onSaveAll={() => saveFile(true)}
+            saveAllLabel="모든 점검표 한 파일로 저장"
+            onBlank={blankBook}
+            onLoad={loadFile}
+            accept=".json,.xlsx,application/json"
+            msg={msg}
+            setMsg={setMsg}
+            hint="저장한 파일(.json)을 내년에 불러오면 날짜와 불량 사항만 고치면 됩니다. 컴퓨터에서 엑셀 빈 서식에 작성해 올려도 됩니다."
+          />
           <BookLink f={f} />
           {f ? <FormEditor key={f.id} f={f} st={st} setSt={setSt} all={all.forms} /> : <div className="ir-sec"><div className="ir-sec-b wm-pt"><CardEditor c={card} set={setCard} /></div></div>}
           <div className="ir-actions">

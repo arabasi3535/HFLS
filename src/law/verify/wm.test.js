@@ -95,17 +95,3 @@ describe("위험물 정기점검표 — 세부기준 별지 제9~24호", () => {
   });
 });
 
-describe("정기점검 결과 제출기한(법 제18조②)", () => {
-  const { submitDue } = require("../wm");
-  test("점검일 + 30일(초일 불산입)", () => {
-    expect(submitDue("2026-11-10")).toEqual({ due: "2026-12-10", dow: "목", next: null, nextDow: null });
-    expect(submitDue("2026-01-31").due).toBe("2026-03-02");
-  });
-  test("말일이 토·일요일이면 다음 월요일", () => {
-    const r = submitDue("2026-11-14"); // 12-14 월
-    expect(r.next).toBe(null);
-    const s = submitDue("2026-11-12"); // 12-12 토
-    expect(s).toMatchObject({ due: "2026-12-12", dow: "토", next: "2026-12-14" });
-  });
-  test("날짜 없으면 null", () => expect(submitDue("")).toBe(null));
-});

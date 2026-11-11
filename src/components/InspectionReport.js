@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReportForm from "./ReportForm";
 import StaffingCalc from "./StaffingCalc";
-import { ROWS_L, ROWS_R, ROWS_M_L, ROWS_M_R, rowItems, defectText, emptyReport, applySeed, missingFields, stationFor, stationInfo, defects, daysInclusive, todayStr, VARIANTS, QUALS_OWNER, QUALS_PRO, mainQualWarn } from "../law/report";
+import FileBar from "./FileBar";
+import { ROWS_L, ROWS_R, ROWS_M_L, ROWS_M_R, rowItems, defectText, emptyReport, applySeed, missingFields, stationFor, stationInfo, defects, daysInclusive, todayStr, VARIANTS, QUALS_OWNER, QUALS_PRO, mainQualWarn, MULTI } from "../law/report";
 
 // ============================================================
 // 자체점검 실시결과 보고서 작성기 — variant: owner(관계인 작동점검) · mgmt(관리업 작동점검) · compFirst(최초점검) · comp(그 밖의 종합점검)
@@ -29,11 +30,6 @@ const save = (kind, v) => {
   }
 };
 
-const MULTI = [
-  "휴게음식점영업", "제과점영업", "일반음식점영업", "단란주점영업", "유흥주점영업", "영화상영관", "비디오물감상실업", "비디오물소극장업", "복합영상물제공업", "학원", "독서실", "목욕장업",
-  "찜질방업", "게임제공업", "인터넷컴퓨터게임시설제공업", "복합유통게임제공업", "노래연습장업", "산후조리업", "고시원업", "권총사격장", "가상체험 체육시설업", "안마시술소", "전화방업",
-  "화상대화방업", "수면방업", "콜라텍업",
-];
 
 function F({ label, children, hint, req, wide }) {
   return (
@@ -151,7 +147,6 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
   const delInsp = (i) => setRep((r) => (r.inspectors.length <= 3 ? r : { ...r, inspectors: r.inspectors.filter((_, j) => j !== i) }));
 
   // 입력 내용 파일 저장·불러오기(매년 다시 쓰기)
-  const fileRef = useRef(null);
   const exportFile = () => {
     const data = JSON.stringify({ type: "hfls-op-report", v: 1, savedAt: todayStr(), data: rep }, null, 1);
     const blob = new Blob([data], { type: "application/json" });
@@ -165,51 +160,62 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
       a.remove();
     }, 1000);
   };
-  const importFile = (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    const fr = new FileReader();
-    fr.onload = () => {
-      try {
-        const j = JSON.parse(fr.result);
-        if (!j || j.type !== "hfls-op-report" || !j.data) throw new Error("형식");
-        const e0 = emptyReport(vr.id);
-        const d = j.data;
-        const sameKind = (d.kind || "owner") === vr.id || (pro && (d.kind || "owner") !== "owner");
-        const t = todayStr();
-        // 날짜(점검기간·작성일)는 오늘로, 불량·이행계획은 비움(모두 양호) — 나머지는 그대로
-        const clean = (rows) => Object.fromEntries(Object.entries(rows || {}).map(([k, st]) => [k, { on: !!(st && st.on), bad: {} }]));
-        setRep({
-          ...e0,
-          ...d,
-          kind: vr.id,
-          checker: sameKind ? d.checker || e0.checker : e0.checker,
-          toWhom: sameKind ? d.toWhom || e0.toWhom : e0.toWhom,
-          firm: { ...e0.firm, ...d.firm },
-          owner: { ...e0.owner, ...d.owner },
-          email: { ...e0.email, ...d.email },
-          manager: { ...e0.manager, ...d.manager },
-          bld: { ...e0.bld, ...d.bld },
-          detail: { ...e0.detail, ...d.detail },
-          insurance: { ...e0.insurance, ...d.insurance },
-          inspectors: sameKind && Array.isArray(d.inspectors) && d.inspectors.length >= 3 ? d.inspectors.map((p) => ({ ...p, days: "" })) : e0.inspectors,
-          rows: clean(d.rows),
-          mRows: clean(d.mRows),
-          plan10: e0.plan10,
-          from: t,
-          to: t,
-          reportDate: t,
-          prevOp: vr.first ? d.prevOp || e0.prevOp : "실시",
-          prevComp: vr.comp && !vr.first ? "실시" : d.prevComp || e0.prevComp,
-          v: 1,
-        });
-        setMsg(`${j.savedAt || ""} 저장한 입력 내용을 불러왔습니다. 점검기간·작성일은 오늘로, 점검 결과는 모두 「양호」로 바꿨습니다 — 날짜와 불량 사항만 확인하십시오.`);
-      } catch (err) {
-        alert("자체점검 보고서 입력 내용 파일(.json)이 아닙니다.");
-      }
-    };
-    fr.readAsText(file, "utf-8");
+  const importFile = async (file) => {
+    if (/\.xlsx$/i.test(file.name)) {
+      const [{ readReportBook }, { fileBuffer }] = await Promise.all([import("../lib/sheets/report"), import("../lib/sheetForm")]);
+      const { rep: r, warn } = readReportBook(await fileBuffer(file), vr.id);
+      if (rep.name && !window.confirm("지금 입력한 내용을 올린 엑셀 서식 내용으로 바꿀까요?")) return "";
+      setRep(r);
+      return `엑셀 서식 「${file.name}」을 불러왔습니다.` + (warn.length ? ` 확인할 점: ${warn.join(" / ")}` : "");
+    }
+    const text = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = () => rej(fr.error);
+      fr.readAsText(file, "utf-8");
+    });
+    try {
+      const j = JSON.parse(text);
+      if (!j || j.type !== "hfls-op-report" || !j.data) throw new Error("형식");
+      const e0 = emptyReport(vr.id);
+      const d = j.data;
+      const sameKind = (d.kind || "owner") === vr.id || (pro && (d.kind || "owner") !== "owner");
+      const t = todayStr();
+      // 날짜(점검기간·작성일)는 오늘로, 불량·이행계획은 비움(모두 양호) — 나머지는 그대로
+      const clean = (rows) => Object.fromEntries(Object.entries(rows || {}).map(([k, st]) => [k, { on: !!(st && st.on), bad: {} }]));
+      setRep({
+        ...e0,
+        ...d,
+        kind: vr.id,
+        checker: sameKind ? d.checker || e0.checker : e0.checker,
+        toWhom: sameKind ? d.toWhom || e0.toWhom : e0.toWhom,
+        firm: { ...e0.firm, ...d.firm },
+        owner: { ...e0.owner, ...d.owner },
+        email: { ...e0.email, ...d.email },
+        manager: { ...e0.manager, ...d.manager },
+        bld: { ...e0.bld, ...d.bld },
+        detail: { ...e0.detail, ...d.detail },
+        insurance: { ...e0.insurance, ...d.insurance },
+        inspectors: sameKind && Array.isArray(d.inspectors) && d.inspectors.length >= 3 ? d.inspectors.map((p) => ({ ...p, days: "" })) : e0.inspectors,
+        rows: clean(d.rows),
+        mRows: clean(d.mRows),
+        plan10: e0.plan10,
+        from: t,
+        to: t,
+        reportDate: t,
+        prevOp: vr.first ? d.prevOp || e0.prevOp : "실시",
+        prevComp: vr.comp && !vr.first ? "실시" : d.prevComp || e0.prevComp,
+        v: 1,
+      });
+      return `${j.savedAt || ""} 저장한 입력 내용을 불러왔습니다. 점검기간·작성일은 오늘로, 점검 결과는 모두 「양호」로 바꿨습니다 — 날짜와 불량 사항만 확인하십시오.`;
+    } catch (err) {
+      throw new Error("자체점검 보고서 입력 내용 파일(.json) 또는 엑셀 서식(.xlsx)이 아닙니다.");
+    }
+  };
+  const blankBook = async () => {
+    const [{ reportBook }, { downloadBytes }] = await Promise.all([import("../lib/sheets/report"), import("../lib/xlsx")]);
+    downloadBytes(reportBook(vr.id), `${vr.file}_보고서_입력서식.xlsx`);
+    return "빈 서식(엑셀)을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리면 보고서가 채워집니다.";
   };
 
   const missing = missingFields(rep);
@@ -314,17 +320,16 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
           )}{" "}
           기본값은 모두 <b>양호</b>이고, 불량인 설비만 고르면 점검번호와 불량내용이 자동으로 들어갑니다.
         </div>
-        <div className="ir-file">
-          <button type="button" className="w-reset" onClick={exportFile}>
-            입력 내용 파일로 저장
-          </button>
-          <button type="button" className="w-reset" onClick={() => fileRef.current && fileRef.current.click()}>
-            저장한 파일 불러오기
-          </button>
-          <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={importFile} />
-          <span className="w-hint">1년에 한 번 제출 — 올해 입력한 내용을 파일로 받아 두었다가 내년에 불러오면 날짜만 고치면 됩니다.</span>
-        </div>
-        {msg && <div className="note">{msg}</div>}
+        <FileBar
+          saveLabel="입력 내용 파일로 저장"
+          onSave={exportFile}
+          onBlank={blankBook}
+          onLoad={importFile}
+          accept=".json,.xlsx,application/json"
+          msg={msg}
+          setMsg={setMsg}
+          hint="저장한 파일(.json)을 내년에 불러오면 날짜·불량 사항만 고치면 됩니다. 컴퓨터에서 엑셀 빈 서식에 작성해 올려도 됩니다."
+        />
 
         {pro && onCopyFrom && (
           <div className="ir-copy">

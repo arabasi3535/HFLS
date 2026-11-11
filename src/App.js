@@ -4,6 +4,7 @@ import Report from "./components/Report";
 import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
 import { BugReportModal, ReportsTab } from "./components/Feedback";
 import Tools from "./components/Tools";
+import FileBar from "./components/FileBar";
 import { loadStats, adminAuth, loadNotice, saveNotice } from "./lib/remote";
 import { review } from "./law/engine";
 import { safetyReview } from "./law/safety";
@@ -288,6 +289,33 @@ export default function App() {
         {isInput && (
           <div className="layout">
             <aside className="no-print">
+              <FileBar
+                key={`fb-${mode}`}
+                onSave={async () => {
+                  const { buildingBook, purposeName } = await import("./lib/sheets/building");
+                  const { downloadBytes } = await import("./lib/xlsx");
+                  const inp = inputs[mode];
+                  const u = getUse(inp.use);
+                  downloadBytes(buildingBook(mode, inp), `${mode === "existing" ? "기존건축물" : "신축건축물"}_입력내용_${u ? purposeName(u).replace(/^[\d.-]+\s*/, "").replace(/\s*—\s*/g, "_") : "미입력"}_${today}.xlsx`);
+                  return "입력 내용을 엑셀 파일로 받았습니다. 컴퓨터에서 고친 뒤 「불러오기」로 다시 올릴 수 있습니다.";
+                }}
+                onBlank={async () => {
+                  const { buildingBook } = await import("./lib/sheets/building");
+                  const { downloadBytes } = await import("./lib/xlsx");
+                  downloadBytes(buildingBook(mode), `소방시설산정_입력서식_${mode === "existing" ? "기존건축물" : "신축건축물"}.xlsx`);
+                  return "빈 서식을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리십시오.";
+                }}
+                onLoad={async (file) => {
+                  if (!/\.xlsx$/i.test(file.name)) throw new Error("엑셀(.xlsx) 파일만 올릴 수 있습니다. 한셀·엑셀에서 「Excel 통합 문서(.xlsx)」로 저장해 주십시오.");
+                  const { readBuildingBook } = await import("./lib/sheets/building");
+                  const { fileBuffer } = await import("./lib/sheetForm");
+                  const { input, warn } = readBuildingBook(await fileBuffer(file), mode);
+                  if (inputs[mode].use && !window.confirm("지금 입력한 내용을 올린 파일 내용으로 바꿀까요?")) return "";
+                  setInputs((p) => ({ ...p, [mode]: input }));
+                  return `「${file.name}」을 불러왔습니다.` + (warn.length ? ` 확인할 점: ${warn.join(" / ")}` : "");
+                }}
+                hint="컴퓨터에서 엑셀로 작성해 올릴 수 있습니다."
+              />
               <Wizard key={mode} mode={mode} input={inputs[mode]} setInput={setInput} onReset={reset} errors={dateErr ? { date: dateErr.replace(/^건축허가일\(|\)$/g, "") } : {}} />
             </aside>
             <section id="result-top" className="results">
