@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.19.1",
+  version: "2.20.0",
   date: "2026-11-11",
-  note: "「영상 강의」 탭 이름 → 「영상 자료」",
+  note: "「기타 자료」 탭(하위: 영상 자료) — 설명란 「더보기」 안내, 분류 삭제, 썸네일 갱신",
 };
 
 export const D = {

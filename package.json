@@ -1,6 +1,6 @@
 {
   "name": "hfls",
-  "version": "2.19.1",
+  "version": "2.20.0",
   "private": true,
   "description": "소방시설 적용·안전관리 검토 시스템 (건축허가등 신청일 기준 별표4 판정 + 부칙 소급 + 강화기준 특례 + 증축·용도변경 특례)",
   "dependencies": {

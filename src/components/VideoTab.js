@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { CHANNEL, VIDEOS, VIDEO_CATS } from "../law/videos";
+import { CHANNEL, VIDEOS, THUMB_REV } from "../law/videos";
 
 // ============================================================
-// 영상 자료 탭 — 채널 영상 목록, 누르면 이 화면에서 재생(youtube-nocookie)
+// 기타 자료 › 영상 자료 — 채널 영상 목록, 누르면 이 화면에서 재생(youtube-nocookie)
 // ============================================================
 export default function VideoTab({ onGo }) {
-  const [cat, setCat] = useState("");
   const [play, setPlay] = useState(null);
-  const list = VIDEOS.filter((v) => !cat || v.cat === cat);
   const cur = VIDEOS.find((v) => v.id === play);
   return (
     <div className="vd">
@@ -19,6 +17,10 @@ export default function VideoTab({ onGo }) {
         <a className="w-run vd-ch" href={CHANNEL.url} target="_blank" rel="noopener noreferrer">
           ▶ {CHANNEL.name} 채널 열기
         </a>
+      </div>
+      <div className="vd-more">
+        <b>📌 자세한 설명은 YouTube 설명란의 「…더보기」에 있습니다.</b>
+        <span>근거 법령·조항, 적용 기준일, 세부 내용은 영상마다 설명란에 정리해 두었습니다. 「YouTube에서 설명란 보기」를 눌러 「…더보기」를 펼쳐 확인하십시오.</span>
       </div>
       {cur && (
         <div className="vd-player">
@@ -35,14 +37,14 @@ export default function VideoTab({ onGo }) {
           <div className="vd-now">
             <b>{cur.title}</b>
             <span>
+              <a className="w-run vd-desc" href={`https://www.youtube.com/watch?v=${cur.id}`} target="_blank" rel="noopener noreferrer">
+                YouTube에서 설명란 보기(더보기) →
+              </a>
               {cur.go && onGo && (
                 <button type="button" className="w-reset" onClick={() => onGo(cur.go[0], cur.go[1])}>
                   앱에서 해 보기: {cur.go[2]} →
                 </button>
               )}
-              <a className="w-link" href={`https://www.youtube.com/watch?v=${cur.id}`} target="_blank" rel="noopener noreferrer">
-                YouTube에서 보기
-              </a>
               <button type="button" className="w-link" onClick={() => setPlay(null)}>
                 닫기
               </button>
@@ -50,15 +52,8 @@ export default function VideoTab({ onGo }) {
           </div>
         </div>
       )}
-      <nav className="tl-tabs vd-cats">
-        {["", ...VIDEO_CATS].map((c) => (
-          <button key={c || "all"} type="button" className={cat === c ? "on" : ""} onClick={() => setCat(c)}>
-            {c || `전체 ${VIDEOS.length}`}
-          </button>
-        ))}
-      </nav>
       <div className="vd-grid">
-        {list.map((v) => (
+        {VIDEOS.map((v) => (
           <button
             key={v.id}
             type="button"
@@ -69,10 +64,9 @@ export default function VideoTab({ onGo }) {
             }}
           >
             <span className="vd-thumb">
-              <img src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`} alt="" loading="lazy" />
+              <img src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg?v=${THUMB_REV}`} alt="" loading="lazy" />
               <i>{v.dur}</i>
             </span>
-            <span className="vd-cat">{v.cat}</span>
             <span className="vd-t">{v.title}</span>
           </button>
         ))}
