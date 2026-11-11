@@ -102,10 +102,10 @@ describe("엑셀 서식 — 안전시설등 세부점검표", () => {
   const { muBook, readMuBook } = require("./mu");
   const { emptyMu, muResults } = require("../../law/mu");
   test("채운 서식 → 다시 읽기", () => {
-    const s0 = { ...emptyMu(), type: "karaoke", opts: { floor: "under", rooms: true }, hdr: { ...emptyMu().hdr, name: "○○노래연습장", addr: "안동시", date: "2026-11-11", checker: "홍길동", qual: "다중이용업주" }, res: { 2: "불량" }, act: { 2: "감지기 교체 예정" } };
+    const s0 = { ...emptyMu(), type: "노래연습장업", hdr: { ...emptyMu().hdr, name: "○○노래연습장", addr: "안동시", date: "2026-11-11", checker: "홍길동", qual: "다중이용업주" }, res: { 2: "불량" }, act: { 2: "감지기 교체 예정" } };
     const { data, warn } = readMuBook(muBook(s0));
     expect(warn).toEqual([]);
-    expect(data.type).toBe("karaoke");
+    expect(data.type).toBe("노래연습장업");
     expect(data.hdr).toEqual(s0.hdr);
     expect(data.res).toEqual({ 2: "불량" });
     expect(data.act).toEqual({ 2: "감지기 교체 예정" });

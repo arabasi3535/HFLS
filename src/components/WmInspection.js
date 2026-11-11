@@ -28,18 +28,6 @@ const FAC = WM_FORMS.filter((f) => f.kind === "facility");
 const FIRE = WM_FORMS.filter((f) => f.kind === "fire");
 const COMMON = ["checker", "owner", "manager", "biz", "loc", "permitDate", "permitNo"];
 
-/** 점검결과 제출 안내 — 서식 칸 모양 */
-function Due() {
-  return (
-    <div className="wm-due">
-      <span className="wm-due-l">점검결과 제출</span>
-      <span className="wm-due-v">
-        점검을 한 날부터 30일 이내 관할 소방서 제출 <small>(위험물안전관리법 제18조제2항)</small>
-      </span>
-    </div>
-  );
-}
-
 function Seg({ value, options, onChange }) {
   return (
     <span className="ir-seg">
@@ -201,7 +189,6 @@ function FormEditor({ f, st, setSt, all }) {
           {I("점검 종료일", "to", "date")}
           {I(f.form === "13" ? "점검자(위험물운송자 등)" : "점검자(안전관리자 등)", "checker")}
         </div>
-        <Due />
         {f.opts.length > 0 && (
           <div className="ir-optgrid">
             {f.opts.map((x) => (

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MU_TYPES, MU_FLOORS, MU_ITEMS, MU_NUM, MU_RESULTS, MU_QUALS, muType, muOpts, muApplies, muResults, emptyMu, quarterOf } from "../law/mu";
+import { MU_TYPES, MU_ITEMS, MU_NUM, MU_RESULTS, MU_QUALS, muType, muResults, emptyMu, quarterOf } from "../law/mu";
 import FileBar from "./FileBar";
 
 // ============================================================
@@ -25,22 +25,6 @@ const dot = (d) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || "");
   return m ? `${m[1]}.  ${Number(m[2])}.  ${Number(m[3])}.` : "     .     .     .";
 };
-
-function Seg({ value, options, onChange }) {
-  return (
-    <span className="ir-seg">
-      {options.map(([k, l]) => (
-        <button key={String(k)} type="button" className={value === k ? "on" : ""} onClick={() => onChange(k)}>
-          {l}
-        </button>
-      ))}
-    </span>
-  );
-}
-const YN = [
-  [true, "예"],
-  [false, "아니오"],
-];
 
 /** A4 서식 */
 export function MuDoc({ st }) {
@@ -187,16 +171,15 @@ export default function MuInspection() {
   }, [st]);
   const h = st.hdr;
   const setH = (k, v) => setSt((s) => ({ ...s, hdr: { ...s.hdr, [k]: v } }));
-  const o = muOpts(st);
-  const setO = (k, v) => setSt((s) => ({ ...s, opts: { ...s.opts, [k]: v } }));
   const res = muResults(st);
   const t = muType(st.type);
   const counts = MU_RESULTS.map((r) => res.filter((x) => x === r).length);
+  const left = res.filter((x) => !x).length;
+  // 같은 버튼을 다시 누르면 선택 취소
   const setRes = (i, v) =>
     setSt((s) => {
       const r = { ...(s.res || {}) };
-      const def = muApplies(i, s).on ? "양호" : "해당없음";
-      if (v === def) delete r[i];
+      if (r[i] === v) delete r[i];
       else r[i] = v;
       return { ...s, res: r };
     });
@@ -302,7 +285,7 @@ export default function MuInspection() {
                 value={st.type}
                 onChange={(e) => {
                   const nt = muType(e.target.value);
-                  setSt((s) => ({ ...s, type: e.target.value, opts: { floor: (s.opts || {}).floor, sealed: (s.opts || {}).sealed }, res: {}, hdr: { ...s.hdr, use: !s.hdr.use || (muType(s.type) || {}).name === s.hdr.use ? (nt ? nt.name : "") : s.hdr.use } }));
+                  setSt((s) => ({ ...s, type: e.target.value, hdr: { ...s.hdr, use: !s.hdr.use || (muType(s.type) || {}).name === s.hdr.use ? (nt ? nt.name : "") : s.hdr.use } }));
                 }}
               >
                 <option value="">— 업종 선택 —</option>
@@ -312,7 +295,7 @@ export default function MuInspection() {
                   </option>
                 ))}
               </select>
-              <span className="w-hint">업종에 따라 구획된 실·영상음향장치·피난안내영상물 기본값이 정해집니다.</span>
+              <span className="w-hint">고르면 주용도에 업종 이름이 들어갑니다.</span>
             </label>
             <div className="w-grid2">
               {I("대상명", "name")}
@@ -328,53 +311,23 @@ export default function MuInspection() {
 
         <section className="ir-sec">
           <div className="ir-sec-h">
-            <span>영업장 현황</span>
-            <small>해당없음 항목 판단</small>
-          </div>
-          <div className="ir-sec-b">
-            <div className="ir-optgrid mu-opts">
-              <div className="ir-optrow">
-                <span className="ir-optlabel">영업장 위치</span>
-                <Seg value={o.floor} options={MU_FLOORS} onChange={(v) => setO("floor", v)} />
-              </div>
-              {[
-                ["sealed", "밀폐구조 영업장", "개구부 면적 합계가 바닥면적의 1/30 이하(시행령 제3조의2) → 간이스프링클러"],
-                ["rooms", "구획된 실 있음", "룸·객실·실 등 → 영업장 내부 피난통로"],
-                ["av", "노래반주기 등 영상음향장치 사용", "→ 영상음향차단장치, 경보설비는 자동화재탐지설비"],
-                ["exitFree", "비상구 설치 제외 영업장", "별도 직통계단이 긴 변 1/2 이상 떨어져 있거나, 피난층 33㎡ 이하·구획된 실 없음·출입구까지 10m 이하"],
-                ["mapFree", "피난안내도 비치 제외", "바닥면적 33㎡ 이하, 또는 구획된 실 없이 어디서나 출입구·비상구가 보임"],
-                ...(t && t.film === "fac" ? [["filmFac", "피난안내 영상물 상영 시설(TV·스크린 등) 있음", "있으면 피난안내영상물 상영 대상"]] : []),
-              ].map(([k, l, hint]) => (
-                <div key={k} className="ir-optrow mu-optrow">
-                  <span className="ir-optlabel">{l}</span>
-                  <Seg value={o[k]} options={YN} onChange={(v) => setO(k, v)} />
-                  <span className="w-hint">{hint}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="ir-sec">
-          <div className="ir-sec-h">
             <span>2. 점검사항</span>
             <small>
               양호 {counts[0]} · 불량 {counts[1]} · 해당없음 {counts[2]}
+              {left ? ` · 미선택 ${left}` : ""}
             </small>
           </div>
           <div className="ir-sec-b">
-            <div className="w-hint">기본은 「양호」, 업종·영업장 현황상 설치 대상이 아닌 항목은 「해당없음」입니다. 불량이면 조치사항(조치 내용·예정일)을 적습니다.</div>
+            <div className="w-hint">항목마다 점검한 결과를 직접 고르십시오(같은 버튼을 다시 누르면 취소). 불량이면 조치사항(조치 내용·예정일)을 적습니다.</div>
             <div className="mu-items">
               {MU_ITEMS.map(([title, subs], i) => {
-                const ap = muApplies(i, st);
                 return (
-                  <div key={i} className={`mu-ed r-${res[i]}`}>
+                  <div key={i} className={`mu-ed ${res[i] ? `r-${res[i]}` : "r-none"}`}>
                     <div className="mu-ed-t">
                       <b>
                         {MU_NUM[i]} {title}
                       </b>
                       {subs.length > 0 && <span className="mu-ed-s">{subs.join(" · ")}</span>}
-                      {ap.why && <em className={ap.on ? "" : "off"}>{ap.on ? "대상: " : "해당없음: "}{ap.why}</em>}
                     </div>
                     <div className="wm-item-r">
                       {MU_RESULTS.map((k) => (

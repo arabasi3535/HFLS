@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.18.0",
+  version: "2.18.1",
   date: "2026-11-11",
-  note: "다중이용업 세부점검 탭 — 안전시설등 세부점검표(시행규칙 별지 제10호서식)",
+  note: "다중이용업 세부점검표 — 점검결과 직접 선택(기본 빈칸), 영업장 현황 판단 삭제",
 };
 
 export const D = {
