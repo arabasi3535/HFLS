@@ -77,6 +77,7 @@ function buildFormSheet(spec, listPool) {
     if (hasNote) row.push(f.note ? { v: f.note.value || "", s: ST.input } : { v: "", s: ST.label });
     row.push({ v: help, s: ST.help });
     rows.push(row);
+    if (f.height) heights[r] = f.height;
     if (list) lists.push({ ref: `C${r}`, ...listRef(list), free: !!f.free });
     if (f.noteList && hasNote) lists.push({ ref: `D${r}`, ...listRef(f.noteList) });
   }

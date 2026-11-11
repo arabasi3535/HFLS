@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.17.0",
+  version: "2.18.0",
   date: "2026-11-11",
-  note: "엑셀 입력 서식 — 신축·기존 건축물 입력 받기·불러오기, 자체점검·위험물 빈 서식",
+  note: "다중이용업 세부점검 탭 — 안전시설등 세부점검표(시행규칙 별지 제10호서식)",
 };
 
 export const D = {

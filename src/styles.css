@@ -877,3 +877,32 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity
 /* 입력 내용 저장·엑셀 서식·불러오기 줄 */
 aside .fb { margin-bottom: 10px; }
 .fb-msg { margin: 6px 0 10px; }
+
+/* 다중이용업 세부점검 — 안전시설등 세부점검표(시행규칙 별지 제10호서식) */
+.mu-opts { display: flex; flex-direction: column; gap: 6px; }
+.mu-optrow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.mu-optrow .w-hint { flex-basis: 100%; margin: 0 0 2px; }
+.mu-items { display: flex; flex-direction: column; border: 1px solid var(--line2); border-radius: 8px; overflow: hidden; }
+.mu-ed { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 8px 10px; border-top: 1px solid var(--line2); align-items: center; }
+.mu-ed:first-child { border-top: 0; }
+.mu-ed.r-불량 { background: color-mix(in srgb, var(--req) 7%, transparent); }
+.mu-ed.r-해당없음 .mu-ed-t b { color: var(--muted); }
+.mu-ed-t { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.mu-ed-s { font-size: 12px; color: var(--muted); }
+.mu-ed-t em { font-style: normal; font-size: 11.5px; color: var(--v); }
+.mu-ed-t em.off { color: var(--muted); }
+.mu-act-in { grid-column: 1 / -1; }
+.mu-page { font-size: 9.5pt; gap: 4px; }
+.mu-title { text-align: center; font-size: 17pt; font-weight: 800; letter-spacing: 2px; margin: 2px 0 4px; }
+.mu-h { font-size: 10.5pt; margin-top: 4px; }
+.mu-head th { font-weight: 500; letter-spacing: 1px; }
+.mu-head td { height: 8.5mm; }
+.mu-t thead th { font-weight: 500; }
+.mu-t .mu-item { padding: 3px 6px; line-height: 1.4; }
+.mu-t .mu-item b { font-weight: 700; }
+.mu-t .mu-sub { padding-left: 6px; font-size: 8.8pt; }
+.mu-t .mu-res { text-align: center; }
+.mu-t .mu-act { font-size: 8.8pt; }
+.mu-foot { display: flex; justify-content: center; gap: 22mm; margin-top: 6px; font-size: 10pt; }
+.mu-checker { display: inline-block; min-width: 26mm; }
+.mu-sign { color: #666; font-size: 8.5pt; }
