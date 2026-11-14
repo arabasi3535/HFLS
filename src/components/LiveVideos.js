@@ -96,6 +96,7 @@ export default function LiveVideos({ playing, onPlay }) {
                   .filter((c) => c.g === g)
                   .map((c) => (
                     <option key={c.id} value={c.id}>
+                      {c.pin ? "📌 " : ""}
                       {c.name}
                       {c.name !== c.org ? ` (${c.org})` : ""}
                     </option>
@@ -116,7 +117,8 @@ export default function LiveVideos({ playing, onPlay }) {
           return (
             <div key={p.id} className="lv-pin">
               <div className="lv-pin-h">
-                <b>{p.name}</b> <span>{p.org}</span>
+                <em className="lv-badge">📌 상단 고정</em>
+                <b>{p.name}</b> <span>{p.org} · 다른 채널 새 영상과 관계없이 항상 맨 위에 표시</span>
                 <a href={`https://www.youtube.com/channel/${p.id}`} target="_blank" rel="noopener noreferrer">
                   채널 열기
                 </a>
