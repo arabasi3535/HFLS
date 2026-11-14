@@ -946,3 +946,25 @@ aside .fb { margin-bottom: 10px; }
 .pp-need { color: #b45309; font-style: normal; }
 .pp-empty { color: var(--muted); padding: 12px; }
 .pp-foot { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+/* 영상 자료 › 최신 소방 영상 */
+.lv { display: flex; flex-direction: column; gap: 10px; background: var(--panel); border: 1px solid var(--line2); border-radius: 12px; padding: 14px 16px; }
+.lv-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px 14px; flex-wrap: wrap; }
+.lv-head b { font-size: 16px; }
+.lv-head p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.lv-head > div { flex: 1 1 320px; }
+.lv-head select { flex: 0 1 280px; width: auto; min-width: 0; }
+.lv-msg { font-size: 13.5px; color: var(--muted); padding: 6px 0; }
+.lv-pin { display: flex; flex-direction: column; gap: 8px; padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
+.lv-pin-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.lv-pin-h span { font-size: 12.5px; color: var(--muted); }
+.lv-pin-h a { margin-left: auto; font-size: 12.5px; color: var(--accent); font-weight: 600; }
+.lv-m { font-size: 12px; color: var(--muted); }
+.lv-more { align-self: center; }
+.lv-ext { font-size: 13px; color: var(--ink2); line-height: 1.6; }
+.lv .vd-card { background: var(--bg, var(--panel)); }
+@media (max-width: 600px) {
+  .lv .vd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .lv .vd-card { padding: 6px; }
+  .lv .vd-t { font-size: 12.5px; }
+  .lv-head select { flex: 1 1 100%; }
+}
