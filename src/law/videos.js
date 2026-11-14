@@ -9,6 +9,7 @@ export const THUMB_REV = "20261111";
 
 /** 최신순 */
 export const VIDEOS = [
+  { id: "MzB00slaCgA", dur: "7:49", title: "학원 다중이용업소 판별 가이드", go: ["tools", "academy", "보조 계산기 › 학원 다중이용업소 판단"] },
   { id: "ELu3105sHFc", dur: "8:52", title: "소방유체역학의 정밀 수리계산 체계: 생명을 구하는 완벽한 에너지 관리", go: ["tools", "pump", "보조 계산기 › 소방펌프 양정"] },
   { id: "lFmwzeXOQCc", dur: "6:39", title: "자력 대피가 어려운 분들을 위한 약속, '노유자시설' 소방시설 기준 완벽 가이드", go: ["new", null, "신축 건축물 산정"] },
   { id: "1yEcw5f6iyQ", dur: "5:02", title: "우리 아파트가 소방차 전용구역 의무 단지일까? 최초 건축허가일의 비밀", go: ["existing", null, "기존 건축물 › 안전관리 검토"] },

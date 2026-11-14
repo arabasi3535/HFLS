@@ -19,7 +19,7 @@ function Desc({ text }) {
   return (
     <div className="vd-desc-t">
       {text.split("\n").map((l, i) =>
-        /^-{10,}$/.test(l.trim()) ? (
+        /^(-{10,}|━{10,})$/.test(l.trim()) ? (
           <hr key={i} />
         ) : /^#\S/.test(l.trim()) ? (
           <div key={i} className="vd-tags">

@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.22.1",
+  version: "2.22.2",
   date: "2026-11-14",
-  note: "최신 소방 영상 — 119안방 「📌 상단 고정」 표시(테두리·배지)",
+  note: "재후준 영상 — 「학원 다중이용업소 판별 가이드」 추가(설명란 전문, 학원 판단 계산기 연결)",
 };
 
 export const D = {
