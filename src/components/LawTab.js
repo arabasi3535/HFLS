@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { LAW_GROUPS, HAZ_GUIDES, LAW_CHECKED, LAW_UNCHECKED, lawUrl } from "../law/lawlinks";
+import { LAW_GROUPS, HAZ_GUIDES, HAZ_HISTORY, LAW_CHECKED, lawUrl } from "../law/lawlinks";
 
 // ============================================================
 // 기타 자료 › 법령 자료 — 국가법령정보센터 현행 원문 링크 모음
@@ -45,14 +45,46 @@ export default function LawTab() {
               {g.title} <span>{g.list.length}</span>
             </h4>
           </summary>
+          {g.id === "haz" && !k && (
+            <div className="lw-hist">
+              <div className="lw-hist-h">위험물 법령 연혁 — 허가 시점의 기준이 어느 법령에 있었는지</div>
+              <div className="lw-hist-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>기간</th>
+                      <th>법률</th>
+                      <th>대통령령</th>
+                      <th>부령</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {HAZ_HISTORY.map((h) => (
+                      <tr key={h.p}>
+                        <td className="nw">{h.p}</td>
+                        <td>{h.law}</td>
+                        <td>
+                          {h.dec}
+                          {h.note && <div className="lw-hist-n">※ {h.note}</div>}
+                        </td>
+                        <td>{h.rule}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="lw-note">
+                옛 법령(소방법 등)의 당시 조문은 국가법령정보센터에서 해당 법령의 「연혁」으로 찾습니다. 출처: 2026년 하반기 위험물담당공무원 교육 교재 「위험물 법령 연혁 및 현황」.
+              </div>
+            </div>
+          )}
           <ol>
             {g.list.map((it) => (
               <li key={it.n}>
                 <a className="pp-t" href={lawUrl(it.n, it.t)} target="_blank" rel="noopener noreferrer">
                   {it.n}
                 </a>
-                <span className={`lw-tag ${it.t === "법령" ? "law" : "adm"}`}>{it.t}</span>
-                {LAW_UNCHECKED.includes(it.n) && <em className="pp-need"> 링크 확인 필요</em>}
+                <span className={`lw-tag ${it.t === "법령" ? "law" : "adm"}`}>{it.k || it.t}</span>
               </li>
             ))}
           </ol>
