@@ -72,6 +72,17 @@ export default function PaperTab() {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          className="btn small pp-reset"
+          disabled={!q && g === "all"}
+          onClick={() => {
+            setQ("");
+            setG("all");
+          }}
+        >
+          초기화
+        </button>
         <span className="pp-count">{list.length}편</span>
       </div>
 

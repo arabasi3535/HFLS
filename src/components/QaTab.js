@@ -92,6 +92,19 @@ export default function QaTab() {
     }
   };
 
+  const reset = () => {
+    setQ("");
+    setSec("2");
+    setRes(null);
+    setErr("");
+    setOpen(null);
+    try {
+      localStorage.removeItem(QA_KEY);
+    } catch (e) {
+      /* 저장 불가 환경 */
+    }
+  };
+
   // 처음 열 때 저장된(또는 검토 결과에서 넘겨받은) 검색어로 바로 검색
   useEffect(() => {
     if (started.current) return;
@@ -126,6 +139,9 @@ export default function QaTab() {
         </select>
         <button type="submit" className="btn small" disabled={busy || !q.trim()}>
           검색
+        </button>
+        <button type="button" className="btn small pp-reset" disabled={busy || (!q && !res && !err && sec === "2")} onClick={reset}>
+          초기화
         </button>
       </form>
 

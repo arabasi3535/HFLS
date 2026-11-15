@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CHANNEL, VIDEOS, THUMB_REV } from "../law/videos";
 import { VIDEO_DESC } from "../law/videoDesc";
 import LiveVideos from "./LiveVideos";
+import KfsiVideos from "./KfsiVideos";
 
 // ============================================================
 // 기타 자료 › 영상 자료 — 채널 영상 목록, 누르면 이 화면에서 재생(youtube-nocookie)
@@ -100,6 +101,8 @@ export default function VideoTab({ onGo }) {
       )}
 
       <LiveVideos playing={play && play.id} onPlay={playExt} />
+
+      <KfsiVideos playing={play && play.id} onPlay={playExt} />
 
       <div className="vd-head">
         <div>

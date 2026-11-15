@@ -33,6 +33,9 @@ export default function LawTab() {
 
       <div className="pp-bar">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="법령·고시 이름 검색 (예: 스프링클러, 자체점검, 방염)" aria-label="법령 검색" />
+        <button type="button" className="btn small pp-reset" disabled={!q} onClick={() => setQ("")}>
+          초기화
+        </button>
         <span className="pp-count">{groups.reduce((s, g) => s + g.list.length, 0) + guides.length}건</span>
       </div>
 

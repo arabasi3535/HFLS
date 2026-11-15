@@ -1022,3 +1022,18 @@ aside .fb { margin-bottom: 10px; }
 .qa-link { display: inline-block; margin-top: 6px; font-size: 12.5px; color: var(--brand); text-decoration: none; }
 .qa-link:hover { text-decoration: underline; }
 @media (max-width: 560px) { .qa-row { grid-template-columns: 1fr; gap: 2px; } .qa-det { margin-left: 4px; } }
+/* 한국소방안전원 영상 */
+.kf-row { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
+.kf-row + .kf-row { border-top: 1px dashed var(--line2); padding-top: 10px; }
+.kf-h { font-size: 14.5px; }
+.kf-h span { font-size: 12.5px; color: var(--muted); margin-left: 4px; }
+.kf-pls { display: flex; flex-wrap: wrap; gap: 6px; }
+.qa-chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.kf-wrap { position: relative; }
+.kf-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 230px); gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; padding: 2px 2px 8px; scrollbar-width: thin; }
+.kf-card { scroll-snap-align: start; }
+.kf-nav { position: absolute; top: 38%; z-index: 2; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.kf-nav.l { left: -10px; }
+.kf-nav.r { right: -10px; }
+@media (hover: none), (max-width: 560px) { .kf-nav { display: none; } .kf-strip { grid-auto-columns: 72%; } }
+.pp-reset { flex: 0 0 auto; }
