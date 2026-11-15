@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { S, SAFETY_REFS } from "../law/safety";
+import QaLink from "./QaLink";
 
 // ============================================================
 // 안전관리 검토 결과 — 소방안전관리대상물 등급 · 방염 · 소방자동차 전용구역
@@ -67,6 +68,7 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
           </div>
         ))}
         <div className="det-ref">{grade.ref}</div>
+        <QaLink word="소방안전관리자" />
       </Card>
 
       {insp && (
@@ -113,6 +115,7 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
             </div>
           ))}
           <div className="det-ref">{insp.ref}</div>
+          <QaLink word="자체점검" />
         </Card>
       )}
       {insp && onMakeReport && (insp.ownerOk || (insp.op === true && !insp.top) || insp.comp.length > 0) && (
@@ -163,6 +166,7 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
         <div className="det-ref">
           {flame.ref} · {SAFETY_REFS.flameItems}
         </div>
+        <QaLink word="방염" />
       </Card>
 
       <Card title="소방자동차 전용구역" badge={lane.status} status={lane.status} lead={lane.reason}>
@@ -209,6 +213,7 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
             </div>
           ))}
           <div className="det-ref">{temp.ref}</div>
+          <QaLink word="임시소방시설" />
         </Card>
       )}
 
@@ -237,6 +242,7 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
             </div>
           ))}
           <div className="det-ref">{site.ref}</div>
+          <QaLink word="건설현장" label="건설현장 소방안전관리 관련 소방청 질의회신 찾기" />
         </Card>
       )}
     </div>

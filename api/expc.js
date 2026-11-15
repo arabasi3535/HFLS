@@ -1,11 +1,11 @@
-// 법제처 국가법령정보 OPEN API 중계 — 1단계: 연결 시험용
-//  · 인증값은 Vercel 환경변수 LAW_OC에만 두고, 응답에는 절대 넣지 않음
-//  · 사용 예
-//      /api/expc                       → 소방청 법령해석 최신 10건(해석일자 내림차순)
-//      /api/expc?q=스프링클러           → 소방청 법령해석 본문 검색
-//      /api/expc?id=372876              → 소방청 법령해석 본문 1건
-//      /api/expc?t=law&q=소방시설       → 다른 대상(law 현행법령, admrul 행정규칙, expc 법령해석례) 목록 시험
-//  · 응답은 CDN에 1시간 캐시(같은 요청이 반복돼도 법제처 호출은 1시간에 1번)
+// 법제처 국가법령정보 OPEN API 중계 — 소방청 법령해석(질의회신)
+//  · 인증값은 Vercel 환경변수 LAW_OC에만 두고, 응답에는 절대 넣지 않음(법제처 상세링크의 OC=… 도 제거)
+//  · 사용
+//      /api/expc?q=스프링클러[&s=1|2][&page=1][&n=20]  → 목록 { total, page, items:[{id,title,date,org,no}] }
+//          s=2(기본) 본문 검색, s=1 안건명 검색
+//      /api/expc?id=2657191                             → 본문 { item:{id,title,ask,answer,reason,laws,date,reg,by,org,no} }
+//      /api/expc?t=law|admrul|expc&q=…  또는 &raw=1      → 원본 응답(시험용)
+//  · 응답은 CDN 캐시(목록 1시간, 본문 1일) — 같은 요청이 반복돼도 법제처 호출은 캐시 시간에 1번
 const TIMEOUT = 8000;
 const TARGETS = { nfa: "nfaCgmExpc", expc: "expc", law: "law", admrul: "admrul" };
 
@@ -20,6 +20,61 @@ async function get(url) {
   }
 }
 
+const s = (v) =>
+  String(v == null ? "" : v)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .trim();
+
+/** 20260615 / 2016.03.28 → 2016. 3. 28. */
+function fmtDate(v) {
+  const m = /^(\d{4})[.-]?(\d{1,2})[.-]?(\d{1,2})/.exec(s(v));
+  return m ? `${m[1]}. ${+m[2]}. ${+m[3]}.` : "";
+}
+
+function list(data) {
+  const root = data && (data.CgmExpc || data.cgmExpc || Object.values(data)[0]);
+  if (!root) return { total: 0, page: 1, items: [] };
+  let rows = root.cgmExpc || root.CgmExpc || [];
+  if (!Array.isArray(rows)) rows = [rows];
+  return {
+    total: parseInt(root.totalCnt, 10) || 0,
+    page: parseInt(root.page, 10) || 1,
+    items: rows.map((r) => ({
+      id: s(r["법령해석일련번호"]),
+      title: s(r["안건명"]),
+      date: fmtDate(r["해석일자"]),
+      org: s(r["질의기관명"]),
+      no: s(r["안건번호"]),
+    })),
+  };
+}
+
+function detail(data) {
+  const r = (data && (data.CgmExpcService || Object.values(data)[0])) || {};
+  return {
+    item: {
+      id: s(r["법령해석일련번호"]),
+      title: s(r["안건명"]),
+      ask: s(r["질의요지"]),
+      answer: s(r["회답"]),
+      reason: s(r["이유"]),
+      laws: s(r["관련법령"]),
+      date: fmtDate(r["해석일자"]),
+      reg: fmtDate(r["등록일시"]),
+      by: s(r["해석기관명"]),
+      org: s(r["질의기관명"]),
+      no: s(r["안건번호"]),
+    },
+  };
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   const oc = (process.env.LAW_OC || "").trim();
@@ -29,9 +84,12 @@ module.exports = async (req, res) => {
   }
   const q = req.query || {};
   const target = TARGETS[String(q.t || "nfa")] || TARGETS.nfa;
+  const raw = target !== "nfaCgmExpc" || q.raw === "1";
   const id = String(q.id || "").replace(/\D/g, "");
-  const query = String(q.q || "").slice(0, 50);
-  const n = Math.min(100, Math.max(1, parseInt(q.n, 10) || 10));
+  const query = String(q.q || "").trim().slice(0, 50);
+  const n = Math.min(100, Math.max(1, parseInt(q.n, 10) || 20));
+  const page = Math.min(500, Math.max(1, parseInt(q.page, 10) || 1));
+  const sec = q.s === "1" ? "1" : "2";
 
   const p = new URLSearchParams({ OC: oc, target, type: "JSON" });
   let base;
@@ -41,13 +99,14 @@ module.exports = async (req, res) => {
   } else {
     base = "https://www.law.go.kr/DRF/lawSearch.do";
     p.set("display", String(n));
+    p.set("page", String(page));
     if (query) {
       p.set("query", query);
-      if (target !== "law" && target !== "admrul") p.set("search", "2"); // 해석은 본문 검색
+      if (target !== "law" && target !== "admrul") p.set("search", sec);
     }
-    if (target === "nfaCgmExpc" || target === "expc") p.set("sort", "ddes"); // 해석일자 최신순
   }
 
+  const clean = (txt) => txt.replace(/OC=[^&"\s]*&?/g, "").split(oc).join("***");
   try {
     const { status, text } = await get(`${base}?${p.toString()}`);
     let data = null;
@@ -57,18 +116,13 @@ module.exports = async (req, res) => {
       data = null;
     }
     const ok = status === 200 && !!data;
-    res.setHeader("Cache-Control", ok ? "public, s-maxage=3600, stale-while-revalidate=86400" : "no-store");
+    let body;
+    if (!ok) body = { ok: false, target, httpStatus: status, raw: text.replace(/\s+/g, " ").slice(0, 600) };
+    else if (raw) body = { ok: true, target, mode: id ? "본문" : "목록", query: query || null, data };
+    else body = { ok: true, query: query || null, ...(id ? detail(data) : list(data)) };
+    res.setHeader("Cache-Control", ok ? `public, s-maxage=${id ? 86400 : 3600}, stale-while-revalidate=86400` : "no-store");
     res.statusCode = ok ? 200 : 502;
-    // 실패하면 법제처가 돌려준 문구 앞부분을 보여 원인 파악(인증값은 응답에 없음)
-    // 법제처 응답의 상세링크에 OC=인증값이 들어 있으므로 내보내기 전에 모두 지움
-    const out = JSON.stringify(
-      ok
-        ? { ok: true, target, mode: id ? "본문" : "목록", query: query || null, data }
-        : { ok: false, target, httpStatus: status, raw: text.replace(/\s+/g, " ").slice(0, 600) },
-      null,
-      1
-    );
-    return res.end(out.replace(/OC=[^&"\s]*&?/g, "").split(oc).join("***"));
+    return res.end(clean(JSON.stringify(body)));
   } catch (e) {
     res.statusCode = 504;
     res.setHeader("Cache-Control", "no-store");

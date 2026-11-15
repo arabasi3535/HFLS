@@ -1002,3 +1002,23 @@ aside .fb { margin-bottom: 10px; }
 .tp-list li > b { margin-right: 4px; }
 .tp-list .sf-crit { margin-top: 3px; }
 .sf-badge.sm { font-size: 11px; padding: 0 6px; margin-left: 4px; }
+/* 질의회신 */
+.qa-hot { display: flex; flex-wrap: wrap; gap: 6px; }
+.qa-chip { font: inherit; font-size: 12.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); cursor: pointer; }
+.qa-chip:hover { border-color: var(--brand); color: var(--brand); }
+.qa-list { gap: 8px !important; }
+.qa-list li.on { background: color-mix(in srgb, var(--brand) 4%, transparent); border-radius: 8px; }
+.qa-t { display: block; width: 100%; font: inherit; font-weight: 600; text-align: left; background: none; border: 0; padding: 2px 0; color: var(--ink); cursor: pointer; word-break: keep-all; line-height: 1.5; }
+.qa-t:hover { color: var(--brand); }
+.qa-caret { color: var(--muted); margin-right: 4px; }
+.qa-det { margin: 6px 0 6px 16px; padding: 10px 12px; border-left: 3px solid var(--brand); background: var(--panel); border-radius: 0 8px 8px 0; display: flex; flex-direction: column; gap: 8px; }
+.qa-row { display: grid; grid-template-columns: 64px 1fr; gap: 8px; font-size: 13.5px; line-height: 1.65; }
+.qa-h { font-weight: 700; color: var(--ink2); }
+.qa-v { white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.qa-meta { font-size: 12px; color: var(--muted); }
+.qa-muted { color: var(--muted); font-size: 13px; }
+.qa-err { color: #b91c1c; font-size: 13px; padding: 6px 0; }
+.qa-more { margin-top: 10px; }
+.qa-link { display: inline-block; margin-top: 6px; font-size: 12.5px; color: var(--brand); text-decoration: none; }
+.qa-link:hover { text-decoration: underline; }
+@media (max-width: 560px) { .qa-row { grid-template-columns: 1fr; gap: 2px; } .qa-det { margin-left: 4px; } }

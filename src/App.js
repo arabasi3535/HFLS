@@ -166,6 +166,32 @@ export default function App() {
     return () => window.removeEventListener("hashchange", apply);
   }, []);
 
+  // 검토 결과의 「관련 질의회신 찾기」(#qa=검색어) → 기타 자료 › 질의회신으로 이동해 바로 검색
+  useEffect(() => {
+    const go = () => {
+      const m = /^#qa=(.*)$/.exec(window.location.hash);
+      if (!m) return;
+      let q = "";
+      try {
+        q = decodeURIComponent(m[1]).slice(0, 40);
+      } catch (e) {
+        q = "";
+      }
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      try {
+        localStorage.setItem("hfls_etc_sub", "qa");
+        if (q) localStorage.setItem("hfls_qa_q", q);
+      } catch (e) {
+        /* 저장 불가 환경 */
+      }
+      setTab("etc");
+      window.scrollTo(0, 0);
+    };
+    go();
+    window.addEventListener("hashchange", go);
+    return () => window.removeEventListener("hashchange", go);
+  }, []);
+
   const mode = tab === "existing" ? "existing" : "new";
   const isInput = tab === "new" || tab === "existing";
   const setInput = (upd) => setInputs((p) => ({ ...p, [mode]: typeof upd === "function" ? upd(p[mode]) : upd }));

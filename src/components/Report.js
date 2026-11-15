@@ -8,6 +8,7 @@ import { safetyReview } from "../law/safety";
 import { guideKind } from "../law/guide";
 import { subName, groupLabel } from "./Wizard";
 import { USE_GROUPS } from "../law/uses";
+import QaLink from "./QaLink";
 
 // ============================================================
 // 간결한 결과 화면 — 설치 대상(소급·강화·대체 표시) / 확인 필요 / 출력
@@ -116,6 +117,7 @@ function Item({ it, open, onToggle, flash, guide }) {
         ))}
         {r && r.exHint && <div className="det-line">면제 검토: {r.exHint}</div>}
         {r && <div className="det-std">설치기준: {r.std}</div>}
+        <QaLink word={guide ? (guide.kind === "light" ? "유도등" : "유도표지") : it.name} />
       </div>
     </li>
   );
