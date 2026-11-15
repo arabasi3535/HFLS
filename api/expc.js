@@ -60,15 +60,15 @@ module.exports = async (req, res) => {
     res.setHeader("Cache-Control", ok ? "public, s-maxage=3600, stale-while-revalidate=86400" : "no-store");
     res.statusCode = ok ? 200 : 502;
     // 실패하면 법제처가 돌려준 문구 앞부분을 보여 원인 파악(인증값은 응답에 없음)
-    return res.end(
-      JSON.stringify(
-        ok
-          ? { ok: true, target, mode: id ? "본문" : "목록", query: query || null, data }
-          : { ok: false, target, httpStatus: status, raw: text.replace(oc, "***").replace(/\s+/g, " ").slice(0, 600) },
-        null,
-        1
-      )
+    // 법제처 응답의 상세링크에 OC=인증값이 들어 있으므로 내보내기 전에 모두 지움
+    const out = JSON.stringify(
+      ok
+        ? { ok: true, target, mode: id ? "본문" : "목록", query: query || null, data }
+        : { ok: false, target, httpStatus: status, raw: text.replace(/\s+/g, " ").slice(0, 600) },
+      null,
+      1
     );
+    return res.end(out.replace(/OC=[^&"\s]*&?/g, "").split(oc).join("***"));
   } catch (e) {
     res.statusCode = 504;
     res.setHeader("Cache-Control", "no-store");

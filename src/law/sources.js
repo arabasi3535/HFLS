@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.25.2",
+  version: "2.25.3",
   date: "2026-11-15",
-  note: "법제처 OPEN API 연결 시험(/api/expc) — 소방청 법령해석",
+  note: "법제처 OPEN API 중계 — 응답의 상세링크에서 인증값(OC) 제거",
 };
 
 export const D = {
