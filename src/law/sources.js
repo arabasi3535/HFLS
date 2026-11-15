@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.25.1",
+  version: "2.25.2",
   date: "2026-11-15",
-  note: "법령 자료 — 소방시설·위험물 법령 연혁표를 접힌 상태로 표시(눌러서 펼침)",
+  note: "법제처 OPEN API 연결 시험(/api/expc) — 소방청 법령해석",
 };
 
 export const D = {
