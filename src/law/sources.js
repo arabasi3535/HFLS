@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.29.5",
+  version: "2.30.0",
   date: "2026-11-15",
-  note: "피난기구 — 지하층은 허가일과 관계없이 대상에서 제외",
+  note: "미니게임 탭 추가 — 「소방 인허가 시티」(설치대상 채점은 HFLS 판정 엔진 사용)",
 };
 
 export const D = {
