@@ -696,6 +696,14 @@ function showMyPos() {
   if (!el) return;
   el.style.display = myPos ? '' : 'none';
   el.innerHTML = myPos ? `🏆 <b>${myPos}</b>위` : '';
+  // 순위 옆 랭킹 버튼: 미등록이면 「랭킹 참여」(누르면 닉네임 입력창), 등록 후엔 「랭킹 보기」
+  const bt = $('hRankBtn');
+  if (bt) {
+    const joined = !!RK.getMe();
+    bt.textContent = joined ? '랭킹 보기' : '🏆 랭킹 참여';
+    bt.classList.toggle('join', !joined);
+    bt.title = joined ? '랭킹 보기' : '닉네임만 입력하면 바로 참여';
+  }
 }
 async function pushRank() {
   const j = await RK.submit(S);
@@ -759,6 +767,7 @@ async function openRank(opts = {}) {
 }
 $('btnRank').onclick = () => openRank();
 $('hMyRank').onclick = () => openRank();
+$('hRankBtn').onclick = () => openRank();
 
 $('btnRef').onclick = () => openRef(null);
 $('btnHelp').onclick = openHelp;
@@ -781,6 +790,7 @@ if (ro) { ro.observe(cv.parentElement); cleanups.push(() => ro.disconnect()); } 
 updateHud(); save();
 rafId = requestAnimationFrame(draw);
 if (fresh) openHelp();
+showMyPos();
 if (RK.getMe()) pushRank();
 // 테스트용 훅
 window.__fc = { get S() { return S; }, evaluate, openReview, submit };

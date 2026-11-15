@@ -98,6 +98,12 @@
 @media (max-width:600px){.fc-root table.fc-ans td:first-child{min-width:96px}}
 /* 랭킹 */
 .fc-root .fc-myrank{background:var(--fc-gold);color:#14213d;border:none;border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700}
+.fc-root .fc-rkbox{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.fc-root .fc-rkbtn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700}
+.fc-root .fc-rkbtn:hover{background:rgba(255,255,255,.22)}
+.fc-root .fc-rkbtn.join{background:var(--fc-gold);color:#14213d;border-color:var(--fc-gold);animation:fc-rkpulse 2.2s ease-in-out infinite}
+@keyframes fc-rkpulse{0%,100%{box-shadow:0 0 0 0 rgba(252,191,73,.55)}50%{box-shadow:0 0 0 6px rgba(252,191,73,0)}}
+@media (prefers-reduced-motion:reduce){.fc-root .fc-rkbtn.join{animation:none}}
 .fc-root .fc-btn.sm{padding:3px 8px;font-size:12px}
 .fc-root .fc-reg{background:#fff7ec;border:1px solid #f5d3a3;border-radius:12px;padding:12px 14px;margin-bottom:14px}
 .fc-root .fc-regrow{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}

@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.31.0",
+  version: "2.31.1",
   date: "2026-11-15",
-  note: "미니게임 랭킹 추가 — 닉네임만 등록, ① XP ② 1회 적합 횟수 순 실시간 순위",
+  note: "미니게임 상단 순위 옆에 🏆 랭킹 참여 버튼 추가 — 누르면 바로 닉네임 등록",
 };
 
 export const D = {
