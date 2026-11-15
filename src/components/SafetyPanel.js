@@ -23,7 +23,7 @@ function Card({ title, badge, status, lead, children }) {
 }
 
 export default function SafetyPanel({ sv, onMakeReport, mode }) {
-  const { grade, flame, lane, insp, temp } = sv;
+  const { grade, flame, lane, insp, temp, site } = sv;
   const gl = grade.label || grade.grade;
   const gBadge = grade.status === S.NA ? "해당없음" : grade.status === S.CHK ? (gl ? `${gl} 이상` : "확인 필요") : gl || "해당없음";
   const iBadge = !insp ? "" : insp.status === S.NA ? "제외" : insp.status === S.NO ? "비대상" : insp.status === S.CHK ? "확인 필요" : insp.top ? "종합(반기)" : insp.comp.length ? "종합+작동" : "작동";
@@ -209,6 +209,34 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
             </div>
           ))}
           <div className="det-ref">{temp.ref}</div>
+        </Card>
+      )}
+
+      {site && (
+        <Card title="건설현장 소방안전관리자" badge={site.status === S.YES ? "선임 대상" : site.status} status={site.status} lead={site.summary}>
+          <div className="det-crit">
+            {site.why.map((w, i) => (
+              <div key={i} className={`sf-crit ${site.status === S.YES ? "ok" : site.status === S.CHK ? "unk" : "no"}`}>
+                {w}
+              </div>
+            ))}
+          </div>
+          {site.status !== S.NO && (
+            <div className="det-crit">
+              <div>소방안전관리자 업무(법 제29조제2항)</div>
+              {site.duties.map((w, i) => (
+                <div key={i} className="det-meta">
+                  {i + 1}. {w}
+                </div>
+              ))}
+            </div>
+          )}
+          {site.notes.map((n, i) => (
+            <div key={i} className="det-line">
+              {n}
+            </div>
+          ))}
+          <div className="det-ref">{site.ref}</div>
         </Card>
       )}
     </div>

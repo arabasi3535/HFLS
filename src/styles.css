@@ -989,7 +989,8 @@ aside .fb { margin-bottom: 10px; }
 .lw-hist th, .lw-hist td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
 .lw-hist th { background: color-mix(in srgb, var(--muted) 10%, transparent); font-weight: 700; }
 .lw-hist td.nw { white-space: nowrap; font-weight: 600; }
-.lw-hist-n { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.lw-hist-n { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: normal; }
+.lw-hist td:nth-child(3) { white-space: nowrap; }
 /* 임시소방시설 */
 .tp-list li { display: block; margin-bottom: 8px; }
 .tp-list li > b { margin-right: 4px; }

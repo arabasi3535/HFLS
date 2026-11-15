@@ -33,7 +33,8 @@ export function effectAt(c, d) {
 
 export function tableRef(date) {
   if (date >= D.C) return "소방시설법 시행령 별표4";
-  if (date >= D.B12) return "구 화재예방소방시설법 시행령 별표5(당시 별표 번호 연혁본 확인)";
+  if (date >= D.B16) return "구 화재예방소방시설법 시행령 별표5(당시 별표 번호 연혁본 확인)";
+  if (date >= D.B12) return "구 소방시설설치유지법 시행령 별표5(당시 별표 번호 연혁본 확인)";
   if (date >= D.A) return "구 소방시설설치유지법 시행령 별표4";
   if (date >= D.P92) return "구 소방법 시행령 별표(소방특별조사 운영매뉴얼 연도별 적용기준)";
   return "구 소방법 시행령 별표(1992.7.28. 이전 — 미수록)";

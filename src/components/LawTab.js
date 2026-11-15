@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { LAW_GROUPS, HAZ_GUIDES, HAZ_HISTORY, LAW_CHECKED, lawUrl } from "../law/lawlinks";
+import { LAW_GROUPS, HAZ_GUIDES, HAZ_HISTORY, FSA_HISTORY, LAW_CHECKED, lawUrl } from "../law/lawlinks";
 
 // ============================================================
 // 기타 자료 › 법령 자료 — 국가법령정보센터 현행 원문 링크 모음
@@ -45,38 +45,21 @@ export default function LawTab() {
               {g.title} <span>{g.list.length}</span>
             </h4>
           </summary>
+          {g.id === "fsa" && !k && (
+            <HistTable
+              title="소방시설법령 연혁 — 허가 시점의 소방시설 설치기준이 어느 법령에 있었는지"
+              cols={["기간", "법률", "대통령령", "소방시설 기술기준"]}
+              rows={FSA_HISTORY.map((h) => [h.p, [h.law, h.lawNote], h.dec, [h.std, h.stdNote]])}
+              foot="옛 법령의 당시 조문은 국가법령정보센터에서 해당 법령의 「연혁」으로 찾습니다. 근거: 2025년도 소방시설법령 해설서 조문별 「법령 연혁」(법령명·시행일)."
+            />
+          )}
           {g.id === "haz" && !k && (
-            <div className="lw-hist">
-              <div className="lw-hist-h">위험물 법령 연혁 — 허가 시점의 기준이 어느 법령에 있었는지</div>
-              <div className="lw-hist-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>기간</th>
-                      <th>법률</th>
-                      <th>대통령령</th>
-                      <th>부령</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {HAZ_HISTORY.map((h) => (
-                      <tr key={h.p}>
-                        <td className="nw">{h.p}</td>
-                        <td>{h.law}</td>
-                        <td>
-                          {h.dec}
-                          {h.note && <div className="lw-hist-n">※ {h.note}</div>}
-                        </td>
-                        <td>{h.rule}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="lw-note">
-                옛 법령(소방법 등)의 당시 조문은 국가법령정보센터에서 해당 법령의 「연혁」으로 찾습니다. 출처: 2026년 하반기 위험물담당공무원 교육 교재 「위험물 법령 연혁 및 현황」.
-              </div>
-            </div>
+            <HistTable
+              title="위험물 법령 연혁 — 허가 시점의 기준이 어느 법령에 있었는지"
+              cols={["기간", "법률", "대통령령", "부령"]}
+              rows={HAZ_HISTORY.map((h) => [h.p, h.law, [h.dec, h.note], h.rule])}
+              foot="옛 법령(소방법 등)의 당시 조문은 국가법령정보센터에서 해당 법령의 「연혁」으로 찾습니다. 출처: 2026년 하반기 위험물담당공무원 교육 교재 「위험물 법령 연혁 및 현황」."
+            />
           )}
           <ol>
             {g.list.map((it) => (
@@ -113,6 +96,42 @@ export default function LawTab() {
         링크 확인 {LAW_CHECKED}(국가법령정보센터 한글주소). 「행정규칙」에는 고시·훈령·예규·공고가 포함됩니다. 원문 화면이 「해당 한글주소명을 찾을 수
         없습니다」로 나오면 법령명이 바뀐 것이니 「오류 신고」로 알려 주세요.
       </div>
+    </div>
+  );
+}
+
+/** 법령 연혁표 — 셀 값이 [본문, 비고]면 비고를 작은 글씨로 */
+function HistTable({ title, cols, rows, foot }) {
+  return (
+    <div className="lw-hist">
+      <div className="lw-hist-h">{title}</div>
+      <div className="lw-hist-wrap">
+        <table>
+          <thead>
+            <tr>
+              {cols.map((c) => (
+                <th key={c}>{c}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r[0]}>
+                {r.map((c, i) => {
+                  const [v, n] = Array.isArray(c) ? c : [c, null];
+                  return (
+                    <td key={i} className={i === 0 ? "nw" : undefined}>
+                      {v}
+                      {n && <div className="lw-hist-n">※ {n}</div>}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="lw-note">{foot}</div>
     </div>
   );
 }
