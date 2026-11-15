@@ -973,8 +973,8 @@ aside .fb { margin-bottom: 10px; }
 .lw-sec summary { cursor: pointer; list-style: none; }
 .lw-sec summary::-webkit-details-marker { display: none; }
 .lw-sec summary h4 { display: inline; }
-.lw-sec summary::before { content: "▸ "; color: var(--muted); }
-.lw-sec[open] summary::before { content: "▾ "; }
+.lw-sec > summary::before { content: "▸ "; color: var(--muted); }
+.lw-sec[open] > summary::before { content: "▾ "; }
 .lw-sec ol { margin-top: 8px; gap: 6px; }
 .lw-tag { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); vertical-align: 1px; }
 .lw-tag.law { color: var(--brand); border-color: var(--brand); }
@@ -983,7 +983,13 @@ aside .fb { margin-bottom: 10px; }
 .lw-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .fb-share { font-weight: 700; }
 .lw-hist { margin: 8px 0 10px; }
-.lw-hist-h { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; }
+.lw-hist-h { font-size: 13.5px; font-weight: 700; cursor: pointer; list-style: none; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--muted) 6%, transparent); }
+.lw-hist-h::-webkit-details-marker { display: none; }
+.lw-hist-h::before { content: "▸ "; color: var(--muted); }
+.lw-hist[open] > .lw-hist-h { margin-bottom: 6px; }
+.lw-hist[open] > .lw-hist-h::before { content: "▾ "; }
+.lw-hist-h::after { content: " — 눌러서 펼치기"; font-weight: 400; font-size: 12px; color: var(--muted); }
+.lw-hist[open] > .lw-hist-h::after { content: ""; }
 .lw-hist-wrap { overflow-x: auto; }
 .lw-hist table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 560px; }
 .lw-hist th, .lw-hist td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }

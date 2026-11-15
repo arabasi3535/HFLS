@@ -100,11 +100,11 @@ export default function LawTab() {
   );
 }
 
-/** 법령 연혁표 — 셀 값이 [본문, 비고]면 비고를 작은 글씨로 */
+/** 법령 연혁표 — 처음엔 접어 두고 제목을 누르면 펼침. 셀 값이 [본문, 비고]면 비고를 작은 글씨로 */
 function HistTable({ title, cols, rows, foot }) {
   return (
-    <div className="lw-hist">
-      <div className="lw-hist-h">{title}</div>
+    <details className="lw-hist">
+      <summary className="lw-hist-h">{title}</summary>
       <div className="lw-hist-wrap">
         <table>
           <thead>
@@ -132,6 +132,6 @@ function HistTable({ title, cols, rows, foot }) {
         </table>
       </div>
       <div className="lw-note">{foot}</div>
-    </div>
+    </details>
   );
 }
