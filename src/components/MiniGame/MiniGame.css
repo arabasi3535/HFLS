@@ -96,3 +96,22 @@
 }
 .fc-root table.fc-ans td:first-child{min-width:150px}
 @media (max-width:600px){.fc-root table.fc-ans td:first-child{min-width:96px}}
+/* 랭킹 */
+.fc-root .fc-myrank{background:var(--fc-gold);color:#14213d;border:none;border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700}
+.fc-root .fc-btn.sm{padding:3px 8px;font-size:12px}
+.fc-root .fc-reg{background:#fff7ec;border:1px solid #f5d3a3;border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.fc-root .fc-regrow{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.fc-root .fc-regrow input{flex:1;min-width:160px;border:1px solid var(--fc-line);border-radius:9px;padding:8px 10px;font-size:14px;font-family:inherit;background:#fff;color:#1d2433}
+.fc-root .fc-meline{font-size:13.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.fc-root .fc-tblwrap{overflow-x:auto}
+.fc-root table.fc-lb{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
+.fc-root table.fc-lb th,.fc-root table.fc-lb td{border-bottom:1px solid var(--fc-line);padding:7px 8px;text-align:left;background:none;color:inherit}
+.fc-root table.fc-lb th{background:#f3f5f9;font-weight:500;color:#4a5368}
+.fc-root table.fc-lb .num{text-align:right}
+.fc-root table.fc-lb td.pos{font-weight:900;color:#14213d;text-align:center;width:44px}
+.fc-root table.fc-lb tr:nth-child(2) td.pos{color:#c99400}
+.fc-root table.fc-lb tr:nth-child(3) td.pos{color:#8a96a8}
+.fc-root table.fc-lb tr:nth-child(4) td.pos{color:#b06a35}
+.fc-root table.fc-lb tr.me td{background:#fff4e0}
+.fc-root table.fc-lb tr.gap td{text-align:center;color:var(--fc-muted);padding:2px}
+.fc-root table.fc-lb small{color:var(--fc-muted)}

@@ -9,6 +9,7 @@ export const MARKUP = `
     <div class="fc-stat">🏢 준공 <b id="fc-hDone">0</b></div>
     <div class="fc-stat">🎯 1회 적합률 <b id="fc-hAcc">-</b></div>
     <div class="fc-stat">📅 <b id="fc-hDate">2026.01.05</b></div>
+    <button class="fc-myrank" id="fc-hMyRank" style="display:none" title="랭킹 보기"></button>
   </div>
   <div class="fc-main">
     <div id="fc-mapWrap">
@@ -27,6 +28,7 @@ export const MARKUP = `
         <ul id="fc-log"></ul>
       </div>
       <div class="fc-sec fc-btns">
+        <button class="fc-btn pri" id="fc-btnRank">🏆 랭킹</button>
         <button class="fc-btn" id="fc-btnRef">📖 설치기준 요약</button>
         <button class="fc-btn" id="fc-btnHelp">❓ 도움말</button>
         <button class="fc-btn" id="fc-btnReset">↺ 새 게임</button>

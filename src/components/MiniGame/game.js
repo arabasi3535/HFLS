@@ -7,9 +7,11 @@
 /* eslint-disable no-mixed-operators */
 import { SYSTEMS, GROUPS, totals, fa } from "./legacyRules";
 import { MARKUP } from "./markup";
+import { RANKS, RANK_XP, STAGES } from "./progress";
+import * as RK from "./rankClient";
 
 export function initGame(root, rules) {
-const { evaluate, extrasOf = () => [], ASSUMPTIONS = [] } = rules;
+const { evaluate, extrasOf = () => [], ASSUMPTIONS = [], getAdminPw = () => '' } = rules;
 root.innerHTML = MARKUP;
 const cleanups = [];
 const on = (el, ev, fn, opt) => { el.addEventListener(ev, fn, opt); cleanups.push(() => el.removeEventListener(ev, fn, opt)); };
@@ -21,9 +23,6 @@ const WORLD_W = N * TW + 120, WORLD_H = N * TH + 330;
 const OX = WORLD_W / 2, OY = 280;
 const SAVE_KEY = 'firecity_v1';
 
-const RANKS = ['소방사', '소방교', '소방장', '소방위', '소방경', '소방령', '소방정', '소방준감', '소방감', '소방정감', '소방총감'];
-const RANK_XP = [0, 80, 200, 380, 620, 920, 1300, 1760, 2300, 2950, 3700];
-const STAGES = [[0, '시골마을'], [40, '농촌 마을'], [150, '읍내'], [500, '소도시'], [1500, '중소도시'], [4000, '중견도시'], [10000, '대도시'], [25000, '광역도시']];
 
 const USE = {
   house:    { label: '단독주택', wall: '#f4e6cc', roof: '#b5533c' },
@@ -502,8 +501,8 @@ function updateHud() {
 }
 
 const modal = $('modal'), card = $('card');
-function showModal(html) { card.innerHTML = html; modal.classList.remove('hidden'); card.scrollTop = 0; }
-function closeModal() { modal.classList.add('hidden'); }
+function showModal(html) { stopRankPoll(); card.innerHTML = html; modal.classList.remove('hidden'); card.scrollTop = 0; }
+function closeModal() { stopRankPoll(); modal.classList.add('hidden'); }
 on(modal, 'click', e => { if (e.target === modal) closeModal(); });
 on(document, 'keydown', e => { if (e.key === 'Escape') closeModal(); });
 
@@ -619,7 +618,7 @@ function complete(k, gain, firstTry, req) {
     const unlocked = nt > oldTier ? TPL.filter(t => t.tier === nt).map(t => TPL_NAME[t.id]) : [];
     later(() => openPromo(nr, unlocked), 1700);
   }
-  later(() => { spawnSites(); updateHud(); save(); }, 1600);
+  later(() => { spawnSites(); updateHud(); save(); pushRank(); }, 1600);
   updateHud(); save();
 }
 
@@ -688,6 +687,79 @@ function openRef(backKey) {
   if (backKey) $('mback').onclick = () => openReview(backKey); else $('mok').onclick = closeModal;
 }
 
+// ================== 랭킹 (XP → 1회 적합 횟수) ==================
+let rankTimer = 0, myPos = null;
+function stopRankPoll() { if (rankTimer) { clearInterval(rankTimer); rankTimer = 0; } }
+cleanups.push(stopRankPoll);
+function showMyPos() {
+  const el = $('hMyRank');
+  if (!el) return;
+  el.style.display = myPos ? '' : 'none';
+  el.innerHTML = myPos ? `🏆 <b>${myPos}</b>위` : '';
+}
+async function pushRank() {
+  const j = await RK.submit(S);
+  if (!alive || !j || j.error) return;
+  const before = myPos;
+  myPos = j.me && j.me.pos;
+  showMyPos();
+  if (before && myPos && myPos < before) toast(`🏆 랭킹 ${myPos}위로 상승!`);
+}
+const pct = (f, d) => (d ? Math.round(f / d * 100) + '%' : '-');
+function rankRows(list, meId, admin) {
+  return list.map((r, i) => `<tr class="${r.id === meId ? 'me' : ''}"><td class="pos">${r.pos || i + 1}</td><td><b>${esc(r.nick)}</b>${r.id === meId ? ' <span class="fc-tag y">나</span>' : ''}</td><td>${esc(r.rankName)}</td><td>${esc(r.stage)}</td><td class="num">${r.pop.toLocaleString()}</td><td class="num">${r.done}</td><td class="num">${r.first}회 <small>(${pct(r.first, r.done)})</small></td><td class="num"><b>${r.xp.toLocaleString()}</b></td>${admin ? `<td><button class="fc-btn sm" data-del="${esc(r.id)}" data-nick="${esc(r.nick)}">삭제</button></td>` : ''}</tr>`).join('');
+}
+async function openRank(opts = {}) {
+  const me = RK.getMe();
+  const admin = getAdminPw();
+  const head = `<div class="fc-hd"><h2>🏆 랭킹 <small style="font-weight:400;color:#6b7385;font-size:13px">① XP ② 1회 적합 횟수 순 · 30초마다 갱신</small></h2><button class="fc-x" id="fc-mx">×</button></div>`;
+  const regForm = (msg, val) => `<div class="fc-reg"><b>${me ? '닉네임 변경' : '랭킹에 참여하기'}</b><div class="fc-regrow"><input id="fc-nick" maxlength="10" placeholder="닉네임 (2~10자)" value="${esc(val || '')}"><button class="fc-btn pri" id="fc-regbtn">${me ? '변경' : '등록'}</button>${me ? '<button class="fc-btn" id="fc-regcancel">취소</button>' : ''}</div>
+    <div class="fc-note">${msg ? `<span style="color:#d62828">${esc(msg)}</span><br>` : ''}로그인 없이 이 기기·브라우저에 저장된 비밀키로 본인을 구분합니다(다른 기기에서는 별도 기록). 개인정보는 받지 않으며, 새 게임을 해도 랭킹에는 최고 기록이 남습니다. 등록하지 않아도 게임은 그대로 할 수 있습니다.</div></div>`;
+  const editing = opts.edit || !me;
+  showModal(`${head}<div class="fc-bd">${editing ? regForm(opts.msg, opts.nick || (me && me.nick)) : `<div class="fc-meline">내 닉네임 <b>${esc(me.nick)}</b> <button class="fc-btn sm" id="fc-nickedit">변경</button></div>`}<div id="fc-board"><div class="fc-note">불러오는 중…</div></div></div>
+  <div class="fc-ft"><div class="fc-grow" id="fc-rankinfo"></div><button class="fc-btn" id="fc-mok">닫기</button></div>`);
+  $('mx').onclick = $('mok').onclick = closeModal;
+  if ($('nickedit')) $('nickedit').onclick = () => openRank({ edit: true });
+  if ($('regcancel')) $('regcancel').onclick = () => openRank();
+  if ($('regbtn')) {
+    const go = async () => {
+      const nick = $('nick').value.trim();
+      $('regbtn').disabled = true;
+      const j = await RK.register(nick, S);
+      if (!alive) return;
+      if (j.error) return openRank({ edit: true, msg: j.error, nick });
+      myPos = j.me && j.me.pos; showMyPos();
+      toast(`🏆 ${esc(j.me.nick)} — 현재 ${myPos}위`);
+      openRank();
+    };
+    $('regbtn').onclick = go;
+    $('nick').onkeydown = e => { if (e.key === 'Enter') go(); };
+    if (!me) setTimeout(() => $('nick') && $('nick').focus(), 50);
+  }
+  const load = async () => {
+    const j = await RK.board();
+    const box = $('board');
+    if (!alive || !box) return;
+    if (j.error) { box.innerHTML = `<div class="fc-res bad">${esc(j.error)}</div>`; return; }
+    const meId = me && me.id;
+    if (j.me) { myPos = j.me.pos; showMyPos(); }
+    const inTop = j.me && j.top.some(r => r.id === j.me.id);
+    box.innerHTML = j.top.length ? `<div class="fc-tblwrap"><table class="fc-lb"><tr><th>순위</th><th>닉네임</th><th>계급</th><th>도시</th><th class="num">인구</th><th class="num">준공</th><th class="num">1회 적합</th><th class="num">XP</th>${admin ? '<th></th>' : ''}</tr>
+      ${rankRows(j.top, meId, admin)}${j.me && !inTop ? `<tr class="gap"><td colspan="${admin ? 9 : 8}">⋯</td></tr>${rankRows([j.me], meId, admin)}` : ''}</table></div>`
+      : '<div class="fc-note">아직 등록된 기록이 없습니다. 첫 번째 주인공이 되어 보세요!</div>';
+    $('rankinfo').textContent = `참여 ${j.total}명 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} 기준`;
+    box.querySelectorAll('[data-del]').forEach(bt => bt.onclick = async () => {
+      if (!window.confirm(`「${bt.dataset.nick}」 기록을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+      const r = await RK.remove(bt.dataset.del, getAdminPw());
+      if (r.error) toast(esc(r.error)); else load();
+    });
+  };
+  await load();
+  if ($('board')) rankTimer = setInterval(load, 30000);
+}
+$('btnRank').onclick = () => openRank();
+$('hMyRank').onclick = () => openRank();
+
 $('btnRef').onclick = () => openRef(null);
 $('btnHelp').onclick = openHelp;
 $('btnReset').onclick = () => {
@@ -709,6 +781,7 @@ if (ro) { ro.observe(cv.parentElement); cleanups.push(() => ro.disconnect()); } 
 updateHud(); save();
 rafId = requestAnimationFrame(draw);
 if (fresh) openHelp();
+if (RK.getMe()) pushRank();
 // 테스트용 훅
 window.__fc = { get S() { return S; }, evaluate, openReview, submit };
 return () => {

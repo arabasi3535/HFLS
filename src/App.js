@@ -475,7 +475,7 @@ export default function App() {
         )}
         {tab === "game" && (
           <Suspense fallback={<div className="empty">불러오는 중…</div>}>
-            <FireCityGame />
+            <FireCityGame adminPw={adminMode ? adminPw : ""} />
           </Suspense>
         )}
         {tab === "guide" && <GuideTab adminMode={adminMode} />}
