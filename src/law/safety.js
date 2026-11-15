@@ -15,6 +15,7 @@
 // ============================================================
 import { STATUS } from "./engine";
 import { num } from "./logic";
+import { tempFacilities } from "./temporary";
 
 export const S = { YES: "대상", NO: "비대상", CHK: "확인 필요", NA: "해당없음" };
 
@@ -504,5 +505,13 @@ export function selfInspection(rv, mode, grade, installed) {
 /** 네 항목 한꺼번에 */
 export function safetyReview(rv, mode, applied, installed) {
   const grade = fireSafetyGrade(rv, mode, applied);
-  return { grade, flame: flameRetardant(rv, mode), lane: fireLane(rv, mode), insp: selfInspection(rv, mode, grade, installed) };
+  let temp = null;
+  if (mode === "new") {
+    try {
+      temp = tempFacilities(rv);
+    } catch (e) {
+      temp = null;
+    }
+  }
+  return { grade, flame: flameRetardant(rv, mode), lane: fireLane(rv, mode), insp: selfInspection(rv, mode, grade, installed), temp };
 }

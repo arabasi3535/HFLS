@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.23.1",
+  version: "2.24.0",
   date: "2026-11-15",
-  note: "법령 자료 — 위험물 법령 연혁표(1958~현재)·위험물 법령 종류 표시, 「링크 확인 필요」 표시 삭제",
+  note: "신축 건축물 — 임시소방시설(건설현장) 설치 대상 판정(시행령 별표8, NFPC 606)",
 };
 
 export const D = {

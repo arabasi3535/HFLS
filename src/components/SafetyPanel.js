@@ -23,7 +23,7 @@ function Card({ title, badge, status, lead, children }) {
 }
 
 export default function SafetyPanel({ sv, onMakeReport, mode }) {
-  const { grade, flame, lane, insp } = sv;
+  const { grade, flame, lane, insp, temp } = sv;
   const gl = grade.label || grade.grade;
   const gBadge = grade.status === S.NA ? "해당없음" : grade.status === S.CHK ? (gl ? `${gl} 이상` : "확인 필요") : gl || "해당없음";
   const iBadge = !insp ? "" : insp.status === S.NA ? "제외" : insp.status === S.NO ? "비대상" : insp.status === S.CHK ? "확인 필요" : insp.top ? "종합(반기)" : insp.comp.length ? "종합+작동" : "작동";
@@ -177,6 +177,40 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
           {lane.exc ? ` · 단서 적용례 ${SAFETY_REFS.laneExc}` : ""}
         </div>
       </Card>
+
+      {temp && temp.status !== S.NA && (
+        <Card
+          title="임시소방시설(건설현장)"
+          badge={temp.status === S.YES ? `${temp.items.filter((i) => i.status === S.YES).length}종 대상` : temp.status}
+          status={temp.status}
+          lead={temp.summary}
+        >
+          <ul className="sf-list tp-list">
+            {temp.items.map((it) => (
+              <li key={it.key} className={it.status === S.YES ? "hit" : ""}>
+                <b>{it.name}</b> <span className={`sf-badge sm ${cls(it.status)}`}>{it.status}</span>
+                <div className={`sf-crit ${it.status === S.YES ? "ok" : it.status === S.CHK ? "unk" : "no"}`}>{it.why}</div>
+                {it.status !== S.NO && <div className="det-meta">설치기준: {it.how}</div>}
+                {it.status !== S.NO && it.alt && <div className="det-meta">설치한 것으로 보는 소방시설: {it.alt}</div>}
+              </li>
+            ))}
+          </ul>
+          <div className="det-crit">
+            <div>화재위험작업(시행령 제18조제1항) — 이 작업을 하기 전에 설치</div>
+            {temp.works.map((w, i) => (
+              <div key={i} className="det-meta">
+                {i + 1}. {w}
+              </div>
+            ))}
+          </div>
+          {temp.notes.map((n, i) => (
+            <div key={i} className="det-line">
+              {n}
+            </div>
+          ))}
+          <div className="det-ref">{temp.ref}</div>
+        </Card>
+      )}
     </div>
   );
 }

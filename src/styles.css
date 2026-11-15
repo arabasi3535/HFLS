@@ -990,3 +990,8 @@ aside .fb { margin-bottom: 10px; }
 .lw-hist th { background: color-mix(in srgb, var(--muted) 10%, transparent); font-weight: 700; }
 .lw-hist td.nw { white-space: nowrap; font-weight: 600; }
 .lw-hist-n { font-size: 12px; color: var(--muted); margin-top: 2px; }
+/* 임시소방시설 */
+.tp-list li { display: block; margin-bottom: 8px; }
+.tp-list li > b { margin-right: 4px; }
+.tp-list .sf-crit { margin-top: 3px; }
+.sf-badge.sm { font-size: 11px; padding: 0 6px; margin-left: 4px; }
