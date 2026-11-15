@@ -879,11 +879,10 @@ export const CRITERIA = [
   // ───────────────────────── 피난기구 ─────────────────────────
   {
     id: "esc-1", fac: "escape", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "",
-    text: "피난층·지상 1층·2층·11층 이상인 층을 제외한 모든 층 (1992.7.28.~1994.7.19.은 지하층도 제외 / 가스시설·지하구·터널 제외)", scope: "해당 층",
+    text: "피난층·지상 1층·2층·11층 이상인 층을 제외한 지상층 (지하층은 표시하지 않음 — 현행 NFTC 301 표 2.1.1에 지하층 적응 피난기구 없음, 2022.9.8. 소방청고시 제2022-22호로 삭제 / 가스시설·지하구·터널 제외)", scope: "해당 층",
     when: (c) => {
       if (c.g("gas", "tunnel", "ugduct")) return F;
       if (c.x.gf >= 3) return T;
-      if (c.x.bf > 0 && c.d >= D.P94) return T;
       return F;
     },
     basis: (c) => escapeFloors(c),
@@ -1238,7 +1237,7 @@ function ugWlUseGE(c, t) {
 }
 function escapeFloors(c) {
   const parts = [];
-  if (c.x.bf > 0 && c.d >= D.P94) parts.push(`지하 1~${c.x.bf}층(피난층 제외)`);
+  // 지하층: 표시하지 않음(현행 NFTC 301 표 2.1.1에 지하층 적응 피난기구 없음)
   // 노유자시설: 2017.1.28.부터 피난층이 아닌 지상 1·2층도 대상(esc-noyu12) → 지상 2층부터 표시
   const noyu12 = c.g("noyu") && c.d >= D.B17 && c.x.gf >= 2;
   if (noyu12) parts.push(`지상 2~${Math.min(c.x.gf, 10)}층(피난층이 아닌 1층 포함)`);

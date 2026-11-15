@@ -46,6 +46,22 @@ describe("피난기구 — 노유자시설 3층 이상 해당 층 표시", () =>
     const r = evaluateAt({ use: "noyu", area: 900, gf: 3, bf: 0, floors: fl(3, 300), f: {} }, "2016-01-01");
     expect(r.byKey.escape.hits.map((h) => h.basis).join()).toContain("지상 3~3층");
   });
+  test("지하층: 2022.9.8. NFSC 301 별표1 지하층 적응성 삭제 이후 → 지하 1층·지상 2층 업무시설은 비대상", () => {
+    const r = evaluateAt({ use: "office", area: 900, gf: 2, bf: 1, floors: fl(2, 300), f: {} }, "2026-11-08");
+    expect(r.byKey.escape.status).not.toBe("설치");
+  });
+  test("지하층: 허가일과 관계없이 표시하지 않음(2020 허가분도 비대상)", () => {
+    const r = evaluateAt({ use: "office", area: 900, gf: 2, bf: 1, floors: fl(2, 300), f: {} }, "2020-05-01");
+    expect(r.byKey.escape.status).not.toBe("설치");
+    const r2 = evaluateAt({ use: "office", area: 1500, gf: 5, bf: 2, floors: fl(5, 300), f: {} }, "2000-05-01");
+    expect(r2.byKey.escape.hits.map((h) => h.basis).join()).not.toContain("지하");
+  });
+  test("지하층 있는 5층 업무시설(2026) → 지상 3~5층만", () => {
+    const r = evaluateAt({ use: "office", area: 1500, gf: 5, bf: 2, floors: fl(5, 300), f: {} }, "2026-11-08");
+    const b = r.byKey.escape.hits.map((h) => h.basis).join();
+    expect(b).toContain("지상 3~5층");
+    expect(b).not.toContain("지하");
+  });
   test("업무시설 5층 → 지상 3층부터(변경 없음)", () => {
     const r = evaluateAt({ use: "office", area: 1500, gf: 5, bf: 0, floors: fl(5, 300), f: {} }, "2026-11-08");
     expect(r.byKey.escape.hits.map((h) => h.basis).join()).toContain("지상 3~5층");

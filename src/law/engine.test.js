@@ -120,10 +120,10 @@ describe("운영매뉴얼(1992~2015) 연도별 적용기준", () => {
     expect(r.byKey.spk.hits.map((h) => h.id)).toContain("spk-apt16");
     expect(r.byKey.autoext.hits.map((h) => h.id)).toContain("auto-apt97");
   });
-  test("1993년 지하 2층 → 피난기구는 지하층 제외(1994.7.20. 전)", () => {
+  test("지하 2층·지상 2층 → 피난기구 지하층 제외(허가일 무관)", () => {
     const b = base({ use: "office", area: 600, gf: 2, bf: 2, floors: floors(2, 2, 150) });
     expect(st(evaluateAt(b, "1993-06-01"), "escape")).toBe(STATUS.NONE);
-    expect(st(evaluateAt(b, "1995-01-01"), "escape")).toBe(STATUS.REQ);
+    expect(st(evaluateAt(b, "1995-01-01"), "escape")).toBe(STATUS.NONE); // v2.29.5: 지하층은 허가일과 관계없이 제외
   });
   test("터널 연결송수관: 2007 2,000m / 2010 1,000m / 2026.3.1. 이후 500m", () => {
     const t = (len) => base({ use: "tunnel", area: 0, gf: 0, bf: 0, floors: [], f: { tunnelLen: len } });

@@ -20,7 +20,7 @@ export const CASES = [
   { id: "C10", t: "공장 2,000㎡ 단층(불연·내화)", d: T, i: { use: "factory", area: 2000, gf: 1, bf: 0, floors: fl(1, 0, 2000), f: { combustibleTimes: 0 } }, exp: ["ext", "hydrant", "afd", "alarm", "guide"] },
   { id: "C11", t: "창고 6,000㎡ 단층(내화)", d: T, i: { use: "warehouse", area: 6000, gf: 1, bf: 0, floors: fl(1, 0, 6000), f: { combustibleTimes: 0 } }, exp: ["ext", "hydrant", "spk", "afd", "alarm", "pa", "guide", "waterSupply"] }, // 연면적 3,500㎡ 이상 → 비상방송
   { id: "C12", t: "판매시설 1,200㎡ 2층 수용 400명", d: T, i: { use: "retail", area: 1200, gf: 2, bf: 0, occ: 400, floors: fl(2, 0, 600) }, exp: ["ext", "afd", "visual", "alarm", "guide", "conspk"] },
-  { id: "C13", t: "근린생활시설 1,500㎡ 지상2/지하1", d: T, i: { use: "neigh", area: 1500, gf: 2, bf: 1, floors: fl(2, 1, 500) }, exp: ["ext", "hydrant", "sspk", "afd", "visual", "alarm", "escape", "guide", "conspk", "elight"] },
+  { id: "C13", t: "근린생활시설 1,500㎡ 지상2/지하1", d: T, i: { use: "neigh", area: 1500, gf: 2, bf: 1, floors: fl(2, 1, 500) }, exp: ["ext", "hydrant", "sspk", "afd", "visual", "alarm", "guide", "conspk", "elight"] }, // 피난기구: 지상 3층 이상 없음, 지하층은 2022.9.8. NFSC 301 별표1 적응성 삭제(소방청고시 제2022-22호)로 제외
   { id: "C14", t: "노유자시설(어린이집) 350㎡ 단층", d: T, i: { use: "noyu", area: 350, gf: 1, bf: 0, floors: fl(1, 0, 350) }, exp: ["ext", "sspk", "guide"] },
   { id: "C15", t: "노유자 생활시설(주·야간보호) 200㎡ 단층", d: T, i: { use: "noyu_res", area: 200, gf: 1, bf: 0, floors: fl(1, 0, 200) }, exp: ["ext", "sspk", "afd", "report", "visual", "guide"] },
   { id: "C16", t: "공연장 1,000㎡ 단층 수용 300명 무대부 250㎡", d: T, i: { use: "perf", area: 1000, gf: 1, bf: 0, occ: 300, floors: fl(1, 0, 1000), f: { stageArea: 250 } }, exp: ["ext", "spk", "afd", "visual", "alarm", "seatguide", "smoke", "guide"] },
