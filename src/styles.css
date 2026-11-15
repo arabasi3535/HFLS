@@ -1037,3 +1037,48 @@ aside .fb { margin-bottom: 10px; }
 .kf-nav.r { right: -10px; }
 @media (hover: none), (max-width: 560px) { .kf-nav { display: none; } .kf-strip { grid-auto-columns: 72%; } }
 .pp-reset { flex: 0 0 auto; }
+/* 법령 개정 알림 */
+.lwt-bar { max-width: 1288px; width: calc(100% - 24px); box-sizing: border-box; margin: 10px auto 0; padding: 8px 12px; border: 1px solid #f59e0b; background: #fffbeb; color: #78350f; border-radius: 10px; font-size: 13.5px; }
+.lwt-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lwt-ico { font-size: 15px; }
+.lwt-txt { flex: 1 1 300px; line-height: 1.5; }
+.lwt-btn { font: inherit; font-size: 12.5px; padding: 2px 10px; border-radius: 999px; border: 1px solid #f59e0b; background: #fff; color: #92400e; cursor: pointer; }
+.lwt-det { margin-top: 8px; border-top: 1px dashed #fcd34d; padding-top: 8px; }
+.lwt-h { font-weight: 700; margin: 4px 0; }
+.lwt-det ul, .lwt-list { margin: 0 0 6px; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.lwt-det a, .lwt-list a { color: inherit; font-weight: 600; }
+.lwt-list a { color: var(--ink); }
+.lwt-m { font-size: 12px; color: #92400e; }
+.lwt-list .lwt-m { color: var(--muted); }
+.lwt-tag { font-style: normal; font-size: 11px; font-weight: 700; border-radius: 6px; padding: 0 6px; margin-right: 6px; border: 1px solid currentColor; }
+.lwt-tag.amend { color: #b45309; }
+.lwt-tag.new { color: #7c3aed; }
+.lwt-tag.up { color: #2563eb; }
+.lwt-note { font-size: 12px; color: #92400e; }
+.lwt-panel { margin-bottom: 8px; }
+@media (prefers-color-scheme: dark) { .lwt-bar { background: #3b2a06; color: #fde68a; border-color: #b45309; } .lwt-m, .lwt-note { color: #fcd34d; } .lwt-btn { background: transparent; color: #fde68a; } }
+/* 질의회신 — 출처 탭·고르기·PDF 저장 */
+.qa-src { margin: 2px 0; }
+.qa-line { display: flex; align-items: flex-start; gap: 6px; }
+.qa-ck { margin-top: 5px; flex: 0 0 auto; width: 16px; height: 16px; accent-color: var(--brand); }
+.qa-pick { border: 1px solid var(--brand); border-radius: 10px; padding: 10px 12px; background: color-mix(in srgb, var(--brand) 5%, transparent); }
+.qa-pick-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.qa-pick-h span { display: flex; gap: 6px; }
+.qa-pick ol { margin: 6px 0 4px; padding-left: 20px; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
+.qa-src-t { font-size: 11px; font-weight: 700; color: var(--brand); border: 1px solid var(--brand); border-radius: 6px; padding: 0 5px; margin-right: 2px; }
+.qa-x { font: inherit; font-size: 12px; margin-left: 6px; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.qa-x:hover { color: #b91c1c; }
+@media screen { .qa-print { display: none; } }
+@media print {
+  body.qa-printing > *:not(.qa-print) { display: none !important; }
+  body.qa-printing .qa-print { display: block; color: #000; font-size: 11pt; }
+  .qa-print h1 { font-size: 16pt; margin: 0 0 4px; }
+  .qa-print .qa-p-sub { font-size: 9pt; color: #444; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+  .qa-print .qa-p-item { break-inside: auto; border-bottom: 1px solid #999; padding: 8px 0 10px; }
+  .qa-print h2 { font-size: 12pt; margin: 0 0 6px; break-after: avoid; }
+  .qa-print .qa-row { display: grid; grid-template-columns: 60px 1fr; gap: 8px; font-size: 10.5pt; line-height: 1.6; margin-bottom: 4px; }
+  .qa-print .qa-h { font-weight: 700; }
+  .qa-print .qa-v { white-space: pre-wrap; }
+  .qa-print .qa-meta { font-size: 9pt; color: #444; }
+  .qa-print .qa-p-foot { font-size: 8.5pt; color: #444; margin-top: 12px; }
+}

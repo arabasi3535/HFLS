@@ -1,10 +1,11 @@
-// 법제처 국가법령정보 OPEN API 중계 — 소방청 법령해석(질의회신)
+// 법제처 국가법령정보 OPEN API 중계 — 소방청 법령해석(질의회신)·법제처 법령해석례
 //  · 인증값은 Vercel 환경변수 LAW_OC에만 두고, 응답에는 절대 넣지 않음(법제처 상세링크의 OC=… 도 제거)
 //  · 사용
 //      /api/expc?q=스프링클러[&s=1|2][&page=1][&n=20]  → 목록 { total, page, items:[{id,title,date,org,no}] }
 //          s=2(기본) 본문 검색, s=1 안건명 검색
 //      /api/expc?id=2657191                             → 본문 { item:{id,title,ask,answer,reason,laws,date,reg,by,org,no} }
-//      /api/expc?t=law|admrul|expc&q=…  또는 &raw=1      → 원본 응답(시험용)
+//      &t=expc 를 붙이면 법제처 법령해석례(같은 형식, 회신일자 최신순)
+//      /api/expc?t=law|admrul&q=…  또는 &raw=1           → 원본 응답(시험용)
 //  · 응답은 CDN 캐시(목록 1시간, 본문 1일) — 같은 요청이 반복돼도 법제처 호출은 캐시 시간에 1번
 const TIMEOUT = 8000;
 const TARGETS = { nfa: "nfaCgmExpc", expc: "expc", law: "law", admrul: "admrul" };
@@ -39,17 +40,17 @@ function fmtDate(v) {
 }
 
 function list(data) {
-  const root = data && (data.CgmExpc || data.cgmExpc || Object.values(data)[0]);
+  const root = data && (data.CgmExpc || data.Expc || Object.values(data)[0]);
   if (!root) return { total: 0, page: 1, items: [] };
-  let rows = root.cgmExpc || root.CgmExpc || [];
+  let rows = root.cgmExpc || root.expc || [];
   if (!Array.isArray(rows)) rows = [rows];
   return {
     total: parseInt(root.totalCnt, 10) || 0,
     page: parseInt(root.page, 10) || 1,
     items: rows.map((r) => ({
-      id: s(r["법령해석일련번호"]),
+      id: s(r["법령해석일련번호"] || r["법령해석례일련번호"]),
       title: s(r["안건명"]),
-      date: fmtDate(r["해석일자"]),
+      date: fmtDate(r["해석일자"] || r["회신일자"]),
       org: s(r["질의기관명"]),
       no: s(r["안건번호"]),
     })),
@@ -57,10 +58,10 @@ function list(data) {
 }
 
 function detail(data) {
-  const r = (data && (data.CgmExpcService || Object.values(data)[0])) || {};
+  const r = (data && (data.CgmExpcService || data.ExpcService || Object.values(data)[0])) || {};
   return {
     item: {
-      id: s(r["법령해석일련번호"]),
+      id: s(r["법령해석일련번호"] || r["법령해석례일련번호"]),
       title: s(r["안건명"]),
       ask: s(r["질의요지"]),
       answer: s(r["회답"]),
@@ -84,7 +85,7 @@ module.exports = async (req, res) => {
   }
   const q = req.query || {};
   const target = TARGETS[String(q.t || "nfa")] || TARGETS.nfa;
-  const raw = target !== "nfaCgmExpc" || q.raw === "1";
+  const raw = target === "law" || target === "admrul" || q.raw === "1";
   const id = String(q.id || "").replace(/\D/g, "");
   const query = String(q.q || "").trim().slice(0, 50);
   const n = Math.min(100, Math.max(1, parseInt(q.n, 10) || 20));
@@ -104,6 +105,7 @@ module.exports = async (req, res) => {
       p.set("query", query);
       if (target !== "law" && target !== "admrul") p.set("search", sec);
     }
+    if (target === "expc") p.set("sort", "ddes"); // 법제처 해석례: 회신일자 최신순
   }
 
   const clean = (txt) => txt.replace(/OC=[^&"\s]*&?/g, "").split(oc).join("***");

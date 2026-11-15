@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { LAW_GROUPS, HAZ_GUIDES, HAZ_HISTORY, FSA_HISTORY, LAW_CHECKED, lawUrl } from "../law/lawlinks";
+import { LawWatchPanel } from "./LawWatch";
 
 // ============================================================
 // 기타 자료 › 법령 자료 — 국가법령정보센터 현행 원문 링크 모음
@@ -30,6 +31,8 @@ export default function LawTab() {
           </p>
         </div>
       </div>
+
+      <LawWatchPanel />
 
       <div className="pp-bar">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="법령·고시 이름 검색 (예: 스프링클러, 자체점검, 방염)" aria-label="법령 검색" />

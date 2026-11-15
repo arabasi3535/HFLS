@@ -218,7 +218,7 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
       )}
 
       {site && (
-        <Card title="건설현장 소방안전관리자" badge={site.status === S.YES ? "선임 대상" : site.status} status={site.status} lead={site.summary}>
+        <Card title="건설현장 소방안전관리자" badge={site.status} status={site.status} lead={site.summary}>
           <div className="det-crit">
             {site.why.map((w, i) => (
               <div key={i} className={`sf-crit ${site.status === S.YES ? "ok" : site.status === S.CHK ? "unk" : "no"}`}>
@@ -226,16 +226,6 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
               </div>
             ))}
           </div>
-          {site.status !== S.NO && (
-            <div className="det-crit">
-              <div>소방안전관리자 업무(법 제29조제2항)</div>
-              {site.duties.map((w, i) => (
-                <div key={i} className="det-meta">
-                  {i + 1}. {w}
-                </div>
-              ))}
-            </div>
-          )}
           {site.notes.map((n, i) => (
             <div key={i} className="det-line">
               {n}

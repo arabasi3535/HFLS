@@ -7,6 +7,7 @@ import { BugReportModal, ReportsTab } from "./components/Feedback";
 import Tools from "./components/Tools";
 import FileBar from "./components/FileBar";
 import { loadStats, adminAuth, loadNotice, saveNotice } from "./lib/remote";
+import LawWatchBar from "./components/LawWatch";
 import { review } from "./law/engine";
 import { safetyReview } from "./law/safety";
 import { getUse } from "./law/uses";
@@ -336,6 +337,8 @@ export default function App() {
           ))}
         </nav>
       </header>
+
+      <LawWatchBar />
 
       <main className="main">
         {isInput && (
