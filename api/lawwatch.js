@@ -8,6 +8,7 @@ const { oc, lawJson, arr } = require("./_law");
 
 const KEY = "hfls:lawwatch";
 const STALE_MIN = 720;
+const V = 2; // 응답 형식 버전 — 바뀌면 저장해 둔 목록을 버리고 새로 받음(2: 법령일련번호 mst 추가)
 const LAWS = [
   "소방시설 설치 및 관리에 관한 법률",
   "화재의 예방 및 안전관리에 관한 법률",
@@ -34,7 +35,7 @@ async function collect() {
         for (const x of arr(j.LawSearch && j.LawSearch.law)) {
           const n = String(x["법령명한글"] || "");
           if (!n.startsWith(q)) continue;
-          items.push({ n, k: x["법령구분명"], eff: ymd(x["시행일자"]), pub: ymd(x["공포일자"]), no: x["공포번호"], why: x["제개정구분명"], t: "law" });
+          items.push({ n, k: x["법령구분명"], eff: ymd(x["시행일자"]), pub: ymd(x["공포일자"]), no: x["공포번호"], why: x["제개정구분명"], t: "law", mst: x["법령일련번호"] });
         }
       } catch (e) {
         failed.push(q);
@@ -44,7 +45,7 @@ async function collect() {
         for (const x of arr(j.LawSearch && j.LawSearch.law)) {
           const n = String(x["법령명한글"] || "");
           if (!n.startsWith(q)) continue;
-          upcoming.push({ n, k: x["법령구분명"], eff: ymd(x["시행일자"]), pub: ymd(x["공포일자"]), no: x["공포번호"], why: x["제개정구분명"], t: "law" });
+          upcoming.push({ n, k: x["법령구분명"], eff: ymd(x["시행일자"]), pub: ymd(x["공포일자"]), no: x["공포번호"], why: x["제개정구분명"], t: "law", mst: x["법령일련번호"] });
         }
       } catch (e) {
         /* 시행예정 목록은 받지 못하면 생략 */
@@ -58,7 +59,7 @@ async function collect() {
         for (const x of arr(j.AdmRulSearch && j.AdmRulSearch.admrul)) {
           const n = String(x["행정규칙명"] || "");
           if (!isStd(n)) continue;
-          items.push({ n, k: x["행정규칙종류"], eff: ymd(x["시행일자"]), pub: ymd(x["발령일자"]), no: x["발령번호"], why: x["제개정구분명"], t: "admrul" });
+          items.push({ n, k: x["행정규칙종류"], eff: ymd(x["시행일자"]), pub: ymd(x["발령일자"]), no: x["발령번호"], why: x["제개정구분명"], t: "admrul", seq: x["행정규칙일련번호"] });
         }
       } catch (e) {
         failed.push(q);
@@ -68,6 +69,7 @@ async function collect() {
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   const seen = new Set();
   return {
+    v: V,
     at: new Date().toISOString(),
     failed,
     items,
@@ -83,7 +85,7 @@ module.exports = async (req, res) => {
     if (configured()) {
       const [raw] = await pipeline([["GET", KEY]]);
       prev = raw ? JSON.parse(raw) : null;
-      if (prev && Date.now() - Date.parse(prev.at) < STALE_MIN * 60 * 1000) {
+      if (prev && prev.v === V && Date.now() - Date.parse(prev.at) < STALE_MIN * 60 * 1000) {
         res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
         return res.status(200).json({ ok: true, ...prev, cached: true });
       }

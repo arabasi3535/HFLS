@@ -39,11 +39,18 @@ export const fmtD = (d) => {
   return m ? `${m[1]}. ${+m[2]}. ${+m[3]}.` : "";
 };
 const kindOf = (it) => (it.t === "admrul" ? "행정규칙" : "법령");
+/** 그 시행일의 원문 — 법령은 법령일련번호+시행일(시행 예정 원문도 열림), 없으면 현행 한글주소 */
+const hrefOf = (it) =>
+  it.t !== "admrul" && it.mst
+    ? `https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=${encodeURIComponent(it.mst)}&efYd=${String(it.eff || "").replace(/-/g, "")}`
+    : it.t === "admrul" && it.seq
+    ? `https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=${encodeURIComponent(it.seq)}`
+    : lawUrl(it.n, kindOf(it));
 
 function Item({ it, tag }) {
   return (
     <li>
-      <a href={lawUrl(it.n, kindOf(it))} target="_blank" rel="noopener noreferrer">
+      <a href={hrefOf(it)} target="_blank" rel="noopener noreferrer">
         {it.n}
       </a>{" "}
       <span className="lwt-m">

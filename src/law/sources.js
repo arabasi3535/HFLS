@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.28.0",
+  version: "2.29.1",
   date: "2026-11-15",
-  note: "법령 개정 자동 알림, 법제처 법령해석 검색, 질의회신 골라 PDF 저장",
+  note: "제작자 정보 — 게재 예정 논문, 유튜브, 네이버 웹소설, 기타 앱",
 };
 
 export const D = {

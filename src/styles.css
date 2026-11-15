@@ -1082,3 +1082,32 @@ aside .fb { margin-bottom: 10px; }
   .qa-print .qa-meta { font-size: 9pt; color: #444; }
   .qa-print .qa-p-foot { font-size: 8.5pt; color: #444; margin-top: 12px; }
 }
+/* 제작자 정보 */
+button.author { font: inherit; color: inherit; background: none; border: 1px solid transparent; border-radius: 8px; padding: 2px 6px; cursor: pointer; }
+button.author:hover { border-color: rgba(255, 255, 255, 0.4); }
+button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.pf { max-width: 460px; }
+.pf-who { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 8px; border-bottom: 1px solid var(--line2); }
+.pf-name { font-size: 18px; font-weight: 800; letter-spacing: 1px; }
+.pf-org { font-size: 13px; color: var(--muted); }
+.pf-mail { font-size: 14px; color: var(--brand); font-weight: 600; margin-top: 4px; text-decoration: none; }
+.pf-intro { font-size: 13px; color: var(--ink2); line-height: 1.6; margin: 8px 0; }
+.pf-sec h4 { margin: 10px 0 4px; font-size: 14px; }
+.pf-sec ul { margin: 0; padding-left: 18px; font-size: 13.5px; }
+.pf-sec a { color: var(--brand); font-weight: 600; }
+.pf-empty { font-size: 13px; color: var(--muted); }
+.pf-state { white-space: nowrap; font-style: normal; font-size: 11px; font-weight: 700; color: #b45309; border: 1px solid currentColor; border-radius: 6px; padding: 0 5px; margin-left: 6px; }
+.pf-note { color: var(--muted); font-size: 12.5px; }
+/* 논문 자료 — 학술지 바로가기 */
+.pj { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line2); border-radius: 12px; padding: 12px; background: var(--panel); }
+.pj-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.pj-card { display: flex; flex-direction: column; gap: 3px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.pj-card b { font-size: 15px; }
+.pj-card span { font-size: 12px; color: var(--muted); }
+.pj-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.pj-links a { font-size: 12.5px; font-weight: 600; color: var(--brand); border: 1px solid var(--brand); border-radius: 999px; padding: 2px 10px; text-decoration: none; }
+.pj-links a:hover { background: var(--brand); color: #fff; }
+.pp-e { font-size: 12.5px; color: var(--muted); font-style: italic; margin-top: 1px; }
+.pp-j { font-style: normal; font-size: 11px; font-weight: 700; border-radius: 6px; padding: 0 5px; border: 1px solid currentColor; margin-right: 2px; }
+.pp-j.k { color: #b91c1c; }
+.pp-j.j { color: #1d4ed8; }

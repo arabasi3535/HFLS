@@ -8,6 +8,7 @@ import Tools from "./components/Tools";
 import FileBar from "./components/FileBar";
 import { loadStats, adminAuth, loadNotice, saveNotice } from "./lib/remote";
 import LawWatchBar from "./components/LawWatch";
+import ProfileModal from "./components/Profile";
 import { review } from "./law/engine";
 import { safetyReview } from "./law/safety";
 import { getUse } from "./law/uses";
@@ -104,6 +105,7 @@ export default function App() {
   const [adminPw, setAdminPw] = useState("");
   const [stats, setStats] = useState(null);
   const [bug, setBug] = useState(false);
+  const [profile, setProfile] = useState(false);
   const [notice, setNotice] = useState(null);
   const [reportSeed, setReportSeed] = useState(null);
   const [buildSeed, setBuildSeed] = useState(null);
@@ -320,10 +322,10 @@ export default function App() {
             <h1>소방시설 적용·안전관리 검토 시스템</h1>
           </div>
           <div className="top-right">
-            <div className="author" title="제작">
+            <button type="button" className="author" title="제작자 정보 보기" onClick={() => setProfile(true)}>
               <span className="author-org">{AUTHOR.org}</span>
               <span className="author-name">{AUTHOR.name}</span>
-            </div>
+            </button>
             <button className={`admin-btn ${adminMode ? "on" : ""}`} onClick={login} title={adminMode ? "관리자 모드 해제" : "관리자"}>
               {adminMode ? "관리자 ON" : "관리자"}
             </button>
@@ -485,9 +487,9 @@ export default function App() {
       </main>
 
       <footer className="foot no-print">
-        <span className="foot-author">
+        <button type="button" className="foot-author" title="제작자 정보 보기" onClick={() => setProfile(true)}>
           제작 · {AUTHOR.org} {AUTHOR.name}
-        </span>
+        </button>
         <span className="ver-line">
           v{BUILD.version} · 빌드 {BUILD.builtAt} KST{adminMode ? ` · ${BUILD.commit} · 판정규칙 ${RULES_REV.date}` : ""}
         </span>
@@ -497,6 +499,7 @@ export default function App() {
           오류 신고 · 의견 보내기
         </button>
       </footer>
+      {profile && <ProfileModal onClose={() => setProfile(false)} />}
       {bug && (
         <BugReportModal
           version={BUILD.version}
