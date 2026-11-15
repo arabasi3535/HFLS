@@ -1,5 +1,6 @@
 // 보조 계산기(무창층·수용인원) 테스트
 import { windowlessFloor, openingRow, occupancy } from "../tools";
+import { evaluateAt } from "../engine";
 
 describe("무창층 판정(시행령 제2조제1호, 1/30)", () => {
   test("바닥 300㎡ — 개구부 10㎡ 이하 무창층, 초과 유창층", () => {
@@ -32,7 +33,6 @@ describe("수용인원(별표7)", () => {
   test("제외 면적이 더 크면 오류", () => expect(occupancy({ type: "etc", area: 10, excl: 20 }).ok).toBe(false));
 });
 
-import { evaluateAt } from "../engine";
 describe("피난기구 — 노유자시설 3층 이상 해당 층 표시", () => {
   const fl = (n, a) => Array.from({ length: n }, (_, i) => ({ level: i + 1, area: a }));
   test("노유자 3층(2026) → 지상 2층부터 표시", () => {

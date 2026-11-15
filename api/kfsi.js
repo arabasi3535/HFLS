@@ -6,6 +6,13 @@ const { configured, pipeline } = require("./_redis");
 const KFSI = require("./_kfsi");
 
 const KEY = "hfls:kfsi";
+// 분류 설정이 바뀌면 저장해 둔 목록을 버리고 새로 받음
+const CFG = (() => {
+  const t = JSON.stringify(KFSI.rows);
+  let h = 0;
+  for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
+  return String(h);
+})();
 const STALE_MIN = 360; // 6시간 — 재생목록은 자주 바뀌지 않음
 const LATEST = 12;
 const MAX_PER_LIST = 100;
@@ -47,7 +54,7 @@ async function collect(prev) {
   if (!key) throw new Error("YT_API_KEY 없음");
   const failed = [];
   const prevList = {};
-  for (const r of (prev && prev.rows) || []) for (const l of r.lists) prevList[l.id] = r.videos.filter((v) => v.pl === l.id);
+  for (const r of (prev && prev.rows) || []) for (const l of r.lists) prevList[r.k + l.id] = r.videos.filter((v) => v.pl === l.id);
   const uploads = "UULF" + KFSI.id.slice(2);
   let latest;
   try {
@@ -59,12 +66,13 @@ async function collect(prev) {
   const rows = [];
   for (const row of KFSI.rows) {
     const got = await Promise.all(
-      row.lists.map(async ([id]) => {
+      row.lists.map(async ([id, , match]) => {
         try {
-          return (await playlist(id, key, MAX_PER_LIST)).map((v) => ({ ...v, pl: id }));
+          const re = match ? new RegExp(match) : null;
+          return (await playlist(id, key, MAX_PER_LIST)).filter((v) => !re || re.test(v.t)).map((v) => ({ ...v, pl: id }));
         } catch (e) {
           failed.push(id);
-          return prevList[id] || [];
+          return prevList[row.k + id] || [];
         }
       })
     );
@@ -77,7 +85,7 @@ async function collect(prev) {
       videos,
     });
   }
-  return { at: new Date().toISOString(), channel: { id: KFSI.id, name: KFSI.name }, failed, latest, rows };
+  return { at: new Date().toISOString(), cfg: CFG, channel: { id: KFSI.id, name: KFSI.name }, failed, latest, rows };
 }
 
 module.exports = async (req, res) => {
@@ -87,7 +95,7 @@ module.exports = async (req, res) => {
     if (configured()) {
       const [raw] = await pipeline([["GET", KEY]]);
       prev = raw ? JSON.parse(raw) : null;
-      if (prev && Date.now() - Date.parse(prev.at) < STALE_MIN * 60 * 1000) {
+      if (prev && prev.cfg === CFG && Date.now() - Date.parse(prev.at) < STALE_MIN * 60 * 1000) {
         res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
         return res.status(200).json({ ...prev, cached: true });
       }

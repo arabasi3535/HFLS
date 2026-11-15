@@ -332,7 +332,9 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
             {need.clinic && <Check checked={input.f.dialysis} onChange={(v) => setF("dialysis", v)}>인공신장실 있음</Check>}
             {need.bars && <Check checked={input.f.bars} onChange={(v) => setF("bars", v)}>탈출 방지용 창살 설치(자동 개방 구조 제외)</Check>}
             {need.noyuHouse && <Check checked={input.f.noyuInHouse} onChange={(v) => setF("noyuInHouse", v)}>단독주택·공동주택 안에 설치된 시설</Check>}
-            {need.factoryWare && <Check checked={input.f.nonFireproof} onChange={(v) => setF("nonFireproof", v)}>지붕·외벽이 불연재료·내화구조가 아님</Check>}
+            {need.factoryWare && <Check checked={input.f.nonFireproof} onChange={(v) => setF("nonFireproof", v)}>
+                지붕 또는 외벽이 불연재료가 아니거나 내화구조가 아님 <small className="muted">(둘 중 하나라도 해당하면 체크 — 법제처 해석 26-0479, 2026.7.14.)</small>
+              </Check>}
             {g("factory") && <Check checked={input.f.workers50} onChange={(v) => setF("workers50", v)}>상시 근로자 50명 이상 옥내 작업장</Check>}
             {need.lithium && <Check checked={input.f.lithium} onChange={(v) => setF("lithium", v)}>리튬 1차전지 제조 공장</Check>}
             {need.gasUse && <Check checked={input.f.gasUse} onChange={(v) => setF("gasUse", v)}>가스시설(도시가스·LPG) 사용</Check>}
