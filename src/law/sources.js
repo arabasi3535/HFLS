@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.29.1",
+  version: "2.29.2",
   date: "2026-11-15",
-  note: "제작자 정보 — 게재 예정 논문, 유튜브, 네이버 웹소설, 기타 앱",
+  note: "사용 안내 간단히 정리",
 };
 
 export const D = {
