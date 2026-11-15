@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { makeShareUrl, readShareHash, copyText } from "./lib/share";
 import Wizard, { EMPTY } from "./components/Wizard";
 import Report from "./components/Report";
 import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
@@ -142,6 +143,28 @@ export default function App() {
   useEffect(() => save(K.existing, inputs.existing), [inputs.existing]);
   useEffect(() => save(K.ov, overrides), [overrides]);
   useEffect(() => save(K.sel, sels), [sels]);
+
+  // 공유 링크(#share=…)로 열었을 때 입력값 불러오기 — 열 때와 주소가 바뀔 때
+  const inputsRef = useRef(inputs);
+  inputsRef.current = inputs;
+  useEffect(() => {
+    const apply = () => {
+      const sh = readShareHash(window.location.hash);
+      if (!sh) return;
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      const label = sh.mode === "existing" ? "기존 건축물" : "신축 건축물";
+      const next = { ...EMPTY, ...sh.input, f: sh.input.f || {}, floors: sh.input.floors || [] };
+      const cur = inputsRef.current[sh.mode];
+      if (cur && cur.use && JSON.stringify(cur) !== JSON.stringify(next)) {
+        if (!window.confirm(`공유받은 「${label}」 검토 조건을 불러올까요?\n지금 「${label}」에 입력한 내용은 공유받은 내용으로 바뀝니다.`)) return;
+      }
+      setInputs((p) => ({ ...p, [sh.mode]: next }));
+      setTab(sh.mode);
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    return () => window.removeEventListener("hashchange", apply);
+  }, []);
 
   const mode = tab === "existing" ? "existing" : "new";
   const isInput = tab === "new" || tab === "existing";
@@ -294,6 +317,14 @@ export default function App() {
             <aside className="no-print">
               <FileBar
                 key={`fb-${mode}`}
+                onShare={async () => {
+                  const inp = inputs[mode];
+                  if (!inp.use) return "대상물 분류를 먼저 입력하면 공유 링크를 만들 수 있습니다.";
+                  const url = makeShareUrl(mode, inp);
+                  if (await copyText(url)) return "공유 링크를 복사했습니다. 메신저·메일에 붙여 넣으면 받는 사람이 같은 입력 조건으로 검토 화면을 엽니다(입력값은 주소에만 담기고 서버에 저장되지 않음).";
+                  window.prompt("아래 주소를 복사해 보내세요.", url);
+                  return "";
+                }}
                 onSave={async () => {
                   const { buildingBook, purposeName } = await import("./lib/sheets/building");
                   const { downloadBytes } = await import("./lib/xlsx");
