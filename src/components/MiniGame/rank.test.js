@@ -91,3 +91,53 @@ test("응답에 비밀키 해시가 노출되지 않음", async () => {
   const g = await call("GET", { query: { me: ID(1) } });
   expect(JSON.stringify(g.body)).not.toMatch(/kh|nickLow|bbbb/);
 });
+
+// ---------- 난이도별 랭킹(v2.32.0) ----------
+const postLv = (n, lv, s, nick) => call("POST", { body: { id: ID(n), key: KEY(n), nick, level: lv, ...s } });
+
+test("난이도별로 순위가 따로 — 초급은 기존 키 그대로", async () => {
+  await post(1, { xp: 300, first: 3, done: 5, pop: 100 }, "초급왕");
+  await postLv(2, "mid", { xp: 700, first: 2, done: 3, pop: 50 }, "중급왕");
+  await postLv(1, "adv", { xp: 100, first: 1, done: 1, pop: 10 });
+  expect((await call("GET")).body.top.map((x) => x.nick)).toEqual(["초급왕"]);
+  expect((await call("GET", { query: { level: "mid" } })).body.top.map((x) => x.nick)).toEqual(["중급왕"]);
+  const adv = await call("GET", { query: { level: "adv", me: ID(1) } });
+  expect(adv.body.top.map((x) => x.nick)).toEqual(["초급왕"]); // 닉네임 공유
+  expect(adv.body.me.pos).toBe(1);
+  expect(fake.hs.get("hfls:fc:data").has(ID(1))).toBe(true);
+  expect(fake.hs.get("hfls:fc:mid:data").has(ID(2))).toBe(true);
+});
+
+test("닉네임은 난이도 공통 — 다른 사람은 다른 난이도에서도 같은 닉네임 불가, 변경은 모든 난이도에 반영", async () => {
+  await post(1, { xp: 100, first: 1, done: 2, pop: 10 }, "공유닉");
+  expect((await postLv(2, "mid", { xp: 0, first: 0, done: 0, pop: 0 }, "공유닉")).code).toBe(409);
+  await postLv(1, "mid", { xp: 100, first: 1, done: 1, pop: 10 });
+  expect((await postLv(1, "mid", { xp: 100, first: 1, done: 1, pop: 10 }, "새닉네임")).code).toBe(200);
+  expect((await call("GET")).body.top[0].nick).toBe("새닉네임");
+  expect((await post(3, { xp: 0, first: 0, done: 0, pop: 0 }, "공유닉")).code).toBe(200); // 옛 닉네임 해제
+});
+
+test("다른 기기 비밀키는 다른 난이도에서도 거부", async () => {
+  await post(1, { xp: 100, first: 1, done: 2, pop: 10 }, "주인2");
+  const r = await call("POST", { body: { id: ID(1), key: KEY(9), level: "adv", xp: 0, first: 0, done: 0, pop: 0 } });
+  expect(r.code).toBe(403);
+});
+
+test("중급·고급 조작 방지 한도 — 진행 중 단계 XP 여유 포함", async () => {
+  // 중급: (준공 + 5) × 380
+  expect((await postLv(1, "mid", { xp: 2280, first: 0, done: 1, pop: 10 }, "중급한도")).code).toBe(200);
+  expect((await postLv(2, "mid", { xp: 2281, first: 0, done: 1, pop: 10 }, "중급초과")).code).toBe(400);
+  expect((await postLv(3, "mid", { xp: 100, first: 2, done: 2, pop: 10 }, "중급부족")).code).toBe(400); // 2 × 60 미만
+  // 고급: (준공 + 5) × 305
+  expect((await postLv(4, "adv", { xp: 1830, first: 0, done: 1, pop: 10 }, "고급한도")).code).toBe(200);
+  expect((await postLv(5, "adv", { xp: 1831, first: 0, done: 1, pop: 10 }, "고급초과")).code).toBe(400);
+});
+
+test("관리자 삭제는 해당 난이도만 — 다른 난이도 기록이 있으면 닉네임 유지", async () => {
+  await post(1, { xp: 100, first: 1, done: 2, pop: 10 }, "둘다");
+  await postLv(1, "mid", { xp: 100, first: 1, done: 1, pop: 10 });
+  expect((await call("DELETE", { query: { id: ID(1), level: "mid" }, headers: { "x-admin-pw": "pw" } })).code).toBe(200);
+  expect((await call("GET", { query: { level: "mid" } })).body.top).toEqual([]);
+  expect((await call("GET")).body.top[0].nick).toBe("둘다");
+  expect((await post(2, { xp: 0, first: 0, done: 0, pop: 0 }, "둘다")).code).toBe(409);
+});

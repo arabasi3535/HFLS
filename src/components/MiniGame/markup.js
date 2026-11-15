@@ -23,7 +23,7 @@ export const MARKUP = `
     </div>
     <div class="fc-side">
       <div class="fc-sec">
-        <div class="fc-h3">📋 건축허가 동의 대기 <small id="fc-siteCnt" style="color:#6b7385;font-weight:400"></small></div>
+        <div class="fc-h3"><span id="fc-qTitle">📋 건축허가 동의 대기</span> <small id="fc-siteCnt" style="color:#6b7385;font-weight:400"></small></div>
         <ul id="fc-siteList"></ul>
       </div>
       <div class="fc-sec">

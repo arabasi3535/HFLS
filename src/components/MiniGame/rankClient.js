@@ -42,36 +42,38 @@ async function call(url, opt) {
 }
 
 const stats = (S) => ({ xp: S.xp, first: S.first, done: S.done, pop: S.pop });
+// 난이도: basic(초급) · mid(중급) · adv(고급) — 랭킹은 난이도별, 닉네임·비밀키는 공유
+const lv = (level) => (level === "mid" || level === "adv" ? level : "basic");
 
 /** 닉네임 등록(처음) 또는 변경 */
-export async function register(nick, S) {
+export async function register(nick, S, level) {
   const prev = getMe();
   const me = prev || { id: hex(8), key: hex(16) };
   const j = await call("/api/rank", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: me.id, key: me.key, nick, ...stats(S) }),
+    body: JSON.stringify({ id: me.id, key: me.key, nick, level: lv(level), ...stats(S) }),
   });
   if (!j.error) setMe({ ...me, nick: j.me.nick });
   return j;
 }
 
 /** 진행 상황 전송(등록한 사람만) */
-export async function submit(S) {
+export async function submit(S, level) {
   const me = getMe();
   if (!me) return null;
   return call("/api/rank", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: me.id, key: me.key, nick: me.nick, ...stats(S) }),
+    body: JSON.stringify({ id: me.id, key: me.key, nick: me.nick, level: lv(level), ...stats(S) }),
   });
 }
 
-export function board() {
+export function board(level) {
   const me = getMe();
-  return call(`/api/rank${me ? `?me=${me.id}` : ""}`);
+  return call(`/api/rank?level=${lv(level)}${me ? `&me=${me.id}` : ""}`);
 }
 
-export function remove(id, pw) {
-  return call(`/api/rank?id=${encodeURIComponent(id)}`, { method: "DELETE", headers: { "x-admin-pw": pw } });
+export function remove(id, pw, level) {
+  return call(`/api/rank?level=${lv(level)}&id=${encodeURIComponent(id)}`, { method: "DELETE", headers: { "x-admin-pw": pw } });
 }

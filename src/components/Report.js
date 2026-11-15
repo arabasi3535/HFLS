@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CATS, SUBSTITUTIONS, getFacility } from "../law/facilities";
+import { CATS, getFacility } from "../law/facilities";
+import { isReq, PARKING_WATER, SUB_DEFAULT_ON, substitutionsFor } from "../law/installed";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
 import SafetyPanel from "./SafetyPanel";
@@ -15,11 +16,6 @@ import QaLink from "./QaLink";
 // ============================================================
 
 const fmtDate = (d) => (d ? d.replace(/-/g, ".") + "." : "");
-const isReq = (s) => s === STATUS.REQ || s === STATUS.REQ_CHK;
-const PARKING_WATER = ["wat-parkbldg", "wat-inpark", "wat-mech"];
-// 실무상 거의 항상 적용하는 대체 — 기본 선택
-const SUB_DEFAULT_ON = new Set(["s4", "s5", "s8", "s8b", "s19", "s21"]);
-
 function scale(input, u) {
   if (u.g.includes("tunnel")) return input.f && input.f.tunnelLen ? `길이 ${Number(input.f.tunnelLen).toLocaleString("ko-KR")}m` : "길이 미입력";
   if (u.g.includes("ugduct")) return "지하구";
@@ -27,30 +23,6 @@ function scale(input, u) {
   const bf = parseInt(input.bf, 10) || 0;
   const a = parseFloat(input.area);
   return `지상 ${gf}층${bf ? ` · 지하 ${bf}층` : ""} · 연면적 ${a ? a.toLocaleString("ko-KR") : "—"}㎡`;
-}
-
-/** 대체 후보: 대상 시설이 설치 대상이고, 대체 시설이 설치 대상(또는 무관)인 경우 */
-function substitutionsFor(rows, u) {
-  const by = Object.fromEntries(rows.map((r) => [r.fac.key, r]));
-  const out = [];
-  for (const s of SUBSTITUTIONS) {
-    const t = by[s.target];
-    if (!t || !isReq(t.status)) continue;
-    if (s.heritageOnly && !u.g.includes("heritage")) continue;
-    if (s.parkingOnly) {
-      const ids = [...t.hits, ...t.maybes].map((i) => i.id);
-      const park = ids.filter((id) => PARKING_WATER.includes(id));
-      if (!park.length) continue;
-      const partial = ids.some((id) => !PARKING_WATER.includes(id));
-      out.push({ ...s, partial, viaKeys: ["spk"] });
-      continue;
-    }
-    if (s.any) continue; // 설비 외 조건(공공소화전·지락차단장치 등) — 관리자 상세에서만 안내
-    const via = s.by.filter((k) => by[k] && by[k].status === STATUS.REQ);
-    if (!via.length) continue;
-    out.push({ ...s, viaKeys: via, replaceWith: via.map((k) => getFacility(k).name).join(" / ") });
-  }
-  return out;
 }
 
 function Item({ it, open, onToggle, flash, guide }) {

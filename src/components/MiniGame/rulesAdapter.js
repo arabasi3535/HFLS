@@ -69,6 +69,13 @@ export const ASSUMPTIONS = [
   "숙박시설 수용인원 = 바닥면적 ÷ 3㎡(침대 수 미상)",
   "아파트 지하층은 주차장(지하 주차장 면적 = 지하층 합계)",
 ];
+// 중급·고급 단계에서 추가로 쓰는 가정
+export const STAGE_ASSUMPTIONS = [
+  "아파트는 1개 동 단지(세대수 = 단지 세대수), 승강기 있음",
+  "건축물 높이 = 지상 층수 × 3.3m",
+  "물분무등소화설비는 호스릴 방식 아님, 공공기관·다중이용업소 없음",
+  "소방차 전용구역 제외 단서(1개 동 + 편도 2차선 도로 직접 접함) 해당 없음",
+];
 
 /** 'YYYY.MM.DD' → 'YYYY-MM-DD' */
 export const toIso = (d) => String(d || "").replace(/\./g, "-");
@@ -81,6 +88,10 @@ export function toHflsInput(b) {
   for (let i = 1; i <= b.BF; i++) floors.push({ level: -i, area: b.Ab });
   const f = { combustibleTimes: 0, rackArea: 0, stageArea: 0, gasTankTon: 0, mechCars: 0 };
   if (b.use === "apt" && b.BF > 0) f.ugParking = bTot;
+  // 중급·고급 단계 판정용(세대수·높이·승강기) — 값이 있을 때만
+  if (b.hh) f.households = b.hh;
+  if (b.use === "apt") f.elevator = true;
+  if (b.H) f.height = b.H;
   const input = { use: USE_MAP[b.use], area: T, gf: b.GF, bf: b.BF, floors, f };
   if (b.use === "sales") input.occ = Math.min(499, Math.floor(T / 3));
   if (b.use === "lodging") input.occ = Math.floor(T / 3);
