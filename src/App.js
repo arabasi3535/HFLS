@@ -258,8 +258,8 @@ export default function App() {
     ["new", "신축 건축물"],
     ["existing", "기존 건축물"],
     ["tools", "보조 계산기"],
-    ["report", "자체점검"], ["wm", "위험물 정기점검"], ["mu", "다중이용업 세부점검"],
     ["etc", "기타 자료"],
+    ["report", "자체점검"], ["wm", "위험물 정기점검"], ["mu", "다중이용업 세부점검"],
     ["guide", "사용 안내"],
     ...(adminMode
       ? [
