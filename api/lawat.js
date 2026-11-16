@@ -8,6 +8,7 @@
 const { lawJson, arr, oc } = require("./_law");
 // 법제처 eflaw 검색·본문 필드: open.law.go.kr OPEN API 활용가이드(lsEfYdListGuide·lsEfYdInfoGuide)
 const { configured, pipeline, clientIp } = require("./_redis");
+const fsc = require("./_fsc"); // 화재안전기준(NFSC·NFPC·NFTC) — 행정규칙
 
 const BASE = "https://hfls.vercel.app/api/lawat";
 const FAMS = {
@@ -18,6 +19,7 @@ const FAMS = {
   multi: { name: "다중이용업소법", q: ["다중이용업소"], re: /^다중이용업소의안전관리에관한특별법$/, note: "다중이용업소의 안전관리에 관한 특별법" },
   haz: { name: "위험물안전관리법", q: ["위험물안전관리법"], re: /^위험물안전관리법$/, note: "2004.5.30. 시행(그 전은 소방법)" },
   build: { name: "건축법", q: ["건축법"], re: /^건축법$/, note: "용도 분류: 건축법 시행령 별표1" },
+  tech: { name: "소방기술기준에관한규칙", q: ["소방기술기준"], re: /^소방기술기준에관한규칙$/, note: "화재안전기준(2004.6.4. 고시) 전의 소방시설 기술기준 — kind=law로 조회" },
 };
 const KINDS = { law: { name: "법률", suf: "" }, dec: { name: "시행령", suf: "시행령" }, rule: { name: "시행규칙", suf: "시행규칙" } };
 
@@ -219,13 +221,61 @@ function usageText() {
     `  ${BASE}?fam=fire&kind=dec&date=2012-03-01&q=스프링클러&format=text`,
     `  ${BASE}?fam=fire&kind=dec&list=1&format=text                      (개정 연혁 목록)`,
     "",
+    "■ 화재안전기준(설비별 설치기준 — NFSC → 2022.12.1.부터 성능기준 NFPC·기술기준 NFTC)",
+    "요청: " + BASE + "?std=설비번호&date=YYYY-MM-DD[&ty=p|t][&jo=조문·절][&byl=별표][&q=검색어][&list=1]&format=text",
+    "  std  : " + fsc.STDS.map(([k, n]) => `${k}=${n}`).join(", "),
+    "  ty   : 생략=자동(기술기준 NFTC가 있으면 NFTC, 2022.12.1. 전이면 NFSC), p=화재안전기준·성능기준(NFSC·NFPC), t=기술기준(NFTC)",
+    "  jo   : 옛 판(NFSC·NFPC)은 조문 번호(예: 10, 10-2), NFTC는 절 번호(예: 2.1), 부칙은 jo=부칙",
+    "  예시 : " + BASE + "?std=103&date=2012-03-01&format=text   (2012.3.1. 시행 중이던 스프링클러설비의 화재안전기준 목차)",
+    "         " + BASE + "?std=103&date=2012-03-01&jo=10&format=text",
+    "         " + BASE + "?std=103&list=1&format=text   (스프링클러설비 기준 개정 연혁)",
+    "  2004.6.4. 전(화재안전기준 고시 전): " + BASE + "?fam=tech&kind=law&date=YYYY-MM-DD&format=text (소방기술기준에관한규칙)",
+    "",
     "계열 설명: " + Object.values(FAMS).map((f) => `${f.name}: ${f.note}`).join(" / "),
     "주의: 원문 확인용 참고 자료입니다. 별표 텍스트가 없는 옛 판은 PDF·HWP 링크로 확인하십시오.",
   ].join("\n");
 }
 
+function renderStd(out) {
+  const L = [];
+  const nm = `${out.std} ${fsc.STD_NAME[out.std] || ""}`;
+  if (out.versions) {
+    L.push(`화재안전기준 ${nm} — 개정 연혁 ${out.versions.length}건 (시행일 순, NFSC·NFPC=p, NFTC=t)`);
+    for (const v of out.versions) L.push(`- ${dash(v.eff)} 시행 | [${v.track}] ${v.name} | ${fsc.admNo(v)} (${dash(v.pub)} 발령, ${v.why})`);
+    L.push("", `기준일 원문: ${BASE}?std=${out.std}&date=YYYY-MM-DD&format=text`);
+    return L.join("\n");
+  }
+  L.push(`[기준일] ${dash(out.date)}에 시행 중이던 판`, `[기준] ${fsc.admLine(out.ver)}`);
+  L.push(`[이 판의 적용 기간] ${dash(out.ver.eff)} ~ ${out.next ? `${dash(out.next.eff)} 전날 (다음 판: ${out.next.name}, ${dash(out.next.eff)} 시행)` : "현재(또는 이후 판 없음)"}`);
+  L.push(`[법제처 원문] ${out.link}`);
+  for (const n of out.notes || []) L.push(`[참고] ${n}`);
+  if (out.art) L.push("", `■ ${out.art.label}`, out.art.text);
+  else if (out.byl) {
+    L.push("", `■ 별표 ${noLabel(out.byl.k)} ${out.byl.title}`);
+    L.push(out.byl.text || "(별표 텍스트 없음 — 아래 파일로 확인)");
+    for (const [k, u] of Object.entries(out.byl.links || {})) L.push(`  ${k.toUpperCase()}: ${u}`);
+  } else if (out.hits) {
+    L.push("", `■ "${out.q}" 검색 결과 ${out.hits.length}건`);
+    for (const h of out.hits) L.push(`- ${h.where}: …${h.snip}…`);
+  } else if (out.toc) {
+    L.push("", `■ ${out.ver.track === "t" ? "절" : "조문"} 목차 (jo=번호로 원문)`);
+    for (const a of out.toc.arts) L.push(a.head ? `  ${a.label}` : `  jo=${a.k}  ${a.label}`);
+    if (out.toc.byls.length) {
+      L.push("", "■ 별표 (byl=번호로 원문)");
+      for (const b of out.toc.byls) L.push(`  byl=${b.k}  별표 ${noLabel(b.k)} ${b.title}${b.hasText ? "" : " (텍스트 없음 — 파일 링크)"}`);
+    }
+    if (out.toc.files.length) {
+      L.push("", "■ 첨부파일(고시·공고 원본 — 그림·표 포함)");
+      for (const f of out.toc.files) L.push(`  ${f.name}: ${f.url}`);
+    }
+  }
+  L.push("", "※ 참고용 원문 중계(HFLS). 최종 판단은 법제처 원문·관보로 확인.");
+  return L.join("\n");
+}
+
 function render(out, format) {
   if (format !== "text") return JSON.stringify(out);
+  if (out.std) return renderStd(out);
   const L = [];
   if (out.versions) {
     L.push(`${FAMS[out.fam].name} ${KINDS[out.kind].name} — 개정 연혁 ${out.versions.length}건 (시행일 순)`);
@@ -295,6 +345,49 @@ async function rateOk(req) {
   }
 }
 
+// ---------- 화재안전기준 ----------
+async function handleStd(qy, send, fail) {
+  const std = fsc.normCode(qy.std);
+  if (!fsc.STD_NAME[std]) return fail(400, `std(설비 번호)를 확인하십시오: ${fsc.STDS.map((s) => s[0]).join(", ")}`);
+  const idx = await fsc.loadIndex();
+  const chain = fsc.chainOf(idx, std);
+  if (!chain.length) return fail(404, `법제처 목록에서 ${std} ${fsc.STD_NAME[std]} 기준을 찾지 못했습니다.`);
+  const cache = "public, s-maxage=86400, stale-while-revalidate=604800";
+  if (qy.list) return send(200, { ok: true, std, versions: chain }, cache);
+  const date = toYmd(qy.date);
+  if (!date) return fail(400, "date(기준일)를 YYYY-MM-DD 형식으로 넣으십시오.");
+  const ty = qy.ty === "p" || qy.ty === "t" ? qy.ty : "";
+  const r = fsc.resolve(chain, date, ty);
+  if (!r.cur) {
+    if (date < fsc.FIRST) return fail(404, `화재안전기준은 2004.6.4.부터 시행된 고시입니다. 그 전의 설비 기술기준은 「소방기술기준에관한규칙」에서 확인하십시오 — ${BASE}?fam=tech&kind=law&date=${dash(date)}&format=text`, { before: { fam: "tech", kind: "law" } });
+    return fail(404, `${dash(date)}에는 ${std} ${fsc.STD_NAME[std]} 기준이 아직 없었습니다(최초 시행 ${dash(chain[0].eff)}).`, { first: chain[0].eff });
+  }
+  const d = await fsc.loadAdm(r.cur.seq);
+  const notes = [];
+  if (r.note) notes.push(r.note);
+  if (fsc.NOTES[std]) notes.push(fsc.NOTES[std]);
+  if (r.track === "p" && date >= fsc.SPLIT) notes.push("2022.12.1.부터 세부 기술 내용은 기술기준(NFTC, ty=t)에 있습니다.");
+  const out = { ok: true, std, date, ty: r.track, ver: r.cur, next: r.next, link: fsc.admLink(r.cur), notes };
+  if (qy.jo) {
+    const raw = String(qy.jo).trim().replace(/^제\s*/, "");
+    const k = raw === "부칙" ? raw : /^\d+(\.\d+)+$/.test(raw) ? raw : normNo(raw);
+    const art = d.arts.find((a) => !a.head && a.k === k);
+    if (!art) return fail(404, `이 판에 ${k}이(가) 없습니다(번호가 판마다 다를 수 있음 — 목차를 먼저 확인).`, { ver: r.cur });
+    out.art = art;
+  } else if (qy.byl) {
+    const k = normNo(qy.byl);
+    const byl = d.byls.find((b) => b.k === k);
+    if (!byl) return fail(404, `이 판에 별표 ${noLabel(k)}가 없습니다(목차 확인).`, { ver: r.cur });
+    out.byl = byl;
+  } else if (qy.q) {
+    out.q = String(qy.q).slice(0, 40);
+    out.hits = snippets(d, out.q);
+  } else {
+    out.toc = { arts: d.arts.map(({ k, label, head }) => ({ k, label, head })), byls: d.byls.map((b) => ({ k: b.k, title: b.title, hasText: !!b.text })), files: d.files || [] };
+  }
+  return send(200, out, cache);
+}
+
 module.exports = async (req, res) => {
   const qy = req.query || {};
   const format = qy.format === "json" ? "json" : "text"; // 기본은 글(AI가 format을 빠뜨려도 읽기 쉽게) — 탭 화면은 format=json
@@ -306,12 +399,13 @@ module.exports = async (req, res) => {
   };
   const fail = (code, msg, extra) => send(code, format === "text" ? `오류: ${msg}\n\n${usageText()}` : { ok: false, error: msg, ...(extra || {}) });
 
-  if (!qy.fam && !qy.list) return send(200, format === "json" ? JSON.stringify({ ok: true, usage: usageText(), fams: Object.fromEntries(Object.entries(FAMS).map(([k, f]) => [k, { name: f.name, note: f.note }])) }) : usageText(), "public, s-maxage=86400");
+  if (!qy.fam && !qy.list && !qy.std) return send(200, format === "json" ? JSON.stringify({ ok: true, usage: usageText(), fams: Object.fromEntries(Object.entries(FAMS).map(([k, f]) => [k, { name: f.name, note: f.note }])), stds: fsc.STDS }) : usageText(), "public, s-maxage=86400");
   const fam = FAMS[qy.fam] ? qy.fam : "fire";
   const kind = KINDS[qy.kind] ? qy.kind : "dec";
   if (!oc()) return fail(503, "서버에 법제처 인증값(LAW_OC)이 설정되지 않았습니다.");
   if (!(await rateOk(req))) return fail(429, "요청이 너무 많습니다. 10분 뒤 다시 시도하십시오.");
   try {
+    if (qy.std) return await handleStd(qy, send, fail);
     if (qy.list) {
       const versions = await listAll(fam, kind);
       return send(200, { ok: true, fam, kind, versions }, "public, s-maxage=86400, stale-while-revalidate=604800");
@@ -349,4 +443,4 @@ module.exports = async (req, res) => {
     return fail(502, `법제처 응답을 받지 못했습니다(${e.message}).`, e.keys ? { keys: e.keys } : undefined);
   }
 };
-module.exports._t = { matches, toYmd, normNo, parseLaw, render, snippets, absLink, usageText, shapeOf, FAMS };
+module.exports._t = { matches, toYmd, normNo, parseLaw, render, snippets, absLink, usageText, shapeOf, FAMS, fsc };

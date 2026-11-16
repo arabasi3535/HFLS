@@ -1180,6 +1180,12 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 
 .lw-hist-link { font: inherit; font-weight: 700; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .lh-nobyl { margin: 2px 6px 6px; line-height: 1.5; }
+.lh-seg button:disabled { opacity: 0.4; cursor: not-allowed; }
+.lh-mode button.on { background: var(--accent); }
+.lh-note { color: var(--ink2); font-size: 12.5px; }
+.lh-err .lh-hint { margin-left: 8px; }
+.lh-toc h5 small { font-weight: 400; }
+.lh-filelist li a { display: block; font-size: 13px; padding: 4px 6px; color: var(--accent); word-break: break-all; }
 
 /* ---------- 휴대폰에 앱으로 설치 ---------- */
 .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

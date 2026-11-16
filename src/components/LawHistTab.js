@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { copyText } from "../lib/share";
+import { STDS } from "./lawHistStds";
 
 // ============================================================
 // 연혁법 찾기 — 기준일(허가일 등)에 시행 중이던 소방 관계 법령의 조문·별표 원문 (api/lawat.js → 법제처 OPEN API)
 //  · 사람: 법령·종류·기준일 → 그 판의 목차·조문·별표·개정 연혁
 //  · AI: 사용자가 쓰는 AI에 붙여 넣을 프롬프트 예시(이 사이트 주소를 열어 원문을 읽게 함)
+//  · 화재안전기준(v2.34.0): 설비(번호 순)·기준일 → NFSC 또는 NFPC·NFTC 판의 조문(절)·별표·첨부파일·부칙
 // ============================================================
 
 const FAMS = [
@@ -15,6 +17,12 @@ const FAMS = [
   ["multi", "다중이용업소의 안전관리에 관한 특별법"],
   ["haz", "위험물안전관리법"],
   ["build", "건축법"],
+  ["tech", "소방기술기준에관한규칙 (~2004.6.3., 화재안전기준 전)"],
+];
+const TYS = [
+  ["", "자동"],
+  ["p", "성능기준(NFSC·NFPC)"],
+  ["t", "기술기준(NFTC)"],
 ];
 const KINDS = [
   ["law", "법률"],
@@ -27,7 +35,9 @@ const prevDay = (s) => {
   return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCDate()).padStart(2, "0")}`;
 };
 const lab = (k) => (k.includes("-") ? k.replace("-", "의") : k);
-const verText = (v) => `${v.name} [${v.kind} 제${String(v.no).replace(/^제|호$/g, "")}호, ${dash(v.pub)} 공포, ${dash(v.eff)} 시행${v.why ? `, ${v.why}` : ""}]`;
+const noText = (v) => `${v.seq ? v.org || "" : ""}${v.kind} 제${String(v.no).replace(/^제|호$/g, "")}호`;
+const pubWord = (v) => (v.seq ? "발령" : "공포"); // 행정규칙(화재안전기준)은 발령
+const verText = (v) => `${v.name} [${noText(v)}, ${dash(v.pub)} ${pubWord(v)}, ${dash(v.eff)} 시행${v.why ? `, ${v.why}` : ""}]`;
 
 async function api(params) {
   const p = new URLSearchParams({ ...params, format: "json" });
@@ -38,11 +48,19 @@ async function api(params) {
   } catch (e) {
     throw new Error(r.status === 404 ? "서버 기능을 찾지 못했습니다(배포 확인 필요)." : `응답 오류(${r.status})`);
   }
-  if (!r.ok || !j.ok) throw new Error(j.error || `응답 오류(${r.status})`);
+  if (!r.ok || !j.ok) {
+    const e = new Error(j.error || `응답 오류(${r.status})`);
+    e.data = j;
+    throw e;
+  }
   return j;
 }
 
 export default function LawHistTab() {
+  const [mode, setMode] = useState("law"); // law=법령, std=화재안전기준
+  const [std, setStd] = useState("103");
+  const [ty, setTy] = useState("");
+  const [hint, setHint] = useState(null); // 2004.6.4. 전 → 소방기술기준에관한규칙 안내
   const [fam, setFam] = useState("fire");
   const [kind, setKind] = useState("dec");
   const [date, setDate] = useState("");
@@ -55,13 +73,17 @@ export default function LawHistTab() {
   const [copied, setCopied] = useState("");
 
   const base = typeof window !== "undefined" && window.location && /^https?:/.test(window.location.origin) ? `${window.location.origin}/api/lawat` : "https://hfls.vercel.app/api/lawat";
+  const isStd = mode === "std";
+  const sel = () => (isStd ? { std, ...(ty ? { ty } : {}) } : { fam, kind });
   const run = async (what, fn) => {
     setBusy(what);
     setErr("");
+    setHint(null);
     try {
       await fn();
     } catch (e) {
       setErr(e.message);
+      if (e.data && e.data.before) setHint(e.data.before);
     } finally {
       setBusy("");
     }
@@ -70,16 +92,38 @@ export default function LawHistTab() {
     run("lookup", async () => {
       if (!date) throw new Error("기준일(허가일·신청일 등)을 넣으십시오.");
       setView(null);
-      setRes(await api({ fam, kind, date }));
+      setRes(await api({ ...sel(), date }));
     });
   const open = (p, label) =>
     run(label, async () => {
-      const j = await api({ fam, kind, date, ...p });
+      const j = await api({ ...sel(), ...(isStd && res && res.ty ? { ty: res.ty } : {}), date, ...p });
       setView(j.art ? { type: "art", title: j.art.label, text: j.art.text } : j.byl ? { type: "byl", title: `별표 ${lab(j.byl.k)} ${j.byl.title}`, text: j.byl.text, links: j.byl.links, k: j.byl.k } : { type: "q", title: `"${j.q}" 검색 결과 ${j.hits.length}건`, hits: j.hits });
     });
-  const history = () => run("list", async () => setVers((await api({ fam, kind, list: 1 })).versions));
+  const history = () => run("list", async () => setVers((await api({ ...sel(), list: 1 })).versions));
+  const clearOut = () => {
+    setRes(null);
+    setVers(null);
+    setView(null);
+    setErr("");
+    setHint(null);
+  };
+  // 2004.6.4. 전 화재안전기준 → 같은 기준일의 소방기술기준에관한규칙
+  const goTech = () => {
+    setMode("law");
+    setFam("tech");
+    setKind("law");
+    setVers(null);
+    run("lookup", async () => {
+      setView(null);
+      setRes(await api({ fam: "tech", kind: "law", date }));
+    });
+  };
   // 초기화: 고른 법령·종류·기준일과 조회 결과를 처음 상태로
   const reset = () => {
+    setMode("law");
+    setStd("103");
+    setTy("");
+    setHint(null);
     setFam("fire");
     setKind("dec");
     setDate("");
@@ -89,7 +133,7 @@ export default function LawHistTab() {
     setQ("");
     setErr("");
   };
-  const dirty = fam !== "fire" || kind !== "dec" || !!date || !!res || !!vers || !!q || !!err;
+  const dirty = isStd || fam !== "fire" || kind !== "dec" || !!date || !!res || !!vers || !!q || !!err;
   const copy = async (key, text) => {
     if (await copyText(text)) {
       setCopied(key);
@@ -99,25 +143,45 @@ export default function LawHistTab() {
 
   const ver = res && res.ver;
   const dq = date || "YYYY-MM-DD";
-  const famName = (FAMS.find((f) => f[0] === fam) || FAMS[0])[1].replace(/ \(.*\)$/, "");
-  const kindName = (KINDS.find((k) => k[0] === kind) || KINDS[1])[1];
+  const stdName = (STDS.find((x) => x[0] === std) || STDS[2])[1];
+  const famName = isStd ? `${stdName}의 화재안전기준(${std})` : (FAMS.find((f) => f[0] === fam) || FAMS[0])[1].replace(/ \(.*\)$/, "");
+  const kindName = isStd ? "" : (KINDS.find((k) => k[0] === kind) || KINDS[1])[1];
+  const sq = isStd ? `std=${std}${ty ? `&ty=${ty}` : ""}` : `fam=${fam}&kind=${kind}`;
   const lead = `너는 소방시설 인허가 검토를 돕는 조사원이야. 아래 HFLS 주소를 직접 열어 법제처 원문을 읽고, 그 원문에 있는 내용만으로 답해 줘. 원문에서 확인되지 않는 것은 추측하지 말고 「확인 필요」라고 적어.\n\n[사용법] ${base}\n`;
   const form = "\n\n답변 형식: ① 결론 ② 근거(법령명·공포번호·시행일·조문/별표 번호와 원문 짧은 인용) ③ 원문 링크 ④ 확인 필요 사항";
-  const prompts = [
+  const prompts = isStd
+    ? [
+        {
+          id: "p1",
+          title: "허가 시점 설치기준(화재안전기준) 확인",
+          text: `${lead}[그 시점 목차] ${base}?${sq}&date=${dq}\n(조문·절은 &jo=번호(옛 판 10, NFTC 2.1), 별표는 &byl=번호, 낱말 검색은 &q=낱말, 경과조치는 &jo=부칙)\n\n질문: ${dq}에 건축허가를 신청한 [용도·층수·연면적] 건축물의 ${stdName}에 대해 [헤드 수평거리·수원 양·설치 위치 등 확인할 내용] 기준을 알려 줘. 그때 시행 중이던 ${famName} 원문을 직접 열어 확인해.${form}`,
+        },
+        {
+          id: "p2",
+          title: "화재안전기준 개정 연혁 추적",
+          text: `${lead}[개정 연혁 목록] ${base}?std=${std}&list=1\n(각 판은 &date=시행일 로 열고, &q=낱말 로 위치를 찾아. 2022.12.1.부터는 성능기준(ty=p)과 기술기준(ty=t)이 나뉨)\n\n질문: ${stdName}의 [확인할 기준] 이 언제 어떻게 바뀌었는지 시행일 순으로 정리해 줘. 바뀐 판마다 조문(절)을 직접 열어 전/후 문구를 비교해.${form}`,
+        },
+        {
+          id: "p3",
+          title: "두 시점 비교",
+          text: `${lead}[시점 A] ${base}?std=${std}&date=[A 날짜]&q=[낱말]\n[시점 B] ${base}?std=${std}&date=[B 날짜]&q=[낱말]\n(조문·절 번호가 판마다 다르니 먼저 &q=낱말 이나 목차로 위치를 찾은 뒤 &jo=번호 로 열어)\n\n질문: 두 시점의 ${stdName} [확인할 기준]을 표로 비교하고, 달라진 부분만 전/후로 보여 줘.${form}`,
+        },
+      ]
+    : [
     {
       id: "p1",
       title: "허가 시점 설치기준 확인",
-      text: `${lead}[그 시점 목차] ${base}?fam=${fam}&kind=${kind}&date=${dq}\n(조문은 &jo=번호, 별표는 &byl=번호, 낱말 검색은 &q=낱말 을 붙여 열어)\n\n질문: ${dq}에 건축허가를 신청한 [용도·층수·연면적] 건축물에 [소방시설 이름]을 설치해야 했는지 알려 줘. 그때 시행 중이던 ${famName} ${kindName}의 해당 별표·조문을 직접 열어 확인해.${form}`,
+      text: `${lead}[그 시점 목차] ${base}?${sq}&date=${dq}\n(조문은 &jo=번호, 별표는 &byl=번호, 낱말 검색은 &q=낱말 을 붙여 열어)\n\n질문: ${dq}에 건축허가를 신청한 [용도·층수·연면적] 건축물에 [소방시설 이름]을 설치해야 했는지 알려 줘. 그때 시행 중이던 ${famName} ${kindName}의 해당 별표·조문을 직접 열어 확인해.${form}`,
     },
     {
       id: "p2",
       title: "개정 연혁 추적",
-      text: `${lead}[개정 연혁 목록] ${base}?fam=${fam}&kind=${kind}&list=1\n(각 판은 &date=시행일 로 열고, &q=낱말 로 위치를 찾아)\n\n질문: [소방시설 이름] 설치 기준이 언제 어떻게 바뀌었는지 시행일 순으로 정리해 줘. 바뀐 판마다 별표·조문을 직접 열어 전/후 문구를 비교해.${form}`,
+      text: `${lead}[개정 연혁 목록] ${base}?${sq}&list=1\n(각 판은 &date=시행일 로 열고, &q=낱말 로 위치를 찾아)\n\n질문: [소방시설 이름] 설치 기준이 언제 어떻게 바뀌었는지 시행일 순으로 정리해 줘. 바뀐 판마다 별표·조문을 직접 열어 전/후 문구를 비교해.${form}`,
     },
     {
       id: "p3",
       title: "두 시점 비교",
-      text: `${lead}[시점 A] ${base}?fam=${fam}&kind=${kind}&date=[A 날짜]&byl=[별표 번호]\n[시점 B] ${base}?fam=${fam}&kind=${kind}&date=[B 날짜]&byl=[별표 번호]\n(별표 번호가 판마다 다를 수 있으니 먼저 &date=날짜 만 열어 목차를 확인해)\n\n질문: 두 시점의 [소방시설 이름] 설치 대상 기준을 표로 비교하고, 달라진 부분만 전/후로 보여 줘.${form}`,
+      text: `${lead}[시점 A] ${base}?${sq}&date=[A 날짜]&byl=[별표 번호]\n[시점 B] ${base}?${sq}&date=[B 날짜]&byl=[별표 번호]\n(별표 번호가 판마다 다를 수 있으니 먼저 &date=날짜 만 열어 목차를 확인해)\n\n질문: 두 시점의 [소방시설 이름] 설치 대상 기준을 표로 비교하고, 달라진 부분만 전/후로 보여 줘.${form}`,
     },
   ];
   const viewCopy = () => {
@@ -132,24 +196,50 @@ export default function LawHistTab() {
         <div>
           <b>연혁법 찾기</b>
           <p>
-            허가일 같은 <b>기준일에 시행 중이던 법령</b>의 조문·별표 원문을 법제처에서 바로 불러옵니다. 법령 이름이 바뀐 시기(소방법 → 소방시설법 등)도 하나로 이어서 찾습니다.
+            허가일 같은 <b>기준일에 시행 중이던 법령·화재안전기준</b>의 조문·별표 원문을 법제처에서 바로 불러옵니다. 법령 이름이 바뀐 시기(소방법 → 소방시설법, NFSC → NFPC·NFTC 등)도 하나로 이어서 찾습니다.
           </p>
         </div>
       </div>
 
       <div className="lh-form">
-        <select value={fam} onChange={(e) => { setFam(e.target.value); setRes(null); setVers(null); }} aria-label="법령">
-          {FAMS.map(([k, n]) => (
-            <option key={k} value={k}>{n}</option>
-          ))}
-        </select>
-        <div className="lh-seg" role="radiogroup" aria-label="종류">
-          {KINDS.map(([k, n]) => (
-            <button key={k} type="button" className={kind === k ? "on" : ""} aria-pressed={kind === k} onClick={() => { setKind(k); setRes(null); setVers(null); }}>
+        <div className="lh-seg lh-mode" role="radiogroup" aria-label="찾을 자료">
+          {[["law", "법령"], ["std", "화재안전기준"]].map(([k, n]) => (
+            <button key={k} type="button" className={mode === k ? "on" : ""} aria-pressed={mode === k} onClick={() => { if (mode !== k) { setMode(k); clearOut(); } }}>
               {n}
             </button>
           ))}
         </div>
+        {isStd ? (
+          <>
+            <select value={std} onChange={(e) => { setStd(e.target.value); clearOut(); }} aria-label="설비(화재안전기준)">
+              {STDS.map(([k, n]) => (
+                <option key={k} value={k}>{k} {n}</option>
+              ))}
+            </select>
+            <div className="lh-seg" role="radiogroup" aria-label="기준 종류">
+              {TYS.map(([k, n]) => (
+                <button key={k || "auto"} type="button" className={ty === k ? "on" : ""} aria-pressed={ty === k} title={k ? "" : "2022.12.1. 이후는 기술기준(NFTC), 그 전은 화재안전기준(NFSC)"} onClick={() => { setTy(k); setRes(null); setView(null); }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <select value={fam} onChange={(e) => { setFam(e.target.value); if (e.target.value === "tech") setKind("law"); setRes(null); setVers(null); }} aria-label="법령">
+              {FAMS.map(([k, n]) => (
+                <option key={k} value={k}>{n}</option>
+              ))}
+            </select>
+            <div className="lh-seg" role="radiogroup" aria-label="종류">
+              {KINDS.map(([k, n]) => (
+                <button key={k} type="button" className={kind === k ? "on" : ""} aria-pressed={kind === k} disabled={fam === "tech" && k !== "law"} onClick={() => { setKind(k); setRes(null); setVers(null); }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <label className="lh-date">
           기준일
           <input type="date" value={date} min="1958-01-01" max="2099-12-31" onChange={(e) => setDate(e.target.value)} onKeyDown={(e) => e.key === "Enter" && lookup()} />
@@ -160,11 +250,20 @@ export default function LawHistTab() {
         <button type="button" className="btn" disabled={!!busy} onClick={history}>
           {busy === "list" ? "불러오는 중…" : "개정 연혁"}
         </button>
-        <button type="button" className="btn" disabled={!!busy || !dirty} onClick={reset} title="법령·종류·기준일과 조회 결과를 처음 상태로">
+        <button type="button" className="btn" disabled={!!busy || !dirty} onClick={reset} title="법령·화재안전기준·기준일과 조회 결과를 처음 상태로">
           초기화
         </button>
       </div>
-      {err && <div className="lh-err">⚠ {err}</div>}
+      {err && (
+        <div className="lh-err">
+          ⚠ {err.replace(/ — https?:\/\/\S+$/, ".")}
+          {hint && date && (
+            <button type="button" className="btn small lh-hint" onClick={goTech}>
+              {date} 기준 소방기술기준에관한규칙 보기
+            </button>
+          )}
+        </div>
+      )}
 
       {vers && (
         <details className="pp-sec lw-sec" open>
@@ -176,17 +275,17 @@ export default function LawHistTab() {
           <div className="lh-vers">
             <table>
               <thead>
-                <tr><th>시행일</th><th>법령명</th><th>공포</th><th>구분</th><th /></tr>
+                <tr><th>시행일</th><th>{isStd ? "기준명" : "법령명"}</th><th>{isStd ? "발령" : "공포"}</th><th>구분</th><th /></tr>
               </thead>
               <tbody>
                 {[...vers].reverse().map((v) => (
-                  <tr key={v.mst + v.eff}>
+                  <tr key={(v.seq || v.mst) + v.eff}>
                     <td>{dash(v.eff)}</td>
                     <td>{v.name}</td>
-                    <td>{v.kind} 제{String(v.no).replace(/^제|호$/g, "")}호 ({dash(v.pub)})</td>
+                    <td>{noText(v)} ({dash(v.pub)})</td>
                     <td>{v.why}</td>
                     <td>
-                      <button type="button" className="btn small" onClick={() => { const d = `${v.eff.slice(0, 4)}-${v.eff.slice(4, 6)}-${v.eff.slice(6)}`; setDate(d); run("lookup", async () => { setView(null); setRes(await api({ fam, kind, date: d })); }); }}>
+                      <button type="button" className="btn small" onClick={() => { const d = `${v.eff.slice(0, 4)}-${v.eff.slice(4, 6)}-${v.eff.slice(6)}`; setDate(d); if (isStd) setTy(v.track); run("lookup", async () => { setView(null); setRes(await api(isStd ? { std, ty: v.track, date: d } : { fam, kind, date: d })); }); }}>
                         이 판 보기
                       </button>
                     </td>
@@ -204,13 +303,16 @@ export default function LawHistTab() {
             <span className="lh-badge">{date} 기준</span> <b>{ver.name}</b>
           </div>
           <div className="lh-ver-m">
-            {ver.kind} 제{String(ver.no).replace(/^제|호$/g, "")}호 · {dash(ver.pub)} 공포 · <b>{dash(ver.eff)} 시행</b>
+            {noText(ver)} · {dash(ver.pub)} {pubWord(ver)} · <b>{dash(ver.eff)} 시행</b>
             {ver.why ? ` · ${ver.why}` : ""}
           </div>
           <div className="lh-ver-m">
             적용 기간: <b>{dash(ver.eff)} ~ {res.next ? dash(prevDay(res.next.eff)) : "현재"}</b>
             {res.next && <span className="lh-sub"> (다음 판 {dash(res.next.eff)} 시행{res.next.name !== ver.name ? ` — 「${res.next.name}」` : ""})</span>}
           </div>
+          {(res.notes || []).map((n, i) => (
+            <div key={i} className="lh-ver-m lh-note">ⓘ {n}</div>
+          ))}
           <a href={res.link} target="_blank" rel="noreferrer" className="lh-link">
             법제처 원문(이 판) 열기 ↗
           </a>
@@ -221,11 +323,23 @@ export default function LawHistTab() {
         <div className="lh-body">
           <div className="lh-toc">
             <div className="lh-find">
-              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && q.trim() && open({ q: q.trim() }, "q")} placeholder="이 판에서 낱말 찾기 (예: 스프링클러)" aria-label="이 판에서 찾기" />
+              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && q.trim() && open({ q: q.trim() }, "q")} placeholder={isStd ? "이 판에서 낱말 찾기 (예: 수평거리)" : "이 판에서 낱말 찾기 (예: 스프링클러)"} aria-label="이 판에서 찾기" />
               <button type="button" className="btn small" disabled={!q.trim() || !!busy} onClick={() => open({ q: q.trim() }, "q")}>찾기</button>
             </div>
-            <h5>별표 {res.toc.byls.length}</h5>
-            {res.toc.byls.length === 0 && (
+            {res.toc.files && res.toc.files.length > 0 && (
+              <>
+                <h5>첨부파일 {res.toc.files.length} <small>(고시·공고 원본 — 그림·표 포함)</small></h5>
+                <ul className="lh-filelist">
+                  {res.toc.files.map((f, i) => (
+                    <li key={"f" + i}>
+                      <a href={f.url} target="_blank" rel="noreferrer">{f.name} ↗</a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {(!isStd || res.toc.byls.length > 0) && <h5>별표 {res.toc.byls.length}</h5>}
+            {!isStd && res.toc.byls.length === 0 && (
               <p className="lh-sub lh-nobyl">
                 이 판의 별표는 법제처 OPEN API에 없습니다 — 위 「법제처 원문(이 판) 열기」의 별표·서식에서 확인하십시오.
               </p>
@@ -240,7 +354,7 @@ export default function LawHistTab() {
                 </li>
               ))}
             </ul>
-            <h5>조문 {res.toc.arts.filter((a) => !a.head).length}</h5>
+            <h5>{res.ty === "t" ? "절" : "조문"} {res.toc.arts.filter((a) => !a.head).length}</h5>
             <ul>
               {res.toc.arts.map((a, i) =>
                 a.head ? (
@@ -301,7 +415,7 @@ export default function LawHistTab() {
           <h4>🤖 내 AI에게 물어보기 — 프롬프트 예시</h4>
         </summary>
         <p className="lh-ai-p">
-          아래 글을 복사해 <b>웹 페이지를 직접 열 수 있는 AI</b>(웹 검색·브라우징 기능이 켜진 ChatGPT·Claude·Gemini·Perplexity 등)에 붙여 넣고 [대괄호]만 바꾸십시오. AI가 이 사이트를 통해 법제처 원문을 읽고 답합니다. 위에서 고른 법령·종류·기준일이 주소에 자동으로 들어갑니다.
+          아래 글을 복사해 <b>웹 페이지를 직접 열 수 있는 AI</b>(웹 검색·브라우징 기능이 켜진 ChatGPT·Claude·Gemini·Perplexity 등)에 붙여 넣고 [대괄호]만 바꾸십시오. AI가 이 사이트를 통해 법제처 원문을 읽고 답합니다. 위에서 고른 {isStd ? "설비·기준 종류" : "법령·종류"}·기준일이 주소에 자동으로 들어갑니다.
         </p>
         <p className="lh-ai-p lh-sub">
           주소를 열지 못하는 AI라면 위 원문 화면의 「출처와 함께 복사」로 원문을 붙여 넣으십시오. AI 답변은 참고용이며, 최종 판단은 법제처 원문으로 확인하십시오.

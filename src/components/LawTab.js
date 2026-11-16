@@ -26,7 +26,7 @@ export default function LawTab({ onHist }) {
           <b>법령 자료 {total + HAZ_GUIDES.length}건</b> <span className="pp-count">(원문 링크 {total}건 · 위험물 업무지침 {HAZ_GUIDES.length}건)</span>
           <p>
             소방시설 관계 법령·고시와 화재안전성능기준(NFPC)·화재안전기술기준(NFTC), 위험물 법령을 국가법령정보센터 원문으로
-            연결합니다. 링크는 항상 <b>현행</b> 원문으로 열리므로 개정되어도 따로 고칠 필요가 없습니다. 허가 시점의 옛 조문·별표는
+            연결합니다. 링크는 항상 <b>현행</b> 원문으로 열리므로 개정되어도 따로 고칠 필요가 없습니다. 허가 시점의 옛 조문·별표와 화재안전기준(NFSC)은
             옆의{" "}
             {onHist ? (
               <button type="button" className="lw-hist-link" onClick={onHist}>
