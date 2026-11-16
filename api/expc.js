@@ -6,6 +6,7 @@
 //      /api/expc?id=2657191                             → 본문 { item:{id,title,ask,answer,reason,laws,date,reg,by,org,no} }
 //      &t=expc 를 붙이면 법제처 법령해석례(같은 형식, 회신일자 최신순)
 //      /api/expc?t=law|admrul&q=…  또는 &raw=1           → 원본 응답(시험용)
+//      /api/expc?t=admrul&q=…&nw=2&sort=efasc&prmlYd=…&knd=3 → 행정규칙 연혁 목록(시험용)
 //  · 응답은 CDN 캐시(목록 1시간, 본문 1일) — 같은 요청이 반복돼도 법제처 호출은 캐시 시간에 1번
 const TIMEOUT = 8000;
 const TARGETS = { nfa: "nfaCgmExpc", expc: "expc", law: "law", admrul: "admrul" };
@@ -106,6 +107,13 @@ module.exports = async (req, res) => {
       if (target !== "law" && target !== "admrul") p.set("search", sec);
     }
     if (target === "expc") p.set("sort", "ddes"); // 법제처 해석례: 회신일자 최신순
+    // 행정규칙(화재안전기준 등) 연혁 확인용(v2.33.6): nw=2 연혁 / sort / prmlYd 발령일자 기간 / knd 종류
+    if (target === "admrul") {
+      if (q.nw === "1" || q.nw === "2") p.set("nw", q.nw);
+      if (/^(lasc|ldes|dasc|ddes|nasc|ndes|efasc|efdes)$/.test(String(q.sort || ""))) p.set("sort", q.sort);
+      if (/^\d{8}~\d{8}$/.test(String(q.prmlYd || ""))) p.set("prmlYd", q.prmlYd);
+      if (/^[1-6]$/.test(String(q.knd || ""))) p.set("knd", q.knd);
+    }
   }
 
   const clean = (txt) => txt.replace(/OC=[^&"\s]*&?/g, "").split(oc).join("***");
