@@ -36,9 +36,9 @@ export default function EtcTab({ onGo }) {
   }, [sub]);
   return (
     <div className="etc">
-      <nav className="tl-tabs">
+      <nav className="grp-tabs" role="tablist">
         {SUBS.map(([k, l]) => (
-          <button key={k} type="button" className={sub === k ? "on" : ""} onClick={() => setSub(k)}>
+          <button key={k} type="button" role="tab" aria-selected={sub === k} className={sub === k ? "on" : ""} onClick={() => setSub(k)}>
             {l}
           </button>
         ))}

@@ -2,23 +2,26 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { makeShareUrl, readShareHash, copyText } from "./lib/share";
 import Wizard, { EMPTY } from "./components/Wizard";
 import Report from "./components/Report";
-import { HistoryTab, RulesTab, GuideTab } from "./components/InfoTabs";
-import { BugReportModal, ReportsTab } from "./components/Feedback";
-import Tools from "./components/Tools";
 import FileBar from "./components/FileBar";
 import { loadStats, adminAuth, loadNotice, saveNotice } from "./lib/remote";
 import LawWatchBar from "./components/LawWatch";
-import ProfileModal from "./components/Profile";
 import PhoneInstall from "./components/PhoneInstall";
+import { loadInspSub } from "./components/inspectSub";
 import { review } from "./law/engine";
 import { safetyReview } from "./law/safety";
 import { getUse } from "./law/uses";
 import { RULES_REV } from "./law/sources";
 import BUILD from "./buildInfo.json";
 
-const SelfInspection = lazy(() => import("./components/SelfInspection"));
-const WmInspection = lazy(() => import("./components/WmInspection"));
-const MuInspection = lazy(() => import("./components/MuInspection"));
+// 첫 화면(신축 건축물)에 필요 없는 탭·창은 열 때 불러옴 — 첫 접속 속도(v2.33.5)
+const InspectTab = lazy(() => import("./components/InspectTab"));
+const Tools = lazy(() => import("./components/Tools"));
+const GuideTab = lazy(() => import("./components/InfoTabs").then((m) => ({ default: m.GuideTab })));
+const HistoryTab = lazy(() => import("./components/InfoTabs").then((m) => ({ default: m.HistoryTab })));
+const RulesTab = lazy(() => import("./components/InfoTabs").then((m) => ({ default: m.RulesTab })));
+const ReportsTab = lazy(() => import("./components/Feedback").then((m) => ({ default: m.ReportsTab })));
+const BugReportModal = lazy(() => import("./components/Feedback").then((m) => ({ default: m.BugReportModal })));
+const ProfileModal = lazy(() => import("./components/Profile"));
 const EtcTab = lazy(() => import("./components/EtcTab"));
 const FireCityGame = lazy(() => import("./components/MiniGame/FireCityGame"));
 
@@ -110,6 +113,7 @@ export default function App() {
   const [profile, setProfile] = useState(false);
   const [notice, setNotice] = useState(null);
   const [reportSeed, setReportSeed] = useState(null);
+  const [inspSub, setInspSub] = useState(loadInspSub); // 점검 탭 하위 탭
   const [buildSeed, setBuildSeed] = useState(null);
   const [noteEdit, setNoteEdit] = useState(null); // 편집 중인 메모 문자열(null = 편집 안 함)
   const today = useMemo(todayKST, []);
@@ -262,7 +266,7 @@ export default function App() {
     ["tools", "보조 계산기"],
     ["etc", "기타 자료"],
     ["game", "미니게임"],
-    ["report", "자체점검"], ["wm", "위험물 정기점검"], ["mu", "다중이용업 세부점검"],
+    ["inspect", "점검"],
     ["guide", "사용 안내"],
     ...(adminMode
       ? [
@@ -410,7 +414,8 @@ export default function App() {
                   sv={sv}
                   onMakeReport={(s) => {
                     setReportSeed(s);
-                    setTab("report");
+                    setInspSub("self");
+                    setTab("inspect");
                     window.scrollTo(0, 0);
                   }}
                   onMakeConstruction={
@@ -442,33 +447,27 @@ export default function App() {
           </div>
         )}
         {tab === "tools" && (
-          <Tools
-            seed={buildSeed}
-            onGoNew={() => {
-              setTab("new");
-              window.scrollTo(0, 0);
-            }}
-          />
-        )}
-        {tab === "report" && (
           <Suspense fallback={<div className="empty">불러오는 중…</div>}>
-            <SelfInspection
+            <Tools
+              seed={buildSeed}
+              onGoNew={() => {
+                setTab("new");
+                window.scrollTo(0, 0);
+              }}
+            />
+          </Suspense>
+        )}
+        {tab === "inspect" && (
+          <Suspense fallback={<div className="empty">불러오는 중…</div>}>
+            <InspectTab
+              sub={inspSub}
+              onSub={setInspSub}
               seed={reportSeed}
               onGoExisting={() => {
                 setTab("existing");
                 window.scrollTo(0, 0);
               }}
             />
-          </Suspense>
-        )}
-        {tab === "wm" && (
-          <Suspense fallback={<div className="empty">불러오는 중…</div>}>
-            <WmInspection />
-          </Suspense>
-        )}
-        {tab === "mu" && (
-          <Suspense fallback={<div className="empty">불러오는 중…</div>}>
-            <MuInspection />
           </Suspense>
         )}
         {tab === "etc" && (
@@ -495,19 +494,21 @@ export default function App() {
             <FireCityGame adminPw={adminMode ? adminPw : ""} />
           </Suspense>
         )}
-        {tab === "guide" && <GuideTab adminMode={adminMode} />}
-        {adminMode && tab === "history" && <HistoryTab />}
-        {adminMode && tab === "rules" && <RulesTab adminMode={adminMode} overrides={overrides} setOverrides={setOverrides} />}
-        {adminMode && tab === "reports" && (
-          <ReportsTab
-            adminPw={adminPw}
-            onLoadInput={(m, input) => {
-              const md = m === "existing" ? "existing" : "new";
-              setInputs((p) => ({ ...p, [md]: { ...EMPTY, ...input, f: input.f || {}, floors: input.floors || [] } }));
-              setTab(md);
-            }}
-          />
-        )}
+        <Suspense fallback={<div className="empty">불러오는 중…</div>}>
+          {tab === "guide" && <GuideTab adminMode={adminMode} />}
+          {adminMode && tab === "history" && <HistoryTab />}
+          {adminMode && tab === "rules" && <RulesTab adminMode={adminMode} overrides={overrides} setOverrides={setOverrides} />}
+          {adminMode && tab === "reports" && (
+            <ReportsTab
+              adminPw={adminPw}
+              onLoadInput={(m, input) => {
+                const md = m === "existing" ? "existing" : "new";
+                setInputs((p) => ({ ...p, [md]: { ...EMPTY, ...input, f: input.f || {}, floors: input.floors || [] } }));
+                setTab(md);
+              }}
+            />
+          )}
+        </Suspense>
       </main>
 
       <footer className="foot no-print">
@@ -523,27 +524,29 @@ export default function App() {
           오류 신고 · 의견 보내기
         </button>
       </footer>
-      {profile && <ProfileModal onClose={() => setProfile(false)} />}
-      {bug && (
-        <BugReportModal
-          version={BUILD.version}
-          onClose={() => setBug(false)}
-          context={
-            isInput && rv
-              ? {
-                  mode,
-                  input: live,
-                  result: [
-                    ...rv.hist.rows.filter((r) => r.status !== "해당없음").map((r) => `${r.fac.name}:${r.status}`),
-                    ...(sv ? [`소방안전관리:${sv.grade.grade || sv.grade.status}`, `방염:${sv.flame.status}`, `전용구역:${sv.lane.status}`] : []),
-                  ],
-                }
-              : isInput
-              ? { mode, input: live }
-              : null
-          }
-        />
-      )}
+      <Suspense fallback={null}>
+        {profile && <ProfileModal onClose={() => setProfile(false)} />}
+        {bug && (
+          <BugReportModal
+            version={BUILD.version}
+            onClose={() => setBug(false)}
+            context={
+              isInput && rv
+                ? {
+                    mode,
+                    input: live,
+                    result: [
+                      ...rv.hist.rows.filter((r) => r.status !== "해당없음").map((r) => `${r.fac.name}:${r.status}`),
+                      ...(sv ? [`소방안전관리:${sv.grade.grade || sv.grade.status}`, `방염:${sv.flame.status}`, `전용구역:${sv.lane.status}`] : []),
+                    ],
+                  }
+                : isInput
+                ? { mode, input: live }
+                : null
+            }
+          />
+        )}
+      </Suspense>
     </div>
   );
 }
