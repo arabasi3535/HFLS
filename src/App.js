@@ -9,6 +9,7 @@ import FileBar from "./components/FileBar";
 import { loadStats, adminAuth, loadNotice, saveNotice } from "./lib/remote";
 import LawWatchBar from "./components/LawWatch";
 import ProfileModal from "./components/Profile";
+import PhoneInstall from "./components/PhoneInstall";
 import { review } from "./law/engine";
 import { safetyReview } from "./law/safety";
 import { getUse } from "./law/uses";
@@ -321,20 +322,23 @@ export default function App() {
                 </span>
               )}
             </div>
-            <h1>
-              {/* 제목 클릭: 새로고침해 처음 화면(신축 건축물)으로 — 입력 내용은 localStorage에 있어 그대로 유지 */}
-              <a
-                href={typeof window !== "undefined" ? window.location.pathname : "/"}
-                className="home-link"
-                title="처음 화면(신축 건축물)으로 새로고침 — 입력한 내용은 그대로 유지"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.location.href = window.location.pathname;
-                }}
-              >
-                소방시설 적용·안전관리 검토 시스템
-              </a>
-            </h1>
+            <div className="title-row">
+              <h1>
+                {/* 제목 클릭: 새로고침해 처음 화면(신축 건축물)으로 — 입력 내용은 localStorage에 있어 그대로 유지 */}
+                <a
+                  href={typeof window !== "undefined" ? window.location.pathname : "/"}
+                  className="home-link"
+                  title="처음 화면(신축 건축물)으로 새로고침 — 입력한 내용은 그대로 유지"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = window.location.pathname;
+                  }}
+                >
+                  소방시설 적용·안전관리 검토 시스템
+                </a>
+              </h1>
+              <PhoneInstall />
+            </div>
           </div>
           <div className="top-right">
             <button type="button" className="author" title="제작자 정보 보기" onClick={() => setProfile(true)}>

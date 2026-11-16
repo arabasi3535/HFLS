@@ -1180,3 +1180,23 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 
 .lw-hist-link { font: inherit; font-weight: 700; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .lh-nobyl { margin: 2px 6px 6px; line-height: 1.5; }
+
+/* ---------- 휴대폰에 앱으로 설치 ---------- */
+.title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pi-btn { font: inherit; font-size: 12.5px; font-weight: 600; color: #fff; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 999px; padding: 4px 11px; cursor: pointer; white-space: nowrap; margin-top: 4px; }
+.pi-btn:hover { background: rgba(255, 255, 255, 0.22); }
+.modal.pi { max-width: 560px; }
+.pi-lead { font-size: 13.5px; color: var(--ink2); line-height: 1.6; margin: 0 0 10px; }
+.pi-dev { display: inline-block; margin-left: 4px; font-size: 12px; font-weight: 700; color: var(--accent); }
+.pi-now { width: 100%; margin: 0 0 10px; }
+.pi-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.pi-tabs button { flex: 1; font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink2); cursor: pointer; }
+.pi-tabs button.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.pi-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pi-steps li { display: flex; gap: 10px; align-items: flex-start; }
+.pi-no { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.pi-steps b { font-size: 14px; }
+.pi-steps p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--ink2); }
+.pi-tip { font-size: 12.5px; line-height: 1.6; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin: 12px 0 0; color: var(--ink2); }
+.pi-sub { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+@media (max-width: 760px) { .pi-btn { font-size: 12px; padding: 3px 9px; } }
