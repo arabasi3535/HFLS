@@ -7,12 +7,20 @@ const D = "2026.01.05";
 describe("착공 단계(중급)", () => {
   test("근생 지상2층 250㎡×2 — 비상경보설비만 착공신고 대상, 감리 비대상", () => {
     const a = ans(startQuestions({ use: "retail", GF: 2, BF: 0, A: 250, Ab: 0, date: D }));
-    expect(a).toMatchObject({ report: "y", tech: "0", supv: "n", lane: "n", site: "n" });
+    expect(a).toMatchObject({ report: "y", tech: "0", supv: "n", flame: "n", lane: "n", site: "n" });
     expect(a.temp.sort()).toEqual(["alarm", "blanket", "ext"]); // 연면적 400㎡ 이상 → 소화기(동의대상)·비상경보장치, 방화포
   });
   test("아파트 지상25층·지하2층 150세대 — 고급기술자·특급감리원, 전용구역·현장 안전관리자 대상", () => {
     const a = ans(startQuestions({ use: "apt", GF: 25, BF: 2, A: 600, Ab: 3000, hh: 150, H: 82.5, date: D }));
-    expect(a).toMatchObject({ report: "y", tech: "3", supv: "y", supvLv: "4", lane: "y", site: "y" });
+    expect(a).toMatchObject({ report: "y", tech: "3", supv: "y", supvLv: "4", flame: "n", lane: "y", site: "y" });
+  });
+  test("방염 — 숙박시설(제7호)·노유자(제5호)·의료시설(제3호) 대상, 업무시설 11층 이상(제10호) 대상, 10층 이하 비대상", () => {
+    const fl = (b) => ans(startQuestions({ BF: 0, Ab: 0, date: D, ...b })).flame;
+    expect(fl({ use: "lodging", GF: 3, A: 200 })).toBe("y");
+    expect(fl({ use: "daycare", GF: 1, A: 200 })).toBe("y");
+    expect(fl({ use: "hospital", GF: 3, A: 300 })).toBe("y");
+    expect(fl({ use: "office", GF: 11, A: 500 })).toBe("y");
+    expect(fl({ use: "office", GF: 10, A: 500 })).toBe("n");
   });
   test("아파트 99세대 — 소방자동차 전용구역 비대상(100세대 미만)", () => {
     expect(ans(startQuestions({ use: "apt", GF: 11, BF: 1, A: 500, Ab: 1500, hh: 99, H: 36.3, date: D })).lane).toBe("n");
@@ -96,7 +104,7 @@ describe("게임 건물 무작위 표본 — 모든 단계 문항이 오류 없�
     }
   };
   test("중급(현행)", () => {
-    for (const b of sample(D)) { const s = startQuestions(b); expect(s.qs.length).toBe(7); valid(s); valid(postQuestions({ ...b, today: D }, false)); }
+    for (const b of sample(D)) { const s = startQuestions(b); expect(s.qs.length).toBe(8); valid(s); valid(postQuestions({ ...b, today: D }, false)); }
   });
   test("고급(1993~2025년 허가)", () => {
     const years = [1993, 1998, 2003, 2006, 2010, 2014, 2018, 2022, 2025];

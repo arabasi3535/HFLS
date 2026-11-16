@@ -8,7 +8,7 @@ import { LawWatchPanel } from "./LawWatch";
 
 const BIG = new Set(["nfpc", "nftc"]); // 41건씩 — 처음엔 접어 둠
 
-export default function LawTab() {
+export default function LawTab({ onHist }) {
   const [q, setQ] = useState("");
   const k = q.trim().replace(/\s+/g, "").toLowerCase();
   const hit = (n) => !k || n.replace(/\s+/g, "").toLowerCase().includes(k);
@@ -26,8 +26,16 @@ export default function LawTab() {
           <b>법령 자료 {total + HAZ_GUIDES.length}건</b> <span className="pp-count">(원문 링크 {total}건 · 위험물 업무지침 {HAZ_GUIDES.length}건)</span>
           <p>
             소방시설 관계 법령·고시와 화재안전성능기준(NFPC)·화재안전기술기준(NFTC), 위험물 법령을 국가법령정보센터 원문으로
-            연결합니다. 링크는 항상 <b>현행</b> 원문으로 열리므로 개정되어도 따로 고칠 필요가 없습니다. 연혁·부칙은 원문 화면의
-            「연혁」에서 확인하세요.
+            연결합니다. 링크는 항상 <b>현행</b> 원문으로 열리므로 개정되어도 따로 고칠 필요가 없습니다. 허가 시점의 옛 조문·별표는
+            옆의{" "}
+            {onHist ? (
+              <button type="button" className="lw-hist-link" onClick={onHist}>
+                「연혁법 찾기」
+              </button>
+            ) : (
+              "「연혁법 찾기」"
+            )}
+            에서 기준일로 바로 불러올 수 있습니다.
           </p>
         </div>
       </div>

@@ -124,9 +124,9 @@ test("다른 기기 비밀키는 다른 난이도에서도 거부", async () => 
 });
 
 test("중급·고급 조작 방지 한도 — 진행 중 단계 XP 여유 포함", async () => {
-  // 중급: (준공 + 5) × 380
-  expect((await postLv(1, "mid", { xp: 2280, first: 0, done: 1, pop: 10 }, "중급한도")).code).toBe(200);
-  expect((await postLv(2, "mid", { xp: 2281, first: 0, done: 1, pop: 10 }, "중급초과")).code).toBe(400);
+  // 중급: (준공 + 5) × 390
+  expect((await postLv(1, "mid", { xp: 2340, first: 0, done: 1, pop: 10 }, "중급한도")).code).toBe(200);
+  expect((await postLv(2, "mid", { xp: 2341, first: 0, done: 1, pop: 10 }, "중급초과")).code).toBe(400);
   expect((await postLv(3, "mid", { xp: 100, first: 2, done: 2, pop: 10 }, "중급부족")).code).toBe(400); // 2 × 60 미만
   // 고급: (준공 + 5) × 305
   expect((await postLv(4, "adv", { xp: 1830, first: 0, done: 1, pop: 10 }, "고급한도")).code).toBe(200);

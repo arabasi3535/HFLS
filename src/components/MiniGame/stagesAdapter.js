@@ -1,14 +1,14 @@
 // ============================================================
 // 「소방 인허가 시티」 중급·고급 단계 문항 — HFLS 판정 함수를 그대로 호출해 정답을 만든다
 //  · 착공(중급): 착공신고·소방기술자·공사감리·감리원(construction.js), 임시소방시설·건설현장 소방안전관리자(temporary.js),
-//               소방자동차 전용구역(safety.js fireLane)
+//               방염 대상(safety.js flameRetardant), 소방자동차 전용구역(safety.js fireLane)
 //  · 준공 후(중급)·관리(고급): 소방안전관리대상물 등급·자체점검(safety.js), 고급은 전용구역 포함
 //  · 설치 목록은 결과 화면 기본값과 같음(law/installed.js — 부칙 소급 의무 반영, 기본 대체 적용)
 //  · HFLS가 '확인 필요'로 판정하거나 '연혁 확인' 설비 때문에 답이 갈리면 그 문항은 채점 제외
 // ============================================================
 import { review } from "../../law/engine";
 import { construction, facsFromKeys, TECH_GRADES, SUPV_GRADES } from "../../law/construction";
-import { fireSafetyGrade, fireLane, selfInspection, S as SS, SAFETY_REFS, INSPECT_REF } from "../../law/safety";
+import { fireSafetyGrade, fireLane, selfInspection, flameRetardant, S as SS, SAFETY_REFS, INSPECT_REF } from "../../law/safety";
 import { tempFacilities, siteManager, T as TT, TEMP_REF, SITE_REF } from "../../law/temporary";
 import { defaultInstalled } from "../../law/installed";
 import { toHflsInput, toIso } from "./rulesAdapter";
@@ -105,6 +105,19 @@ export function startQuestions(b) {
     whyOf: Object.fromEntries(tf.items.map((i) => [i.key, `${i.status} — ${i.why}`])),
     why: "화재위험작업 현장 기준(시행령 별표8 제2호)",
     ref: TEMP_REF,
+  });
+  // 방염: 실내장식물 등 시공 전 착공 단계에서 확인(소방시설법 제20조, 시행령 제30조)
+  const fl = flameRetardant(rv, "new");
+  const fh = top(fl.hits) || top(fl.checks);
+  qs.push({
+    id: "flame",
+    title: "방염 대상(실내장식물 등)",
+    kind: "one",
+    opts: YN,
+    ans: fl.status === SS.YES ? "y" : "n",
+    chk: fl.status === SS.CHK,
+    why: fh ? `시행령 제30조 ${fh.no} — ${fh.text}` : fl.notes[0] || "시행령 제30조 각 호에 해당하지 않음",
+    ref: SAFETY_REFS.flame,
   });
   const ln = fireLane(rv, "new");
   qs.push(laneQ(ln));
