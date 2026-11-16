@@ -26,6 +26,7 @@ const SYSTEMS = [
   { id: 'escape', g: 'evac', name: '피난기구' },
   { id: 'exitlight', g: 'evac', name: '유도등·유도표지' },
   { id: 'emlight', g: 'evac', name: '비상조명등' },
+  { id: 'plight', g: 'evac', name: '휴대용비상조명등' },
   { id: 'water', g: 'water', name: '상수도소화용수설비' },
   { id: 'standpipe', g: 'act', name: '연결송수관설비' },
   { id: 'sprinkle', g: 'act', name: '연결살수설비' },
@@ -155,6 +156,9 @@ function evaluate(b) {
   const em1 = total >= 5 && T >= 3000, em2 = BF > 0 && Ab >= 450;
   S('emlight', em1 || em2, em1 ? `지하 포함 ${total}개층(≥5) & 연면적 ${fa(T)}㎡ ≥ 3,000㎡` : em2 ? `지하층 바닥면적 ${fa(Ab)}㎡ ≥ 450㎡ → 해당 층`
     : '5층 이상·연면적 3,000㎡ 이상 아님, 지하층 450㎡ 이상 층 없음');
+
+  // 휴대용비상조명등(별표4 제3호마목): 숙박시설 — 게임 용도 중 영화상영관·대규모점포·지하역사·지하상가는 없음
+  S('plight', use === 'lodging', use === 'lodging' ? '숙박시설 → 설치' : '숙박시설, 수용인원 100명 이상 영화상영관·대규모점포·지하역사·지하상가 아님');
 
   // ── 소화용수설비 ──
   S('water', T >= 5000, T >= 5000 ? `연면적 ${fa(T)}㎡ ≥ 5,000㎡` : `연면적 ${fa(T)}㎡ < 5,000㎡`);

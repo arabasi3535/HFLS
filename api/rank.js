@@ -17,13 +17,13 @@ const RANK_XP = [0, 80, 200, 380, 620, 920, 1300, 1760, 2300, 2950, 3700];
 const STAGES = [[0, "시골마을"], [40, "농촌 마을"], [150, "읍내"], [500, "소도시"], [1500, "중소도시"], [4000, "중견도시"], [10000, "대도시"], [25000, "광역도시"]];
 
 // 조작 방지 한도 — 게임 규칙에서 나올 수 있는 최댓값 기준(난이도별)
-//  허가 동의 1건 최대 XP: 20 + 설비 20종×8 + 30층×2 = 240 / 최소(설치 0종·1층) 22, 현행 기준은 소화기구가 항상 대상이라 30
+//  허가 동의 1건 최대 XP: 20 + 설비 21종×8 + 30층×2 = 248 / 최소(설치 0종·1층) 22, 현행 기준은 소화기구가 항상 대상이라 30
 //  착공 단계 최대 20 + 8문항×10 = 100 · 준공 후 최대 20 + 2문항×15 = 50 · 고급 관리 최대 20 + 3문항×15 = 65 / 단계 최소 20
 //  slack: 진행 중(아직 준공 전) 건물의 단계 XP 여유 — 동시 접수 최대 5건
 const LEVELS = {
-  basic: { p: "hfls:fc", maxGain: 240, minFirst: 30, slack: 0 },
-  mid: { p: "hfls:fc:mid", maxGain: 390, minFirst: 60, slack: 5 },
-  adv: { p: "hfls:fc:adv", maxGain: 305, minFirst: 40, slack: 5 },
+  basic: { p: "hfls:fc", maxGain: 248, minFirst: 30, slack: 0 },
+  mid: { p: "hfls:fc:mid", maxGain: 398, minFirst: 60, slack: 5 },
+  adv: { p: "hfls:fc:adv", maxGain: 313, minFirst: 40, slack: 5 },
 };
 const LV_IDS = Object.keys(LEVELS);
 const keysOf = (lv) => ({ rank: `${LEVELS[lv].p}:rank`, data: `${LEVELS[lv].p}:data`, top: `${LEVELS[lv].p}:top` });

@@ -44,6 +44,7 @@ export const SYS_MAP = {
   escape: "escape",
   exitlight: "guide",
   emlight: "elight",
+  plight: "plight",
   water: "waterSupply",
   standpipe: "standpipe",
   sprinkle: "conspk",

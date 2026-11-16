@@ -26,6 +26,17 @@ describe("지시서 검증 표본 — HFLS 판정", () => {
     expect(req({ use: "apt", GF: 15, BF: 2, A: 600, Ab: 3000 })).toEqual(
       ids("ext kitchen hyd sp afd broadcast escape exitlight emlight water standpipe outlet radio")
     ));
+  test("숙박시설 → 휴대용비상조명등 설치(별표4 제3호마목), 다른 용도는 비대상", () => {
+    expect(req({ use: "lodging", GF: 3, BF: 0, A: 200, Ab: 0 })).toContain("plight");
+    for (const use of ["retail", "office", "sales", "hospital", "apt"]) expect(req({ use, GF: 3, BF: 0, A: 300, Ab: 0 })).not.toContain("plight");
+  });
+  test("휴대용비상조명등 연혁(고급) — 소방법 2002.3.30. 신설 전 숙박시설은 비대상, 이후 대상", () => {
+    const lodge = { use: "lodging", GF: 3, BF: 0, A: 200, Ab: 0 };
+    const at = (date) => evaluate({ ...lodge, date }).plight;
+    expect(at("2001.05.01").req).toBe(false);
+    expect(at("2003.05.01").req || at("2003.05.01").chk).toBe(true);
+    expect(at("2010.05.01").req).toBe(true);
+  });
   test("단독주택 → 주택용소방시설(소화기·단독경보형)만", () => expect(req({ use: "house", GF: 2, BF: 0, A: 100, Ab: 0 })).toEqual(ids("ext single")));
 });
 
