@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.34.0",
-  date: "2026-11-16",
-  note: "연혁법 찾기에 화재안전기준(NFSC → NFPC·NFTC) 추가 — 설비별·기준일별 원문(판정 규칙 변화 없음)",
+  version: "2.35.0",
+  date: "2026-11-17",
+  note: "기타 자료에 해설서·매뉴얼, 관련 사이트 추가(판정 규칙 변화 없음)",
 };
 
 export const D = {
