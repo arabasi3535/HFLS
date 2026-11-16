@@ -78,6 +78,18 @@ export default function LawHistTab() {
       setView(j.art ? { type: "art", title: j.art.label, text: j.art.text } : j.byl ? { type: "byl", title: `별표 ${lab(j.byl.k)} ${j.byl.title}`, text: j.byl.text, links: j.byl.links, k: j.byl.k } : { type: "q", title: `"${j.q}" 검색 결과 ${j.hits.length}건`, hits: j.hits });
     });
   const history = () => run("list", async () => setVers((await api({ fam, kind, list: 1 })).versions));
+  // 초기화: 고른 법령·종류·기준일과 조회 결과를 처음 상태로
+  const reset = () => {
+    setFam("fire");
+    setKind("dec");
+    setDate("");
+    setRes(null);
+    setView(null);
+    setVers(null);
+    setQ("");
+    setErr("");
+  };
+  const dirty = fam !== "fire" || kind !== "dec" || !!date || !!res || !!vers || !!q || !!err;
   const copy = async (key, text) => {
     if (await copyText(text)) {
       setCopied(key);
@@ -148,6 +160,9 @@ export default function LawHistTab() {
         <button type="button" className="btn" disabled={!!busy} onClick={history}>
           {busy === "list" ? "불러오는 중…" : "개정 연혁"}
         </button>
+        <button type="button" className="btn" disabled={!!busy || !dirty} onClick={reset} title="법령·종류·기준일과 조회 결과를 처음 상태로">
+          초기화
+        </button>
       </div>
       {err && <div className="lh-err">⚠ {err}</div>}
 
@@ -210,6 +225,11 @@ export default function LawHistTab() {
               <button type="button" className="btn small" disabled={!q.trim() || !!busy} onClick={() => open({ q: q.trim() }, "q")}>찾기</button>
             </div>
             <h5>별표 {res.toc.byls.length}</h5>
+            {res.toc.byls.length === 0 && (
+              <p className="lh-sub lh-nobyl">
+                이 판의 별표는 법제처 OPEN API에 없습니다 — 위 「법제처 원문(이 판) 열기」의 별표·서식에서 확인하십시오.
+              </p>
+            )}
             <ul>
               {res.toc.byls.map((b) => (
                 <li key={"b" + b.k}>

@@ -106,11 +106,15 @@ function parseLaw(j) {
       const k = normNo(`${txt(o["조문번호"])}${+txt(o["조문가지번호"]) ? `-${txt(o["조문가지번호"])}` : ""}`);
       const head = txt(o["조문여부"]) === "전문";
       const title = txt(o["조문제목"]);
-      arts.push({ k, head, label: head ? txt(o["조문내용"]) : `${joLabel(k)}${title ? `(${title})` : ""}`, text: articleText(o) });
+      arts.push({ k, head, label: head ? txt(o["조문내용"]).trim() : `${joLabel(k)}${title ? `(${title})` : ""}`, text: articleText(o) });
     }
-    if ("별표번호" in o && ("별표내용" in o || "별표제목" in o)) {
+    // 별표: 별표번호가 없는 옛 판도 별표내용·별표제목이 있으면 받음(번호는 제목의 「별표 N」에서 추정)
+    if (("별표내용" in o || "별표제목" in o) && !("조문번호" in o)) {
       if (txt(o["별표구분"]) === "서식") return;
-      const k = normNo(`${txt(o["별표번호"])}${+txt(o["별표가지번호"]) ? `-${txt(o["별표가지번호"])}` : ""}`);
+      const guess = /별표\s*(\d+)(?:\s*의\s*(\d+))?/.exec(`${txt(o["별표제목"])} ${txt(o["별표내용"]).slice(0, 40)}`);
+      const k = "별표번호" in o
+        ? normNo(`${txt(o["별표번호"])}${+txt(o["별표가지번호"]) ? `-${txt(o["별표가지번호"])}` : ""}`)
+        : guess ? normNo(`${guess[1]}${guess[2] ? `-${guess[2]}` : ""}`) : String(byls.length + 1);
       const links = {};
       if (o["별표서식PDF파일링크"]) links.pdf = absLink(o["별표서식PDF파일링크"]);
       if (o["별표서식파일링크"]) links.hwp = absLink(o["별표서식파일링크"]);
@@ -139,18 +143,20 @@ async function search(q, efYd, sort, page) {
 }
 /** 기준일에 시행 중이던 판(efdes) 또는 기준일 다음 판(efasc) */
 async function findOne(famId, kind, efYd, dir) {
-  let best = null;
-  for (const q of FAMS[famId].q) {
-    for (let page = 1; page <= 3; page++) {
-      const { list, total } = await search(q, efYd, dir === "prev" ? "efdes" : "efasc", page);
-      const hits = list.filter((x) => matches(famId, kind, x["법령명한글"])).map(pick);
-      if (hits.length) {
-        for (const h of hits) if (!best || (dir === "prev" ? later_(h, best) : later_(best, h))) best = h;
-        break;
+  // 계열의 검색어별로 동시에 조회(응답 시간 단축)
+  const found = await Promise.all(
+    FAMS[famId].q.map(async (q) => {
+      for (let page = 1; page <= 3; page++) {
+        const { list, total } = await search(q, efYd, dir === "prev" ? "efdes" : "efasc", page);
+        const hits = list.filter((x) => matches(famId, kind, x["법령명한글"])).map(pick);
+        if (hits.length) return hits;
+        if (page * 100 >= total) break;
       }
-      if (page * 100 >= total) break;
-    }
-  }
+      return [];
+    })
+  );
+  let best = null;
+  for (const h of found.flat()) if (!best || (dir === "prev" ? later_(h, best) : later_(best, h))) best = h;
   return best;
 }
 async function listAll(famId, kind) {
@@ -174,7 +180,7 @@ async function loadDoc(mst, eff) {
       if (raw) { const d = JSON.parse(raw); mem.set(key, d); return d; }
     } catch (e) { /* 캐시 실패는 무시 */ }
   }
-  const j = await lawJson("lawService.do", { target: "eflaw", MST: mst, efYd: eff });
+  const j = await lawJson("lawService.do", { target: "eflaw", MST: mst, efYd: eff }, 20000);
   const d = parseLaw(j);
   if (!d.arts.length && !d.byls.length) {
     const e = new Error("본문을 읽지 못함");
@@ -242,10 +248,23 @@ function render(out, format) {
     L.push("", "■ 조문 목차 (jo=번호로 원문)");
     for (const a of out.toc.arts) L.push(a.head ? `  ${a.label}` : `  jo=${a.k}  ${a.label}`);
     L.push("", "■ 별표 (byl=번호로 원문)");
+    if (!out.toc.byls.length) L.push(`  (이 판의 별표는 법제처 OPEN API에 없음 — 법제처 원문 화면의 「별표·서식」에서 확인: ${lawLink(out.ver)})`);
     for (const b of out.toc.byls) L.push(`  byl=${b.k}  별표 ${noLabel(b.k)} ${b.title}${b.hasText ? "" : " (텍스트 없음 — 파일 링크)"}`);
   }
   L.push("", "※ 참고용 원문 중계(HFLS). 최종 판단은 법제처 원문·관보로 확인.");
   return L.join("\n");
+}
+
+/** 키 구조만(값 제외) — 배열은 길이와 첫 항목 구조 */
+function shapeOf(v, depth) {
+  if (Array.isArray(v)) return depth ? [`배열 ${v.length}개`, shapeOf(v[0], depth - 1)] : `배열 ${v.length}개`;
+  if (v && typeof v === "object") {
+    if (!depth) return "{…}";
+    const o = {};
+    for (const [k, x] of Object.entries(v)) if (!/^OC$/i.test(k)) o[k] = shapeOf(x, depth - 1);
+    return o;
+  }
+  return typeof v;
 }
 
 function snippets(d, q) {
@@ -301,9 +320,14 @@ module.exports = async (req, res) => {
     if (!date) return fail(400, "date(기준일)를 YYYY-MM-DD 형식으로 넣으십시오.");
     const ver = await findOne(fam, kind, `19000101~${date}`, "prev");
     if (!ver) return fail(404, `${dash(date)}에 시행 중이던 ${FAMS[fam].name} ${KINDS[kind].name}을(를) 찾지 못했습니다. (${FAMS[fam].note})`);
-    const nx = await findOne(fam, kind, `${toYmd(new Date(Date.UTC(+date.slice(0, 4), +date.slice(4, 6) - 1, +date.slice(6) + 1)).toISOString())}~99991231`, "next");
+    if (qy.shape) {
+      // 구조 확인용(값 없이 키 이름·배열 길이만) — 옛 판 별표 위치 확인 등
+      const j = await lawJson("lawService.do", { target: "eflaw", MST: ver.mst, efYd: ver.eff }, 20000);
+      return send(200, JSON.stringify({ ok: true, ver, shape: shapeOf(j, 5) }), "public, s-maxage=3600");
+    }
+    const nextFrom = toYmd(new Date(Date.UTC(+date.slice(0, 4), +date.slice(4, 6) - 1, +date.slice(6) + 1)).toISOString());
+    const [nx, d] = await Promise.all([findOne(fam, kind, `${nextFrom}~99991231`, "next"), loadDoc(ver.mst, ver.eff)]);
     const out = { ok: true, fam, kind, date, ver, next: nx, link: lawLink(ver) };
-    const d = await loadDoc(ver.mst, ver.eff);
     if (qy.jo) {
       const k = normNo(qy.jo);
       const art = d.arts.find((a) => !a.head && a.k === k);
@@ -325,4 +349,4 @@ module.exports = async (req, res) => {
     return fail(502, `법제처 응답을 받지 못했습니다(${e.message}).`, e.keys ? { keys: e.keys } : undefined);
   }
 };
-module.exports._t = { matches, toYmd, normNo, parseLaw, render, snippets, absLink, usageText, FAMS };
+module.exports._t = { matches, toYmd, normNo, parseLaw, render, snippets, absLink, usageText, shapeOf, FAMS };

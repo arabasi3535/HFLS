@@ -140,3 +140,29 @@ test("오류 — 날짜 형식, 찾을 수 없는 시점", async () => {
   expect((await call({ fam: "fire", date: "어제" })).code).toBe(400);
   expect((await call({ fam: "fire", kind: "dec", date: "1980-01-01" })).code).toBe(404);
 });
+
+test("실제 응답 반영 — 장 제목 앞 공백 제거, 별표번호 없는 옛 판 별표, 별표 없는 판 안내, 구조 확인", () => {
+  const { parseLaw, render, shapeOf } = api._t;
+  const d = parseLaw({
+    법령: {
+      기본정보: { 법령명_한글: "소방법시행령" },
+      조문: { 조문단위: [{ 조문번호: "1", 조문여부: "전문", 조문내용: "        제1장 총칙" }, { 조문번호: "1", 조문여부: "조문", 조문제목: "목적", 조문내용: "제1조(목적) …" }] },
+      별표: { 별표단위: { 별표제목: "[별표 2] 방화관리자를 두어야 할 특수장소", 별표내용: "[별표 2]\n1급 …" } },
+    },
+  });
+  expect(d.arts[0].label).toBe("제1장 총칙");
+  expect(d.byls.map((b) => b.k)).toEqual(["2"]);
+  const ver = { name: "소방법시행령", mst: "18484", eff: "19941228", pub: "19940720", no: "14334", kind: "대통령령", why: "일부개정" };
+  const t = render({ fam: "fire", kind: "dec", date: "19950301", ver, next: null, toc: { arts: [], byls: [] } }, "text");
+  expect(t).toContain("이 판의 별표는 법제처 OPEN API에 없음");
+  expect(shapeOf({ OC: "secret", 법령: { 별표: { 별표단위: [{ 별표내용: "x" }, {}] } } }, 5)).toEqual({ 법령: { 별표: { 별표단위: ["배열 2개", { 별표내용: "string" }] } } });
+});
+
+test("구조 확인(shape=1) — 값·인증값 없이 키 구조만", async () => {
+  const r = await call({ fam: "fire", kind: "dec", date: "2010-01-01", shape: "1" });
+  expect(r.code).toBe(200);
+  const j = JSON.parse(r.body);
+  expect(j.shape.법령.별표.별표단위[0]).toBe("배열 3개");
+  expect(r.body).not.toContain("secret");
+  expect(r.body).not.toContain("특정소방대상물");
+});

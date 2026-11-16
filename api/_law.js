@@ -4,12 +4,12 @@ const TIMEOUT = 8000;
 const oc = () => (process.env.LAW_OC || "").trim();
 
 /** lawSearch.do / lawService.do 호출 → JSON (실패 시 throw) */
-async function lawJson(path, params) {
+async function lawJson(path, params, timeout = TIMEOUT) {
   const key = oc();
   if (!key) throw new Error("LAW_OC 없음");
   const p = new URLSearchParams({ OC: key, type: "JSON", ...params });
   const ac = new AbortController();
-  const t = setTimeout(() => ac.abort(), TIMEOUT);
+  const t = setTimeout(() => ac.abort(), timeout);
   try {
     const r = await fetch(`https://www.law.go.kr/DRF/${path}?${p.toString()}`, {
       signal: ac.signal,
