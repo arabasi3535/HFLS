@@ -2,11 +2,13 @@
 // 「소방 인허가 시티」 중급·고급 단계 문항 — HFLS 판정 함수를 그대로 호출해 정답을 만든다
 //  · 착공(중급): 착공신고·소방기술자·공사감리·감리원(construction.js), 임시소방시설·건설현장 소방안전관리자(temporary.js),
 //               방염 대상(safety.js flameRetardant), 소방자동차 전용구역(safety.js fireLane)
-//  · 준공 후(중급)·관리(고급): 소방안전관리대상물 등급·자체점검(safety.js), 고급은 전용구역 포함
+//  · 준공 후(중급)·관리(고급): 소방안전관리대상물 등급·자체점검(safety.js), 고급은 전용구역·부칙 소급 시설 포함
+//    고급 등급·자체점검은 '실제 설치 의무 시설'(허가 당시 설치 대상 + 부칙 소급 시설)로 판정 — 소급 안 된 강화 시설은 없는 것으로 봄
 //  · 설치 목록은 결과 화면 기본값과 같음(law/installed.js — 부칙 소급 의무 반영, 기본 대체 적용)
 //  · HFLS가 '확인 필요'로 판정하거나 '연혁 확인' 설비 때문에 답이 갈리면 그 문항은 채점 제외
 // ============================================================
-import { review } from "../../law/engine";
+import { review, STATUS } from "../../law/engine";
+import { getFacility } from "../../law/facilities";
 import { construction, facsFromKeys, TECH_GRADES, SUPV_GRADES } from "../../law/construction";
 import { fireSafetyGrade, fireLane, selfInspection, flameRetardant, S as SS, SAFETY_REFS, INSPECT_REF } from "../../law/safety";
 import { tempFacilities, siteManager, T as TT, TEMP_REF, SITE_REF } from "../../law/temporary";
@@ -162,15 +164,60 @@ export const INSP_OPTS = [
   { v: "top", label: "종합점검(반기, 특급)" },
 ];
 
+// 게임 용도에 해당하는 부칙 소급 시설(retro.js RETRO_RULES: 노유자 생활시설 2012·요양병원 2015·병원급 2019)
+const RETRO_OPTS = ["spk", "sspk", "afd", "report"];
+// 등급 기준 시설(화재예방법 시행령 별표4 — 2급: 옥내소화전·SP·물분무등, 3급: 간이SP·자탐)
+const GRADE_FACS = ["hydrant", "spk", "water", "sspk", "afd"];
+
+/** 등급 판정에 쓴 시설과 출처 — safety.js facFacts와 같은 원칙(설치 의무 + 현행 기준에서도 대상) */
+function gradeFacts(rv, inst, existing) {
+  const on = [];
+  const relaxed = [];
+  for (const k of GRADE_FACS) {
+    const h = rv.hist.byKey[k] && rv.hist.byKey[k].status === STATUS.REQ;
+    const r = inst.applied.get(k) === true;
+    if (!h && !r) continue;
+    const name = getFacility(k).name;
+    const c = rv.curr.byKey[k] ? rv.curr.byKey[k].status : STATUS.NONE;
+    if (c === STATUS.REQ) on.push(`${name}(${h ? (existing ? "허가 당시 설치 대상" : "설치 대상") : "부칙 소급"})`);
+    else if (c === STATUS.NONE) relaxed.push(name);
+  }
+  return { on, relaxed };
+}
+
 /** 준공 후(중급) · 관리(고급) 단계 문항 */
 export function postQuestions(b, existing) {
   const mode = existing ? "existing" : "new";
   const rv = reviewOf(b, existing);
   const inst = defaultInstalled(rv, existing);
   const qs = [];
-  if (existing) qs.push(laneQ(fireLane(rv, mode)));
+  if (existing) {
+    qs.push(laneQ(fireLane(rv, mode)));
+    // 부칙 소급 적용 시설 — 허가 당시 설치 대상이 아니었는데 부칙으로 설치 의무가 생긴 시설(결과 화면 기본값과 같음)
+    const retroItems = inst.list.filter((i) => i.kind === "retro");
+    const histReq = (k) => rv.hist.byKey[k] && rv.hist.byKey[k].status === STATUS.REQ;
+    qs.push({
+      id: "retro",
+      title: "부칙 소급 적용 시설 (모두 선택 · 없으면 비워 둠)",
+      kind: "multi",
+      opts: RETRO_OPTS.map((k) => ({ v: k, label: getFacility(k).name })),
+      ans: retroItems.filter((i) => !i.check).map((i) => i.key),
+      free: retroItems.filter((i) => i.check).map((i) => i.key),
+      whyOf: Object.fromEntries(
+        RETRO_OPTS.map((k) => {
+          const it = retroItems.find((i) => i.key === k);
+          return [k, it ? `소급 — ${it.retro}` : histReq(k) ? "허가 당시 이미 설치 대상(소급 아님)" : "소급 대상 아님"];
+        })
+      ),
+      why: rv.retro.length ? rv.retro.map((r) => `${r.title} (${r.basis})`).join(" / ") : "이 건물에 해당하는 부칙 소급 규정 없음 — 허가 당시 설치 대상 시설만 갖추면 됨",
+      ref: "소방시설법 시행령 부칙(소급 규정)",
+    });
+  }
   const gr = fireSafetyGrade(rv, mode, inst.applied);
   const hit = gr.first >= 0 ? top(gr.levels[gr.first].hit) : null;
+  const gf = gradeFacts(rv, inst, existing);
+  const facTxt = gf.on.length ? ` · 등급 기준 시설: ${gf.on.join(", ")}` : " · 등급 기준 시설(옥내소화전·SP·물분무등·간이SP·자탐) 설치 의무 없음";
+  const relTxt = gf.relaxed.length ? ` · 현행 기준 미대상(완화)이라 제외: ${gf.relaxed.join(", ")}` : "";
   qs.push({
     id: "grade",
     title: "소방안전관리대상물 등급",
@@ -178,7 +225,7 @@ export function postQuestions(b, existing) {
     opts: GRADE_OPTS,
     ans: gr.status === SS.YES && gr.grade ? gr.grade : "none",
     chk: gr.status === SS.CHK,
-    why: `${gr.summary}${hit ? ` — ${hit.text}${hit.basis ? ` (${hit.basis})` : ""}` : ""}`,
+    why: `${gr.summary}${hit ? ` — ${hit.text}${hit.basis ? ` (${hit.basis})` : ""}` : ""}${facTxt}${relTxt}`,
     ref: gr.ref,
   });
   const ins = selfInspection(rv, mode, gr, inst.installed);

@@ -825,7 +825,7 @@ function openStage(k) {
   let resHtml = '';
   if (s.last && !detail) resHtml = `<div class="fc-res bad"><b>⚠ 보완 요구</b> — ${s.last.wrong.length}개 항목이 맞지 않습니다. 한 번 더 틀리면 정답과 근거가 공개됩니다.</div>`;
   else if (detail) resHtml = `<div class="fc-res bad"><b>⚠ 보완 요구 (${s.tries}회차)</b> — 각 항목 아래 정답·근거를 확인하세요.</div>`;
-  const lead = pn === 'start' ? '착공 단계에서 판단할 사항을 고르세요.' : ADV ? `현재(${s.today}) 기준으로 판단하세요. 부칙 소급 의무 시설도 반영합니다.` : '준공 후 소방안전관리 사항을 고르세요.';
+  const lead = pn === 'start' ? '착공 단계에서 판단할 사항을 고르세요.' : ADV ? `등급·자체점검은 현재(${s.today}) 기준이지만, 시설은 <b>허가 당시 설치 대상 + 부칙 소급 시설</b>만 있는 것으로 봅니다(소급 안 된 강화 시설은 없음).` : '준공 후 소방안전관리 사항을 고르세요.';
   showModal(`<div class="fc-hd"><h2>${pn === 'start' ? '🏗' : '🏢'} ${PH[pn].stamp} — ${esc(s.name)}</h2><button class="fc-x" id="fc-mx">×</button></div>
   <div class="fc-bd"><div class="fc-grid2 fc-stagegrid"><div>${infoTable(s)}${facHtml}</div>
   <div><div class="fc-lead">${lead}</div>${qs.length ? qHtml : '<div class="fc-note">판정할 항목이 없습니다 — 그대로 제출하세요.</div>'}${resHtml}</div></div></div>
@@ -953,7 +953,7 @@ function openHelp() {
     adv: [
       '모든 건물은 <b>과거에 허가받은 기존 건축물</b>입니다(1992~2025년).',
       '<b style="color:#d62828">허가</b> — <b>허가일 당시 기준(연혁)</b>으로 설치 소방시설 선택',
-      '<b style="color:#3a6ea5">관리</b> — 지금 기준으로 소방차 전용구역·안전관리 등급·자체점검(부칙 소급 반영)',
+      '<b style="color:#3a6ea5">관리</b> — 소방차 전용구역 · <b>부칙 소급 시설</b> · 안전관리 등급·자체점검(현행 등급 기준을 <b>실제 설치 의무 시설</b> — 허가 당시 대상 + 부칙 소급 — 에 적용)',
       '착공·감리·임시소방시설은 HFLS에 연혁 기준이 없어 고급에서 다루지 않습니다.',
     ],
   }[level] || [];
@@ -1005,7 +1005,11 @@ function openRef(backKey) {
   const tbl = rs => `<table class="fc-info fc-ref">${rs.map(r => `<tr><th style="width:150px">${r[0]}</th><td>${r[1]}</td></tr>`).join('')}</table>`;
   const stageFirst = backKey && S.sites[backKey] && LV.phases[S.sites[backKey].ph || 0] !== 'consent';
   const consentHtml = `<h4 class="fc-h4">설치대상(현행 요약)</h4>${tbl(rows)}`;
-  const stageHtml = level === 'basic' ? '' : `<h4 class="fc-h4">${ADV ? '관리 단계' : '착공·준공 단계'}</h4>${tbl(ADV ? stageRows.filter(r => ['소방차 전용구역', '소방안전관리 등급', '자체점검'].includes(r[0])) : stageRows)}`;
+  const advRows = [
+    ['부칙 소급 시설', '2012.2.5. 당시 기존 노유자 생활시설: 간이SP·자탐·속보 / 2015.7.1. 당시 건축 완료된 요양병원: SP(600㎡↑)·간이SP·자탐·속보 / 2019.8.6. 당시 건축 완료된 병원급: SP(간이SP 가능)·속보 (소방시설법 시행령 부칙)'],
+    ['기존 건축물 등급 원칙', '현행 등급 기준을 실제 설치 의무 시설(허가 당시 설치 대상 + 부칙 소급 시설)에 적용 — 소급 안 된 강화 시설은 없는 것으로, 현행 기준 미대상(완화) 시설은 제외'],
+  ];
+  const stageHtml = level === 'basic' ? '' : `<h4 class="fc-h4">${ADV ? '관리 단계' : '착공·준공 단계'}</h4>${tbl(ADV ? [...stageRows.filter(r => r[0] === '소방차 전용구역'), ...advRows, ...stageRows.filter(r => ['소방안전관리 등급', '자체점검'].includes(r[0]))] : stageRows)}`;
   showModal(`<div class="fc-hd"><h2>📖 기준 요약 (참고용)</h2><button class="fc-x" id="fc-mx">×</button></div>
   <div class="fc-bd">${stageFirst ? stageHtml + consentHtml : consentHtml + stageHtml}
   <div class="fc-note">예외·세부 조건은 생략한 요약입니다${ADV ? '(설치대상은 현행 요약 — 허가 당시 기준은 다를 수 있음)' : ''}. 채점은 HFLS 판정 결과로 합니다.</div></div>

@@ -51,6 +51,35 @@ describe("준공 후(중급)·관리(고급)", () => {
   });
 });
 
+describe("고급 — 부칙 소급 시설과 실제 설치 의무 시설 기준 등급", () => {
+  const post = (b) => postQuestions({ BF: 0, Ab: 0, today: D, ...b }, true);
+  test("1995년 숙박시설(지하층 포함) — SP는 당시·소급 모두 없음, 2급 근거는 옥내소화전설비(허가 당시)", () => {
+    const r = post({ use: "lodging", GF: 2, BF: 1, A: 211, Ab: 376, H: 6.6, date: "1995.04.15", done: "1996.06.30" });
+    const a = ans(r);
+    expect(a.retro).toEqual([]);
+    expect(a.grade).toBe("2급");
+    const why = r.qs.find((q) => q.id === "grade").why;
+    expect(why).toContain("옥내소화전설비(허가 당시 설치 대상)");
+    expect(why).not.toContain("스프링클러설비(");
+  });
+  test("2010년 노유자 생활시설 250㎡ — 2012.2.5. 부칙으로 간이SP·자탐·속보 소급 → 3급", () => {
+    const r = post({ use: "nursing", GF: 2, A: 125, H: 6.6, date: "2010.04.15", done: "2011.06.30" });
+    const a = ans(r);
+    expect(a.retro.sort()).toEqual(["afd", "report", "sspk"]);
+    expect(a.grade).toBe("3급");
+    expect(r.qs.find((q) => q.id === "grade").why).toContain("간이스프링클러설비(부칙 소급)");
+  });
+  test("2013년 노유자 생활시설 — 부칙 이후 허가라 소급 없음", () => {
+    expect(ans(post({ use: "nursing", GF: 2, A: 125, H: 6.6, date: "2013.04.15", done: "2014.06.30" })).retro).toEqual([]);
+  });
+  test("등급은 실제 설치 의무 시설 기준 — 현행이면 SP 대상(2급)인 1995년 아파트도 당시 시설로 판정", () => {
+    const b = { use: "apt", GF: 14, BF: 2, A: 447, Ab: 3382, hh: 56, H: 46.2, date: "1995.04.15", done: "1996.06.30" };
+    const r = post(b);
+    const why = r.qs.find((q) => q.id === "grade").why;
+    expect(why).not.toContain("스프링클러설비(");
+  });
+});
+
 describe("채점", () => {
   const qs = [
     { id: "p", kind: "one", opts: [], ans: "n" },
@@ -108,6 +137,6 @@ describe("게임 건물 무작위 표본 — 모든 단계 문항이 오류 없�
   });
   test("고급(1993~2025년 허가)", () => {
     const years = [1993, 1998, 2003, 2006, 2010, 2014, 2018, 2022, 2025];
-    for (const y of years) for (const b of sample(`${y}.04.15`)) { const r = postQuestions({ ...b, done: `${y + 1}.06.30` }, true); expect(r.qs.length).toBe(3); valid(r); }
+    for (const y of years) for (const b of sample(`${y}.04.15`)) { const r = postQuestions({ ...b, done: `${y + 1}.06.30` }, true); expect(r.qs.length).toBe(4); valid(r); }
   });
 });
