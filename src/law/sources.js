@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.37.1",
+  version: "2.37.2",
   date: "2026-11-17",
-  note: "실무 자료 — 분류 없이 번호·제목 순서대로 표시(판정 규칙 변화 없음)",
+  note: "실무 자료 — 다크 모드 가독성 수정(판정 규칙 변화 없음)",
 };
 
 export const D = {
