@@ -87,9 +87,9 @@ describe("현행 기준", () => {
     const r = evaluateAt(base({ use: "office", area: 1200, gf: 4, bf: 1, floors: floors(4, 1, "") }), "2024-01-01");
     expect(st(r, "hydrant")).toBe(STATUS.CHK);
   });
-  test("2026.3.1. 이후 지하주차장 300㎡ → 자탐 (별표 원문 문구 미대조 규칙 → 설치(연혁 확인))", () => {
+  test("2026.3.1. 이후 지하주차장 300㎡ → 자탐 (별표 원문 문구 대조 완료 v2.36.1 → 설치)", () => {
     const r = evaluateAt(base({ use: "neigh", area: 500, gf: 2, bf: 1, floors: floors(2, 1, 166.7), f: { ugParking: 300 } }), "2026-04-01");
-    expect(st(r, "afd")).toBe(STATUS.REQ_CHK);
+    expect(st(r, "afd")).toBe(STATUS.REQ);
   });
   test("1992.7.28. 이전 → 미지원 표시 및 설치 판정 하향", () => {
     const r = evaluateAt(base({ use: "office", area: 4000, gf: 12, bf: 0, floors: floors(12, 0, 333.4) }), "1990-01-01");

@@ -293,6 +293,11 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
                 <Num value={input.f.stageArea} onChange={(v) => setF("stageArea", v)} />
               </Field>
             )}
+            {g("animal") && (
+              <Field label="기둥·지붕만으로 된 개방 부분(㎡)" hint="외부와 기류가 통하는 부분 — 자동화재탐지설비 연면적 기준에서 제외(2012.2.5.~), 없으면 비움">
+                <Num value={input.f.animalOpenArea} onChange={(v) => setF("animalOpenArea", v)} />
+              </Field>
+            )}
             {need.cinema && (
               <Field label="상영관 바닥면적(㎡)">
                 <Num value={input.f.cinemaArea} onChange={(v) => setF("cinemaArea", v)} />
@@ -336,6 +341,51 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
                 지붕 또는 외벽이 불연재료가 아니거나 내화구조가 아님 <small className="muted">(둘 중 하나라도 해당하면 체크 — 법제처 해석 26-0479, 2026.7.14.)</small>
               </Check>}
             {g("factory") && <Check checked={input.f.workers50} onChange={(v) => setF("workers50", v)}>상시 근로자 50명 이상 옥내 작업장</Check>}
+            {g("office") && !g("officetel") && (
+              <Check checked={input.f.unmannedSub} onChange={(v) => setF("unmannedSub", v)}>
+                무인변전소(방재실 등에서 스프링클러·물분무등소화설비 원격 조정) <small>— 옥내소화전설비 제외 판단(2011.7.7.~)</small>
+              </Check>
+            )}
+            {g("religion") && (
+              <Check checked={input.f.temple} onChange={(v) => setF("temple", v)}>
+                사찰·제실·사당 <small>— 스프링클러설비 제외 판단(2014.10.7.까지)</small>
+              </Check>
+            )}
+            {g("religion") && (
+              <Check checked={input.f.woodStructure} onChange={(v) => setF("woodStructure", v)}>
+                주요구조부가 목조 <small>— 스프링클러설비 제외 판단(2014.10.8.부터)</small>
+              </Check>
+            )}
+            {g("sports") && (
+              <Check checked={input.f.waterPlay} onChange={(v) => setF("waterPlay", v)}>
+                물놀이형 시설 <small>— 스프링클러설비 제외 판단(2011.7.7.~)</small>
+              </Check>
+            )}
+            {g("sports") && (
+              <Check checked={input.f.noSeatNonComb} onChange={(v) => setF("noSeatNonComb", v)}>
+                바닥이 불연재료이고 관람석이 없음 <small>— 스프링클러설비 제외 판단(2022.12.1.~)</small>
+              </Check>
+            )}
+            {g("correction") && !g("military") && (
+              <Check checked={input.f.immigLeased} onChange={(v) => setF("immigLeased", v)}>
+                「출입국관리법」 보호시설로 임차건물에 있음 <small>— 스프링클러설비 대신 간이스프링클러설비</small>
+              </Check>
+            )}
+            {g("ess") && (
+              <Check checked={input.f.ups} onChange={(v) => setF("ups", v)}>
+                무정전전원공급장치(UPS) 시설 <small>— 물분무등소화설비 제외 판단(2024.12.31.~)</small>
+              </Check>
+            )}
+            {g("apt") && (
+              <Check checked={input.f.aptRemodel} onChange={(v) => setF("aptRemodel", v)}>
+                주택 관련 법령에 따른 리모델링(연면적·층높이 변경 없음) <small>— 스프링클러 층수 기준 제외, 사용검사 당시 기준 적용</small>
+              </Check>
+            )}
+            {(parseInt(input.gf, 10) || 0) >= 6 && (
+              <Check checked={input.f.useChangeNoSpk} onChange={(v) => setF("useChangeNoSpk", v)}>
+                스프링클러설비가 없는 기존 건축물의 용도변경 <small>— 6층 이상 기준 제외(2020.9.15.~, 용도별 기준은 그대로)</small>
+              </Check>
+            )}
             {g("factory", "warehouse") && (
               <Check checked={input.f.nonCombMaterial} onChange={(v) => setF("nonCombMaterial", v)}>
                 모래·석재 등 불연재료 {g("factory") ? "공장" : "창고"} <small>— 비상경보설비 제외 판단(창고 2016.7.1.~, 공장 2022.12.1.~)</small>
@@ -470,7 +520,7 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
                     <Field label="옥상 차고·주차장(㎡)">
                       <Num value={input.f.rooftopParking} onChange={(v) => setF("rooftopParking", v)} />
                     </Field>
-                    <Field label="전기실·발전실·변전실·전산실(㎡)" hint="하나의 방화구획 안 합산">
+                    <Field label="전기실·발전실·변전실·전산실(㎡)" hint="하나의 방화구획 안 합산 — 가연성 절연유·가연성 피복 없는 기기·전선만 있는 실, 양압·220V 이하·24시간 상주 주조정실은 빼고 입력">
                       <Num value={input.f.elecRoom} onChange={(v) => setF("elecRoom", v)} />
                     </Field>
                   </div>
@@ -481,6 +531,9 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
                     <Check checked={input.f.lath} onChange={(v) => setF("lath", v)}>라스(철망) 비내화구조</Check>
                     <Check checked={input.f.leak100A} onChange={(v) => setF("leak100A", v)}>계약전류용량 100A 초과</Check>
                     <Check checked={input.f.roadDirect} onChange={(v) => setF("roadDirect", v)}>지하층이 피난층이고 주출입구가 도로에 접함</Check>
+                    {(parseInt(input.f.mechCars, 10) || 0) > 0 && (parseInt(input.f.mechCars, 10) || 0) < 20 && (
+                      <Check checked={input.f.mechOpen} onChange={(v) => setF("mechOpen", v)}>기계식 주차시설에 지붕 또는 외벽이 없음 <small>— 연결살수설비 제외 판단</small></Check>
+                    )}
                     <Check checked={input.f.staffed24} onChange={(v) => setF("staffed24", v)}>수신기 설치 장소 24시간 근무자 있음</Check>
                     {need.radwaste && (
                       <label className="w-check">

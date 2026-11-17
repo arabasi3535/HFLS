@@ -107,16 +107,17 @@ export const CRITERIA = [
   // ───────────────────────── 옥내소화전설비 ─────────────────────────
   {
     id: "hyd-1", fac: "hydrant", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "1)",
-    text: "연면적 3천㎡ 이상(터널 제외) 또는 지하층·무창층(축사 제외, 2010.2.4.~)·4층 이상 층 중 바닥면적 600㎡ 이상인 층이 있는 것", scope: "모든 층",
+    text: "연면적 3천㎡ 이상(터널 제외) 또는 지하층·무창층(축사 제외, 2010.2.4.~)·4층 이상 층 중 바닥면적 600㎡ 이상인 층이 있는 것 (가스시설·지하구, 원격 조정 무인변전소 2011.7.7.~ 제외 — 세부사항에서 체크)", scope: "모든 층",
     when: (c) =>
-      c.g("gas", "ugduct") ? F
+      hydExcl(c) ? F
         : or(and(ge(c.x.area, 3000), !c.g("tunnel")), c.g("cattle") && c.d >= D.B10 ? F : c.x.ugOrWlGE(600), c.x.upper4GE(600)),
     basis: (c) => `${A(c)}, 지하·무창층 최대 ${fmt(c.x.ugOrWlMax)}㎡`,
   },
   {
     id: "hyd-2", fac: "hydrant", from: D.P92, to: INF, cert: "V", src: "manual,hist24,s2,cur4", cur: "2)",
-    text: "근생·판매(영업)·운수·의료·노유자·업무·숙박·위락·공장·창고·항공기및자동차·방송통신(통신촬영)·복합 + (2011.7.7.~) 국방·군사시설·발전시설·장례시설: 연면적 1,500㎡ 이상 또는 지하층·무창층·4층 이상 층 중 바닥면적 300㎡ 이상인 층 (교정시설 미포함)", scope: "모든 층",
+    text: "근생·판매(영업)·운수·의료·노유자·업무·숙박·위락·공장·창고·항공기및자동차·방송통신(통신촬영)·복합 + (2011.7.7.~) 국방·군사시설·발전시설·장례시설: 연면적 1,500㎡ 이상 또는 지하층·무창층·4층 이상 층 중 바닥면적 300㎡ 이상인 층 (교정시설 미포함; 원격 조정 무인변전소 2011.7.7.~ 제외)", scope: "모든 층",
     when: (c) => {
+      if (hydExcl(c)) return F;
       const cond = or(ge(c.x.area, 1500), c.x.ugOrWlGE(300), c.x.upper4GE(300));
       if (c.g("neigh", "retail", "transport", "medical", "noyu", "office", "lodging", "entertain", "factory", "warehouse", "aircar", "broadcast", "mixed")) return cond;
       if (c.g("military", "power", "funeral")) return c.d >= D.B11 ? cond : and(U, cond); // 2011.7.7. 전 당시 용도분류 확인 필요
@@ -127,7 +128,7 @@ export const CRITERIA = [
   {
     id: "hyd-roof", fac: "hydrant", from: D.P97, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "3)",
     text: "건축물 옥상 차고·주차장 200㎡ 이상 (1997.9.27.)", scope: "해당 부분",
-    when: (c) => ge(n0(c.f.rooftopParking), 200), basis: (c) => `옥상 주차장 ${fmt(n0(c.f.rooftopParking))}㎡`,
+    when: (c) => (hydExcl(c) ? F : ge(n0(c.f.rooftopParking), 200)), basis: (c) => `옥상 주차장 ${fmt(n0(c.f.rooftopParking))}㎡`,
   },
   {
     id: "hyd-tunnel", fac: "hydrant", from: D.P97, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "4)",
@@ -177,12 +178,12 @@ export const CRITERIA = [
   {
     id: "spk-11f", fac: "spk", from: D.A, toU: SPK6, cert: "V", src: "manual,s1,reasons", cur: "",
     text: "층수 11층 이상 — 모든 층 (아파트는 2005.1.1.부터, 2005.11.11.부터 연면적·층높이 불변 아파트 리모델링 예외)", scope: "모든 층",
-    when: (c) => (c.g("apt") && c.d < D.APT05 ? F : ge(c.x.gf, 11)), basis: GF,
+    when: (c) => (c.g("apt") && c.d < D.APT05 ? F : aptRemodel(c) ? F : ge(c.x.gf, 11)), basis: GF,
   },
   {
     id: "spk-6f", fac: "spk", fromU: SPK6, to: INF, cert: "V", src: "hist24,use24,s2,cur4,reasons", cur: "1)",
-    text: "층수 6층 이상 (모든 층) — 2017.1.26. 개정, 부칙상 공포 후 1년 경과한 날(2018.1.27.) 시행 — 단, 연면적·층높이 불변 아파트 리모델링, 스프링클러 없는 기존 대상물의 용도변경(일부 용도 제외)은 예외", scope: "모든 층",
-    when: (c) => ge(c.x.gf, 6), basis: GF,
+    text: "층수 6층 이상 (모든 층) — 2017.1.26. 개정, 부칙상 공포 후 1년 경과한 날(2018.1.27.) 시행 — 단, 연면적·층높이 불변 아파트 리모델링, 스프링클러 없는 기존 대상물의 용도변경(2020.9.15.~, 일부 용도 제외)은 예외 — 세부사항에서 체크", scope: "모든 층",
+    when: (c) => (aptRemodel(c) || (c.f.useChangeNoSpk && c.d >= D.B20) ? F : ge(c.x.gf, 6)), basis: GF,
   },
   {
     id: "spk-dorm", fac: "spk", from: D.P95, to: INF, cert: "M", src: "manual,s1,s2,cur4", cur: "2)",
@@ -191,9 +192,9 @@ export const CRITERIA = [
   },
   {
     id: "spk-assembly", fac: "spk", from: D.A, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "3)",
-    text: "문화집회(동·식물원 제외)·종교(목조 제외)·운동(물놀이형 등 제외): 수용인원 100명 이상, 영화상영관 지하·무창층 500㎡/그 밖 1천㎡ 이상, 무대부 지하·무창·4층 이상 300㎡/그 밖 500㎡ 이상", scope: "모든 층",
+    text: "문화집회(동·식물원 제외)·종교(사찰·제실·사당 ~2014.10.7. / 주요구조부 목조 2014.10.8.~ 제외)·운동(물놀이형 시설 2011.7.7.~, 바닥 불연재료이고 관람석 없는 것 2022.12.1.~ 제외): 수용인원 100명 이상, 영화상영관 지하·무창층 500㎡/그 밖 1천㎡ 이상, 무대부 지하·무창·4층 이상 300㎡/그 밖 500㎡ 이상", scope: "모든 층",
     when: (c) => {
-      if (!(c.g("culture", "religion", "sports") && !c.g("zoo"))) return F;
+      if (!(c.g("culture", "religion", "sports") && !c.g("zoo")) || assemblyExcl(c)) return F;
       const cin = c.g("cinema") ? ge(num(c.f.cinemaArea) ?? c.x.useArea, c.f.cinemaUG ? 500 : 1000) : F;
       const stage = ge(stageVal(c), c.f.stageUG ? 300 : 500);
       return or(ge(c.x.occ, 100), cin, stage);
@@ -302,8 +303,8 @@ export const CRITERIA = [
   },
   {
     id: "spk-corr", fac: "spk", from: D.B08, to: INF, cert: "V", src: "manual,reasons,s2,cur4", cur: "11)",
-    text: "교정시설(교도소·구치소 등 수용거실, 출입국 보호장소, 경찰서 유치장) (2008.8.16.)", scope: "해당 장소",
-    when: (c) => c.g("correction") && !c.g("military"), basis: (c) => c.u.name,
+    text: "교정시설(교도소·구치소 등 수용거실, 출입국 보호장소, 경찰서 유치장) (2008.8.16.; 출입국 보호시설이 임차건물에 있는 경우 제외 — 간이스프링클러설비)", scope: "해당 장소",
+    when: (c) => c.g("correction") && !c.g("military") && !c.f.immigLeased, basis: (c) => c.u.name,
   },
   {
     id: "spk-ugmall", fac: "spk", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "12)",
@@ -391,22 +392,28 @@ export const CRITERIA = [
     text: "복합건축물(별표2 제30호나목: 근생·판매·업무·숙박·위락 + 주택) 연면적 1천㎡ 이상 (2013.2.10.)", scope: "모든 층",
     when: (c) => (c.g("mixed_res") ? ge(c.x.area, 1000) : F), basis: A,
   },
+  {
+    id: "sspk-immig", fac: "sspk", from: D.B08, to: INF, cert: "V", src: "cur4", cur: "7)",
+    text: "건물을 임차하여 「출입국관리법」 제52조제2항에 따른 보호시설로 사용하는 부분 (2008.8.16.)", scope: "해당 부분",
+    when: (c) => c.g("correction") && !c.g("military") && !!c.f.immigLeased, basis: () => "임차건물의 출입국 보호시설",
+  },
 
   // ───────────────────────── 물분무등소화설비 ─────────────────────────
   {
     id: "wat-hangar", fac: "water", from: D.P94, to: INF, cert: "V", src: "hist24,s1,s2,cur4", cur: "1)",
     text: "항공기(비행기) 격납고 (1994.7.20. — 1992.7.28. 개정 목록에는 없음)", scope: "해당 시설",
-    when: (c) => c.g("hangar"), basis: (c) => c.u.name,
+    when: (c) => !upsExcl(c) && c.g("hangar"), basis: (c) => c.u.name,
   },
   {
     id: "wat-parkbldg", fac: "water", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "2)",
     text: "차고·주차용 건축물·철골 조립식 주차시설 연면적 800㎡ 이상", scope: "해당 시설",
-    when: (c) => (c.g("parking") ? ge(c.x.area, 800) : F), basis: A,
+    when: (c) => !upsExcl(c) && (c.g("parking") ? ge(c.x.area, 800) : F), basis: A,
   },
   {
     id: "wat-inpark", fac: "water", from: D.P92, to: INF, cert: "V", src: "manual,hist24,use24,s1,s2,cur4", cur: "3)",
     text: "건축물 내부 차고·주차장 바닥면적 합계 200㎡ 이상 — 1997.9.27.~2001.5.20. 아파트 부설 차고는 의무관리대상 공동주택(300세대 이상 등)만, 50세대 미만 연립·다세대 제외(법령집 2022.12.1. / 2024 용도별 자료 2018.1.26. — 그 사이 확인 필요)", scope: "해당 부분",
     when: (c) => {
+      if (upsExcl(c)) return F;
       if (c.g("gas", "ugduct")) return F;
       // 지하 차고·주차장은 건축물 내부 차고에 포함 — 합계를 비워 두고 지하만 입력한 경우도 반영
       const base = ge(Math.max(n0(c.f.parkingInside), n0(c.f.ugParking)), 200);
@@ -428,33 +435,33 @@ export const CRITERIA = [
   {
     id: "wat-mech", fac: "water", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "4)",
     text: "기계장치에 의한 주차시설로 20대 이상 주차", scope: "해당 시설",
-    when: (c) => ge(n0(c.f.mechCars), 20), basis: (c) => `기계식 ${fmt(n0(c.f.mechCars))}대`,
+    when: (c) => !upsExcl(c) && ge(n0(c.f.mechCars), 20), basis: (c) => `기계식 ${fmt(n0(c.f.mechCars))}대`,
   },
   {
     id: "wat-elec", fac: "water", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "5)",
     text: "전기실·발전실·변전실·축전지실·통신기기실·전산실 바닥면적 300㎡ 이상(1995.8.10.~ 양압·저전압·24시간 상주 제어실 제외)", scope: "해당 실",
-    when: (c) => ge(n0(c.f.elecRoom), 300), basis: (c) => `전기실 등 ${fmt(n0(c.f.elecRoom))}㎡`,
+    when: (c) => !upsExcl(c) && ge(n0(c.f.elecRoom), 300), basis: (c) => `전기실 등 ${fmt(n0(c.f.elecRoom))}㎡`,
   },
   {
     id: "wat-comb-old", fac: "water", from: D.P92, to: D.A, cert: "M", src: "manual", cur: "",
     text: "(소방법) 공장·창고로서 특수가연물 지정수량 1천배 이상 저장·취급", scope: "해당 장소",
-    when: (c) => (c.g("factory", "warehouse") ? ge(comb(c), 1000) : F), basis: (c) => `특수가연물 ${fmt(comb(c))}배`,
+    when: (c) => !upsExcl(c) && (c.g("factory", "warehouse") ? ge(comb(c), 1000) : F), basis: (c) => `특수가연물 ${fmt(comb(c))}배`,
   },
   {
     id: "wat-radwaste", fac: "water", from: D.B08, to: INF, cert: "M", src: "manual,s2,cur4", cur: "6)",
     text: "소화수 수집·처리설비가 없는 중·저준위방사성폐기물 저장시설 (가스계 소화설비, 2008.8.16.)", scope: "해당 시설",
-    when: (c) => c.f.radwaste === "noWater", basis: () => "소화수 수집·처리설비 없음",
+    when: (c) => !upsExcl(c) && c.f.radwaste === "noWater", basis: () => "소화수 수집·처리설비 없음",
   },
   {
     id: "wat-tunnel", fac: "water", from: D.B08, to: INF, cert: "M", src: "manual,hist24,s2,cur4", cur: "7)",
     text: "터널 — 2008.8.16.~ 길이 3,000m 이상으로서 위험등급 이상, 2013.2.10.~ 길이요건 삭제(예상교통량·경사도 등 행정안전부령 위험등급) — 물분무소화설비", scope: "터널",
-    when: (c) => (c.g("tunnel") ? (c.d < D.B13 ? and(ge(tunnelLen(c), 3000), U) : U) : F),
+    when: (c) => !upsExcl(c) && (c.g("tunnel") ? (c.d < D.B13 ? and(ge(tunnelLen(c), 3000), U) : U) : F),
     basis: (c) => `${TL(c)} — 행정안전부령(터널 위험등급) 확인 필요`,
   },
   {
     id: "wat-heritage", fac: "water", from: D.H09b, to: INF, cert: "M", src: "manual,reasons,cur4", cur: "8)",
     text: "지정문화재(국가유산) 중 소방청장이 문화재청장(국가유산청장)과 협의하여 정하는 것 — 2009.2.6. 개정, 부칙상 공포 후 1년(2010.2.7.) 시행", scope: "해당 국가유산",
-    when: (c) => (c.g("heritage") ? U : F), basis: () => "협의 대상 지정 여부 확인",
+    when: (c) => !upsExcl(c) && (c.g("heritage") ? U : F), basis: () => "협의 대상 지정 여부 확인",
   },
 
   // ───────────────────────── 옥외소화전설비 ─────────────────────────
@@ -512,8 +519,8 @@ export const CRITERIA = [
     when: (c) => c.g("row", "multi"), basis: (c) => c.u.name,
   },
   {
-    id: "sgl-ugpark", fac: "single", from: D.C26, to: INF, cert: "I", src: "reasons,fpn2026", cur: "6)",
-    text: "지하 차고·주차장 바닥면적 200㎡ 미만 부분 (2026.3.1. 이후 신청분 — 원문 문구 확인)", scope: "해당 부분",
+    id: "sgl-ugpark", fac: "single", from: D.C26, to: INF, cert: "V", src: "reasons,fpn2026,cur4", cur: "6)",
+    text: "지하 차고·주차장 바닥면적 200㎡ 미만 부분 (2026.3.1. 이후 신청분)", scope: "해당 부분",
     when: (c) => and(ge(ugpk(c), 0.01), lt(ugpk(c), 200)), basis: (c) => `지하 주차장 ${fmt(ugpk(c))}㎡`,
   },
 
@@ -538,9 +545,9 @@ export const CRITERIA = [
     when: (c) => !!c.f.workers50 && !almAnimalAll(c) && !almNonComb(c), basis: () => "근로자 50명 이상",
   },
   {
-    id: "alm-ugpark", fac: "alarm", from: D.C26, to: INF, cert: "I", src: "reasons,fpn2026", cur: "5)",
-    text: "지하 차고·주차장 (2026.3.1. 이후 신청분 — 원문 문구 확인)", scope: "모든 층",
-    when: (c) => and(ge(ugpk(c), 0.01), lt(ugpk(c), 200)), basis: (c) => `지하 주차장 ${fmt(ugpk(c))}㎡`,
+    id: "alm-ugpark", fac: "alarm", from: D.C26, to: INF, cert: "V", src: "reasons,fpn2026,cur4", cur: "5)",
+    text: "건축물 지하 차고·주차장 면적 합계 200㎡ 미만 — 해당 건축물의 모든 층 (2026.3.1. 이후 신청분)", scope: "모든 층",
+    when: (c) => (c.g("gas", "ugduct") || almAnimalAll(c) || almNonComb(c) ? F : and(ge(ugpk(c), 0.01), lt(ugpk(c), 200))), basis: (c) => `지하 주차장 ${fmt(ugpk(c))}㎡`,
   },
 
   // ───────────────────────── 자동화재탐지설비 ─────────────────────────
@@ -609,12 +616,12 @@ export const CRITERIA = [
   },
   {
     id: "afd-2000", fac: "afd", from: D.A, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "5)",
-    text: "교육연구(내 기숙사·합숙소 포함)·수련시설(숙박 없는 것)·동식물관련·자원순환(위생 등)·교정(국방군사 제외)·묘지관련 연면적 2천㎡ 이상", scope: "모든 층",
+    text: "교육연구(내 기숙사·합숙소 포함)·수련시설(숙박 없는 것)·동식물관련·자원순환(위생 등)·교정(국방군사 제외)·묘지관련 연면적 2천㎡ 이상 (동식물관련 시설 중 기둥과 지붕만으로 구성되어 외부와 기류가 통하는 장소 2012.2.5.~ 제외)", scope: "모든 층",
     when: (c) =>
       c.g("edu", "animal", "recycle", "cemetery") || (c.g("training") && !c.g("training_lodge")) || (c.g("correction") && !c.g("military"))
-        ? ge(c.x.area, 2000)
+        ? ge(afdArea2000(c), 2000)
         : F,
-    basis: A,
+    basis: (c) => (afdArea2000(c) !== c.x.area ? `${A(c)} − 기둥·지붕만 개방 부분 ${fmt(num(c.f.animalOpenArea))}㎡ = ${fmt(afdArea2000(c))}㎡` : A(c)),
   },
   {
     id: "afd-noyures", fac: "afd", from: D.B12, to: INF, cert: "V", src: "manual,reasons,incheon2012,s2,cur4", cur: "6)",
@@ -678,8 +685,8 @@ export const CRITERIA = [
     when: (c) => c.g("ess"), basis: (c) => c.u.name,
   },
   {
-    id: "afd-ugpark", fac: "afd", from: D.C26, to: INF, cert: "I", src: "reasons,fpn2026", cur: "15)",
-    text: "지하 차고·주차장 바닥면적 200㎡ 이상 (2026.3.1. 이후 신청분 — 원문 문구 확인)", scope: "모든 층",
+    id: "afd-ugpark", fac: "afd", from: D.C26, to: INF, cert: "V", src: "reasons,fpn2026,cur4", cur: "15)",
+    text: "지하 차고·주차장 바닥면적 200㎡ 이상 (2026.3.1. 이후 신청분)", scope: "모든 층",
     when: (c) => ge(ugpk(c), 200), basis: (c) => `지하 주차장 ${fmt(ugpk(c))}㎡`,
   },
 
@@ -704,8 +711,8 @@ export const CRITERIA = [
     basis: () => "자동화재탐지설비 설치 대상 연동",
   },
   {
-    id: "vis-lithium", fac: "visual", from: D.C26, to: INF, cert: "I", src: "reasons,fpn2026", cur: "5)",
-    text: "리튬 1차전지 제조 공장 (2026.3.1. 이후 신청분 — 원문 문구 확인)", scope: "해당 공장",
+    id: "vis-lithium", fac: "visual", from: D.C26, to: INF, cert: "V", src: "reasons,fpn2026,cur4", cur: "5)",
+    text: "리튬 1차전지 제조 공장 (2026.3.1. 이후 신청분)", scope: "해당 공장",
     when: (c) => c.g("factory") && !!c.f.lithium, basis: () => "리튬1차전지 공장",
   },
 
@@ -871,8 +878,8 @@ export const CRITERIA = [
     basis: () => "가스시설 설치",
   },
   {
-    id: "gas-factory", fac: "gasleak", from: D.C26, to: INF, cert: "I", src: "reasons,fpn2026", cur: "2)",
-    text: "가스시설이 설치된 공장 (2026.3.1. 이후 신청분 — 원문 문구 확인)", scope: "가스시설 설치 장소",
+    id: "gas-factory", fac: "gasleak", from: D.C26, to: INF, cert: "V", src: "reasons,fpn2026,cur4", cur: "2)",
+    text: "가스시설이 설치된 공장 (2026.3.1. 이후 신청분)", scope: "가스시설 설치 장소",
     when: (c) => (c.g("factory") ? !!c.f.gasUse : F), basis: () => "가스시설 설치",
   },
 
@@ -1143,9 +1150,9 @@ export const CRITERIA = [
     when: (c) => (c.g("gas") ? ge(gasTon(c), 30) : F), basis: (c) => `탱크 ${fmt(gasTon(c))}톤`,
   },
   {
-    id: "cs-ugpark", fac: "conspk", from: D.C26, to: INF, cert: "I", src: "reasons,fpn2026", cur: "5)·6)",
-    text: "지하 차고·주차장 200㎡ 미만, 20대 미만 기계식 주차시설 (2026.3.1. 이후 신청분 — 원문 문구 확인)", scope: "해당 부분",
-    when: (c) => or(and(ge(ugpk(c), 0.01), lt(ugpk(c), 200)), and(ge(n0(c.f.mechCars), 1), lt(n0(c.f.mechCars), 20))),
+    id: "cs-ugpark", fac: "conspk", from: D.C26, to: INF, cert: "V", src: "reasons,fpn2026,cur4", cur: "5)·6)",
+    text: "지하 차고·주차장 200㎡ 미만 부분, 20대 미만 기계식 주차시설(지붕과 외벽이 있는 경우만) (2026.3.1. 이후 신청분)", scope: "해당 부분",
+    when: (c) => or(and(ge(ugpk(c), 0.01), lt(ugpk(c), 200)), and(ge(n0(c.f.mechCars), 1), lt(n0(c.f.mechCars), 20), !c.f.mechOpen)),
     basis: (c) => `지하 주차장 ${fmt(ugpk(c))}㎡, 기계식 ${fmt(n0(c.f.mechCars))}대`,
   },
 
@@ -1225,6 +1232,32 @@ function lath(c) {
 function elOldExcl(c) {
   if (c.d < D.P94) return false;
   return c.g("parking", "gas", "ugduct") || (c.g("warehouse") && !c.g("logistics"));
+}
+/** 옥내소화전설비 제외: 가스시설·지하구, 업무시설 중 원격 조정 무인변전소(2011.7.7.~, f.unmannedSub) */
+function hydExcl(c) {
+  return c.g("gas", "ugduct") || (c.g("office") && !!c.f.unmannedSub && c.d >= D.B11);
+}
+/** 스프링클러 층수 기준 예외: 주택 관련 법령에 따른 아파트등 리모델링(연면적·층높이 불변) 2005.11.11.~ — 사용검사 당시 기준 적용 */
+function aptRemodel(c) {
+  return c.g("apt") && !!c.f.aptRemodel && c.d >= D.B05;
+}
+/** 스프링클러 문화집회·종교·운동시설 기준의 제외
+ *  종교: 2004.5.30.~2014.10.7. 사찰·제실·사당(f.temple) / 2014.10.8.~ 주요구조부가 목조(f.woodStructure)
+ *  운동: 2011.7.7.~ 물놀이형 시설(f.waterPlay) / 2022.12.1.~ 바닥이 불연재료이고 관람석이 없는 운동시설(f.noSeatNonComb) */
+function assemblyExcl(c) {
+  if (c.g("religion")) return c.d < D.U14b ? !!c.f.temple : !!c.f.woodStructure;
+  if (c.g("sports")) return (c.d >= D.B11 && !!c.f.waterPlay) || (c.d >= D.C && !!c.f.noSeatNonComb);
+  return false;
+}
+/** 물분무등소화설비 제외: 발전시설의 전기저장시설 중 무정전전원공급장치(UPS) 시설(2024.12.31.~, f.ups) */
+function upsExcl(c) {
+  return c.g("ess") && !!c.f.ups && c.d >= D.C24b;
+}
+/** 자동화재탐지설비 2천㎡ 기준 면적 — 동·식물 관련 시설은 2012.2.5.부터 기둥과 지붕만으로 된 개방 장소(f.animalOpenArea) 제외 */
+function afdArea2000(c) {
+  const open = num(c.f.animalOpenArea);
+  if (!c.g("animal") || !open || c.d < D.B12 || c.x.area === null || c.x.area === undefined) return c.x.area;
+  return Math.max(0, c.x.area - open);
 }
 // 동물 및 식물 관련 시설 — 「사람이 거주하지 않음」 f.animalNoResid, 「벽이 없음」 f.animalNoWall (세부사항 체크)
 const animalNoResid = (c) => c.g("animal") && !!c.f.animalNoResid;
