@@ -520,12 +520,12 @@ export const CRITERIA = [
   // ───────────────────────── 비상경보설비 ─────────────────────────
   {
     id: "alm-1", fac: "alarm", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "1)·2)",
-    text: "연면적 400㎡ 이상, 또는 지하층·무창층 바닥면적 150㎡(공연장 100㎡) 이상 (가스시설·지하구 1994~, 사람 거주 않거나 벽 없는 축사 2005.11.11.~ 등 제외)", scope: "모든 층",
+    text: "연면적 400㎡ 이상, 또는 지하층·무창층 바닥면적 150㎡(공연장 100㎡) 이상 (가스시설·지하구 1994~ 제외; 모래·석재 등 불연재료 창고 2016.7.1.~, 불연재료 공장 2022.12.1.~ 제외; 사람이 거주하지 않거나 벽이 없는 축사 등 동·식물 관련 시설은 2005.11.11.~2022.11.30. 연면적 400㎡ 기준에서만, 2022.12.1.~ 전체 제외 — 세부사항에서 체크)", scope: "모든 층",
     when: (c) => {
-      if (c.g("gas", "ugduct", "tunnel")) return F;
-      return or(ge(c.x.area, 400), c.x.ugOrWlGE(c.g("perf") ? 100 : 150));
+      if (c.g("gas", "ugduct", "tunnel") || almAnimalAll(c) || almNonComb(c)) return F;
+      return or(almAnimalArea(c) ? F : ge(c.x.area, 400), c.x.ugOrWlGE(c.g("perf") ? 100 : 150));
     },
-    basis: (c) => `${A(c)}, 지하·무창층 최대 ${fmt(c.x.ugOrWlMax)}㎡`,
+    basis: (c) => `${A(c)}${almAnimalArea(c) ? "(사람 거주 않거나 벽 없는 동·식물 관련 시설 — 연면적 기준 제외)" : ""}, 지하·무창층 최대 ${fmt(c.x.ugOrWlMax)}㎡`,
   },
   {
     id: "alm-tunnel", fac: "alarm", from: D.P97, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "3)",
@@ -535,7 +535,7 @@ export const CRITERIA = [
   {
     id: "alm-workers", fac: "alarm", from: D.P01, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "4)",
     text: "상시 50명 이상 근로자가 작업하는 옥내 작업장 (2001.5.20.)", scope: "해당 작업장",
-    when: (c) => !!c.f.workers50, basis: () => "근로자 50명 이상",
+    when: (c) => !!c.f.workers50 && !almAnimalAll(c) && !almNonComb(c), basis: () => "근로자 50명 이상",
   },
   {
     id: "alm-ugpark", fac: "alarm", from: D.C26, to: INF, cert: "I", src: "reasons,fpn2026", cur: "5)",
@@ -719,8 +719,8 @@ export const CRITERIA = [
   // ───────────────────────── 비상방송설비 ─────────────────────────
   {
     id: "pa-1", fac: "pa", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "1)~3)",
-    text: "연면적 3,500㎡ 이상, 지하층 제외 11층 이상, 또는 지하층 3층 이상 (가스시설·지하구 1994.7.20.~, 터널 1997.9.27.~, 사람 거주 않는 동식물시설 2009.2.6.~ 제외)", scope: "모든 층",
-    when: (c) => ((c.g("gas", "ugduct") && c.d >= D.P94) || (c.g("tunnel") && c.d >= D.P97) || (c.g("cattle") && c.d >= D.B09) ? F : or(ge(c.x.area, 3500), ge(c.x.gf, 11), ge(c.x.bf, 3))),
+    text: "연면적 3,500㎡ 이상, 지하층 제외 11층 이상, 또는 지하층 3층 이상 (가스시설·지하구 1994.7.20.~, 터널 1997.9.27.~ 제외; 사람이 거주하지 않는 동식물시설 2009.2.6.~, 축사 2013.2.10.~2022.11.30., 사람이 거주하지 않거나 벽이 없는 축사 등 동·식물 관련 시설 2022.12.1.~ 제외 — 세부사항에서 체크)", scope: "모든 층",
+    when: (c) => ((c.g("gas", "ugduct") && c.d >= D.P94) || (c.g("tunnel") && c.d >= D.P97) || paAnimal(c) ? F : or(ge(c.x.area, 3500), ge(c.x.gf, 11), ge(c.x.bf, 3))),
     basis: (c) => `${A(c)}, ${GF(c)}, 지하 ${c.x.bf}층`,
   },
 
@@ -959,7 +959,7 @@ export const CRITERIA = [
   },
   {
     id: "el-1", fac: "elight", from: D.A, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "1)",
-    text: "지하층 포함 층수 5층 이상 + 연면적 3천㎡ 이상 (창고·하역장·가스시설·사람이 거주하지 않는 동식물시설 제외)", scope: "모든 층",
+    text: "지하층 포함 층수 5층 이상 + 연면적 3천㎡ 이상 (창고·하역장·가스시설 제외; 사람이 거주하지 않거나 벽이 없는 축사 등 동·식물 관련 시설 2022.12.1.~ 제외 — 세부사항에서 체크)", scope: "모든 층",
     when: (c) => (elExcl(c) ? F : and(ge(c.x.totalFloors, 5), ge(c.x.area, 3000))),
     basis: (c) => `${TF(c)}, ${A(c)}`,
   },
@@ -1226,8 +1226,37 @@ function elOldExcl(c) {
   if (c.d < D.P94) return false;
   return c.g("parking", "gas", "ugduct") || (c.g("warehouse") && !c.g("logistics"));
 }
+// 동물 및 식물 관련 시설 — 「사람이 거주하지 않음」 f.animalNoResid, 「벽이 없음」 f.animalNoWall (세부사항 체크)
+const animalNoResid = (c) => c.g("animal") && !!c.f.animalNoResid;
+const animalNoResidOrWall = (c) => c.g("animal") && (!!c.f.animalNoResid || !!c.f.animalNoWall);
+/** 비상경보설비 — 동·식물 관련 시설 제외
+ *  2005.11.11.~2016.6.30. 연면적 400㎡ 기준에서만 「사람이 거주하지 않거나 벽이 없는 축사」 제외
+ *  2016.7.1.~2022.11.30. 연면적 400㎡ 기준에서만 「…축사 등 동·식물 관련시설」 제외
+ *  2022.12.1.~ 설치대상 전체에서 「사람이 거주하지 않거나 벽이 없는 축사 등 동물 및 식물 관련 시설」 제외(시행령 별표4 제2호나목) */
+function almAnimalArea(c) {
+  if (!animalNoResidOrWall(c) || c.d < D.B05) return false;
+  return c.d >= D.B16b || c.g("cattle");
+}
+function almAnimalAll(c) {
+  return c.d >= D.C && animalNoResidOrWall(c);
+}
+/** 비상경보설비 — 모래·석재 등 불연재료(f.nonCombMaterial) 제외: 2016.7.1.(제27299호)~ 창고, 2022.12.1.~ 공장 및 창고시설(별표4 제2호나목) */
+function almNonComb(c) {
+  if (!c.f.nonCombMaterial || c.d < D.B16b) return false;
+  if (c.d >= D.C) return c.g("factory", "warehouse");
+  return c.g("warehouse") && !c.g("logistics");
+}
+/** 비상방송설비 — 동·식물 관련 시설 제외
+ *  2009.2.6.~ 「사람이 거주하지 않는 동식물 관련시설」, 2013.2.10.~ 「축사」도(조건 없이)
+ *  2022.12.1.~ 「사람이 거주하지 않거나 벽이 없는 축사 등 동물 및 식물 관련 시설」(별표4 제2호바목) */
+function paAnimal(c) {
+  if (c.d >= D.C) return animalNoResidOrWall(c);
+  if (c.d >= D.B13 && c.g("cattle")) return true;
+  return c.d >= D.B09 && animalNoResid(c);
+}
+/** 비상조명등 제외(2004.5.30.~) — 동·식물 관련 시설은 2022.12.1.~ 「사람이 거주하지 않거나 벽이 없는 축사 등」만(별표4 제3호라목) */
 function elExcl(c) {
-  return c.g("gas") || (c.g("warehouse") && !c.g("logistics")) || c.g("cattle");
+  return c.g("gas") || (c.g("warehouse") && !c.g("logistics")) || (c.d >= D.C && animalNoResidOrWall(c));
 }
 function ugWlTotal(c) {
   return c.x.ugWlSum;

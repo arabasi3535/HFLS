@@ -336,6 +336,21 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
                 지붕 또는 외벽이 불연재료가 아니거나 내화구조가 아님 <small className="muted">(둘 중 하나라도 해당하면 체크 — 법제처 해석 26-0479, 2026.7.14.)</small>
               </Check>}
             {g("factory") && <Check checked={input.f.workers50} onChange={(v) => setF("workers50", v)}>상시 근로자 50명 이상 옥내 작업장</Check>}
+            {g("factory", "warehouse") && (
+              <Check checked={input.f.nonCombMaterial} onChange={(v) => setF("nonCombMaterial", v)}>
+                모래·석재 등 불연재료 {g("factory") ? "공장" : "창고"} <small>— 비상경보설비 제외 판단(창고 2016.7.1.~, 공장 2022.12.1.~)</small>
+              </Check>
+            )}
+            {g("animal") && (
+              <Check checked={input.f.animalNoResid} onChange={(v) => setF("animalNoResid", v)}>
+                사람이 거주하지 않음 <small>— 비상경보·비상방송설비·비상조명등 제외 판단</small>
+              </Check>
+            )}
+            {g("animal") && (
+              <Check checked={input.f.animalNoWall} onChange={(v) => setF("animalNoWall", v)}>
+                벽이 없음(개방형 축사 등) <small>— 비상경보·비상방송설비·비상조명등 제외 판단</small>
+              </Check>
+            )}
             {need.lithium && <Check checked={input.f.lithium} onChange={(v) => setF("lithium", v)}>리튬 1차전지 제조 공장</Check>}
             {need.gasUse && <Check checked={input.f.gasUse} onChange={(v) => setF("gasUse", v)}>가스시설(도시가스·LPG) 사용</Check>}
             {need.apt && <Check checked={input.f.nationalHousingShelter} onChange={(v) => setF("nationalHousingShelter", v)}>국민주택규모 이하 — 지하층이 대피시설 전용</Check>}
