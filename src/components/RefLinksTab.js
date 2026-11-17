@@ -61,6 +61,7 @@ export function SiteTab() {
                 <span className="rl-org">{it.org}</span>
                 {it.login && <em className="rl-login">업무용 로그인</em>}
                 <div className="pp-m">{it.d}</div>
+                {it.how && <div className="pp-m rl-how">사용 방법: {it.how}</div>}
               </li>
             ))}
           </ol>

@@ -24,6 +24,7 @@ export const GUIDE_GROUPS = [
     items: [
       { t: "2024년 화재안전기술기준 해설서", url: NFA(56), src: NFA_SRC },
       { t: "소방시설의 내진설계 기준 해설서", url: NFA(42, "2"), src: NFA_SRC },
+      { t: "한국소방기술사회 기술지침", url: "https://www.ksfpe.or.kr/bbs.asp?sec=00601", src: "한국소방기술사회" },
     ],
   },
   {
@@ -38,7 +39,10 @@ export const GUIDE_GROUPS = [
   {
     id: "insp",
     name: "점검·유지관리",
-    items: [{ t: "소방시설등 점검관리 매뉴얼", url: NFA(57), src: NFA_SRC }],
+    items: [
+      { t: "소방시설등 점검관리 매뉴얼", url: NFA(57), src: NFA_SRC },
+      { t: "한국소방안전원 교육용 콘텐츠(강습교재)", url: "https://safe.kfsi.or.kr/educationContents/textbook/traing.do", src: "한국소방안전원 소방안전24" },
+    ],
   },
   {
     id: "haz",
@@ -51,20 +55,20 @@ export const GUIDE_GROUPS = [
       },
     ],
   },
+  {
+    id: "build",
+    name: "건축법",
+    items: [{ t: "그림으로 이해하는 건축법", url: "https://ebook.seoul.go.kr/Viewer/QGBIRM3E1K7Q", src: "서울특별시 발간 · 서울시 전자책" }],
+  },
 ];
 
-// 관련 사이트 — 업무 흐름 순(기준 → 인허가·착공 → 점검·민원 → 위험물 → 통계·데이터 → 교육)
+// 관련 사이트 — 업무 흐름 순(소방시설업·착공 → 점검·민원 → 위험물 → 방염 → 통계·데이터 → 교육)
+//  · how: 사용 방법 한 줄(있을 때만), login: 업무용 로그인 표시
 export const SITE_GROUPS = [
   {
-    id: "std",
-    name: "기준·인허가",
+    id: "permit",
+    name: "소방시설업·착공",
     items: [
-      {
-        t: "화재안전기술기준정보시스템",
-        url: "https://nftc.nfire.go.kr/kor/",
-        org: "국립소방연구원",
-        d: "현행 화재안전성능기준(NFPC)·기술기준(NFTC) 원문 확인 — 허가 당시의 옛 기준은 이 앱의 「연혁법 찾기」",
-      },
       {
         t: "소방시설업 등록시스템",
         url: "http://fdept.ekffa.or.kr/login.do",
@@ -91,6 +95,14 @@ export const SITE_GROUPS = [
         org: "소방청",
         d: "자체점검 실시결과 보고, 소방안전관리자 선임신고 등 소방민원 온라인 신청·처리",
       },
+      {
+        t: "한국소방시설관리협회",
+        url: "https://www.kfma.kr/",
+        org: "사단법인",
+        d: "자체점검 인력 배치 확인",
+        how: "「소방서 확인업무」란에서 검색",
+        login: true,
+      },
     ],
   },
   {
@@ -101,7 +113,20 @@ export const SITE_GROUPS = [
         t: "국가위험물통합정보시스템",
         url: "https://hazmat.nfa.go.kr/",
         org: "소방청",
-        d: "위험물 제조소등의 허가·신고와 안전관리 정보 조회·관리",
+        d: "위험물 안전관리 정보 조회",
+      },
+    ],
+  },
+  {
+    id: "flame",
+    name: "방염",
+    items: [
+      {
+        t: "KFI 시스템(CY)",
+        url: "https://cyber.kfi.or.kr/kfi/index.do",
+        org: "한국소방산업기술원",
+        d: "방염제 사용 여부 입력 및 확인",
+        how: "로그인 후 「방염제 사용」란에 사용 여부 입력",
         login: true,
       },
     ],
