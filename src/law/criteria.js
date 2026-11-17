@@ -25,7 +25,6 @@ import { ge, lt, between, or, and, num, fmt, T, F, U } from "./logic";
 
 const INF = "9999-12-31";
 // 자료 간 시행일 차이가 남는 구간(그 사이 기준일은 '설치(연혁 확인)'으로 하향)
-const SPK6 = [D.B18a, D.B18b]; // 6층 이상 스프링클러: 부칙 계산 2018.1.27. / 2024 용도별 자료 2018.1.28.
 const P99U = [D.P99, D.P99b]; // 1999 개정: 매뉴얼 1999.2.5. / 법령집 1999.7.29.(8.6. 시행)
 
 const n0 = (v) => num(v) ?? 0; // 부가조건 수치: 미입력은 0(해당없음)으로 보고 체크리스트로 안내
@@ -176,13 +175,13 @@ export const CRITERIA = [
   },
   // (2) 2004.5.30. 이후
   {
-    id: "spk-11f", fac: "spk", from: D.A, toU: SPK6, cert: "V", src: "manual,s1,reasons", cur: "",
+    id: "spk-11f", fac: "spk", from: D.A, to: D.B18a, cert: "V", src: "manual,s1,reasons,add27810", cur: "",
     text: "층수 11층 이상 — 모든 층 (아파트는 2005.1.1.부터, 2005.11.11.부터 연면적·층높이 불변 아파트 리모델링 예외)", scope: "모든 층",
     when: (c) => (c.g("apt") && c.d < D.APT05 ? F : aptRemodel(c) ? F : ge(c.x.gf, 11)), basis: GF,
   },
   {
-    id: "spk-6f", fac: "spk", fromU: SPK6, to: INF, cert: "V", src: "hist24,use24,s2,cur4,reasons", cur: "1)",
-    text: "층수 6층 이상 (모든 층) — 2017.1.26. 개정, 부칙상 공포 후 1년 경과한 날(2018.1.27.) 시행 — 단, 연면적·층높이 불변 아파트 리모델링, 스프링클러 없는 기존 대상물의 용도변경(2020.9.15.~, 일부 용도 제외)은 예외 — 세부사항에서 체크", scope: "모든 층",
+    id: "spk-6f", fac: "spk", from: D.B18a, to: INF, cert: "V", src: "add27810,hist24,use24,s2,cur4,reasons", cur: "1)",
+    text: "층수 6층 이상 (모든 층) — 2017.1.26. 개정(제27810호), 부칙 제1조 단서: 공포 후 1년 경과한 날(2018.1.27.) 시행, 제2조제1항: 그날 이후 허가·협의 신청(신고)분부터 적용 — 단, 연면적·층높이 불변 아파트 리모델링, 스프링클러 없는 기존 대상물의 용도변경(2020.9.15.~, 일부 용도 제외)은 예외 — 세부사항에서 체크", scope: "모든 층",
     when: (c) => (aptRemodel(c) || (c.f.useChangeNoSpk && c.d >= D.B20) ? F : ge(c.x.gf, 6)), basis: GF,
   },
   {
@@ -203,9 +202,9 @@ export const CRITERIA = [
   },
   {
     id: "spk-retail-s1", fac: "spk", from: D.A, to: D.U14b, cert: "V", src: "manual,s1", cur: "",
-    text: "판매시설 및 영업시설: 3층 이하 바닥면적 합계 6천㎡ 이상, 4층 이상 5천㎡ 이상, 또는 수용인원 500명 이상 (2004.5.30.~2014)", scope: "모든 층",
+    text: "판매시설 및 영업시설(여객·화물터미널·철도역사·공항·항만) → 2011.7.7.~ 판매시설·운수시설·창고시설 중 물류터미널: 3층 이하 바닥면적 합계 6천㎡ 이상, 4층 이상 5천㎡ 이상, 또는 수용인원 500명 이상 (2004.5.30.~2014.10.7.)", scope: "모든 층",
     when: (c) =>
-      c.g("retail")
+      c.g("retail", "transport", "logistics")
         ? or(and(lt(c.x.gf, 4), ge(c.x.useArea, 6000)), and(ge(c.x.gf, 4), ge(c.x.useArea, 5000)), ge(c.x.occ, 500))
         : F,
     basis: (c) => `${GF(c)}, ${UA(c)}, 수용인원 ${fmt(c.x.occ)}명`,
@@ -243,12 +242,12 @@ export const CRITERIA = [
     when: (c) => (c.g("hosp") ? ge(c.x.useArea, 600) : F), basis: UA,
   },
   {
-    id: "spk-midwife", fac: "spk", from: D.C22a, to: INF, cert: "M", src: "hist24,cur4", cur: "5)",
+    id: "spk-midwife", fac: "spk", from: D.C22a, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "5)",
     text: "근린생활시설 중 조산원·산후조리원: 바닥면적 합계 600㎡ 이상 (2021.8.24. 개정, 2022.2.25. 시행)", scope: "모든 층",
     when: (c) => (c.g("midwife") ? ge(c.x.useArea, 600) : F), basis: UA,
   },
   {
-    id: "spk-lodging600", fac: "spk", from: D.C, to: INF, cert: "M", src: "hist24,cur4", cur: "5)",
+    id: "spk-lodging600", fac: "spk", from: D.C, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "5)",
     text: "숙박시설: 바닥면적 합계 600㎡ 이상 (2022.12.1.)", scope: "모든 층",
     when: (c) => (c.g("lodging") ? ge(c.x.useArea, 600) : F), basis: UA,
   },
@@ -383,7 +382,7 @@ export const CRITERIA = [
     when: (c) => (c.g("lodging") && c.f.cooking ? ge(c.x.useArea, 600) : F), basis: UA,
   },
   {
-    id: "sspk-lodging", fac: "sspk", from: D.C, to: INF, cert: "M", src: "hist24,cur4", cur: "6)",
+    id: "sspk-lodging", fac: "sspk", from: D.C, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "6)",
     text: "숙박시설 바닥면적 합계 300㎡ 이상 600㎡ 미만", scope: "해당 시설",
     when: (c) => (c.g("lodging") ? between(c.x.useArea, 300, 600) : F), basis: UA,
   },
@@ -410,14 +409,16 @@ export const CRITERIA = [
     when: (c) => !upsExcl(c) && (c.g("parking") ? ge(c.x.area, 800) : F), basis: A,
   },
   {
-    id: "wat-inpark", fac: "water", from: D.P92, to: INF, cert: "V", src: "manual,hist24,use24,s1,s2,cur4", cur: "3)",
-    text: "건축물 내부 차고·주차장 바닥면적 합계 200㎡ 이상 — 1997.9.27.~2001.5.20. 아파트 부설 차고는 의무관리대상 공동주택(300세대 이상 등)만, 50세대 미만 연립·다세대 제외(법령집 2022.12.1. / 2024 용도별 자료 2018.1.26. — 그 사이 확인 필요)", scope: "해당 부분",
+    id: "wat-inpark", fac: "water", from: D.P92, to: INF, cert: "V", src: "add27810,eflaw,manual,hist24,use24,s1,s2,cur4", cur: "3)",
+    text: "건축물 내부 차고·주차장 바닥면적 합계 200㎡ 이상 — 2018.1.27.~2022.11.30.은 「주차 용도 바닥면적이 200㎡ 이상인 층」(2017.1.26. 개정, 부칙 제1조 단서; 합계 200㎡ 이상이면 층별 면적 [확인 필요]) — 1997.9.27.~2001.5.20. 아파트 부설 차고는 의무관리대상 공동주택(300세대 이상 등)만, 50세대 미만 연립·다세대 제외(법령집 2022.12.1. / 2024 용도별 자료 2018.1.26. — 그 사이 확인 필요)", scope: "해당 부분",
     when: (c) => {
       if (upsExcl(c)) return F;
       if (c.g("gas", "ugduct")) return F;
       // 지하 차고·주차장은 건축물 내부 차고에 포함 — 합계를 비워 두고 지하만 입력한 경우도 반영
       const base = ge(Math.max(n0(c.f.parkingInside), n0(c.f.ugParking)), 200);
       if (base !== T) return base;
+      // 2018.1.27.~2022.11.30.: 「바닥면적이 200㎡ 이상인 층」(제27810호 부칙 제1조 단서) — 층별 주차면적 입력이 없어 합계만으로는 확정 불가
+      if (c.d >= D.B18a && c.d < D.C) return U;
       if (c.g("apt") && c.d >= D.P97 && c.d < D.P01) {
         const hh = num(c.f.households);
         return hh !== null && hh >= 300 ? T : U; // 의무관리대상(300세대↑·승강기·중앙집중난방) 여부
@@ -430,7 +431,7 @@ export const CRITERIA = [
       }
       return T;
     },
-    basis: (c) => `내부 차고·주차장 ${fmt(Math.max(n0(c.f.parkingInside), n0(c.f.ugParking)))}㎡${n0(c.f.ugParking) ? `(지하 ${fmt(n0(c.f.ugParking))}㎡ 포함)` : ""}${c.f.households ? `, ${c.f.households}세대` : ""}`,
+    basis: (c) => `내부 차고·주차장 ${fmt(Math.max(n0(c.f.parkingInside), n0(c.f.ugParking)))}㎡${n0(c.f.ugParking) ? `(지하 ${fmt(n0(c.f.ugParking))}㎡ 포함)` : ""}${c.f.households ? `, ${c.f.households}세대` : ""}${c.d >= D.B18a && c.d < D.C ? " — 이 기간은 주차 용도 바닥면적 200㎡ 이상인 층이 있어야 대상(층별 면적 확인)" : ""}`,
   },
   {
     id: "wat-mech", fac: "water", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "4)",
@@ -570,12 +571,12 @@ export const CRITERIA = [
     when: (c) => (c.g("ugduct") ? U : F), basis: () => "지하구 규모 요건 확인",
   },
   {
-    id: "afd-aptlodge", fac: "afd", from: D.C, to: INF, cert: "M", src: "hist24,cur4", cur: "1)",
+    id: "afd-aptlodge", fac: "afd", from: D.C, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "1)",
     text: "공동주택 중 아파트등·기숙사 및 숙박시설 (규모 무관)", scope: "모든 층",
     when: (c) => c.g("apt", "dorm", "lodging"), basis: (c) => c.u.name,
   },
   {
-    id: "afd-6f", fac: "afd", from: D.C, to: INF, cert: "M", src: "hist24,cur4", cur: "2)",
+    id: "afd-6f", fac: "afd", from: D.C, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "2)",
     text: "층수 6층 이상 건축물", scope: "모든 층",
     when: (c) => (c.g("tunnel", "ugduct") ? F : ge(c.x.gf, 6)), basis: GF,
   },
@@ -692,19 +693,20 @@ export const CRITERIA = [
 
   // ───────────────────────── 시각경보기 (2004.5.30. 신설, 자탐 연동) ─────────────────────────
   {
-    id: "vis-1", fac: "visual", from: D.A, to: INF, cert: "M", src: "manual,cur4", cur: "1)~4)",
-    text: "자동화재탐지설비 설치 대상 중 근생·위락·문화집회·운동·판매·숙박·노유자·의료·업무(2006.12.7.~ 군사시설 제외)·방송국·도서관·지하상가 (2004.5.30.)", scope: "자탐 설치 부분",
+    id: "vis-1", fac: "visual", from: D.A, to: INF, cert: "V", src: "eflaw,manual,cur4", cur: "1)~4)",
+    text: "자동화재탐지설비 설치 대상 중 근생·위락·문화집회·종교·운동·판매(2011.7.6.까지 영업시설 — 여객·화물터미널 등 포함)·숙박·노유자·의료·업무(2006.12.7.~ 군사시설 제외)·방송국·도서관·지하상가 (2004.5.30.)", scope: "자탐 설치 부분",
     dependsOn: "afd",
     when: (c) => {
       const list =
         c.g("neigh", "entertain", "culture", "religion", "sports", "retail", "lodging", "noyu", "medical", "bstation", "library", "ugmall") ||
+        salesOld(c) ||
         (c.g("office") && !(c.g("military") && c.d >= D.B06));
       return list ? c.dep.afd : F;
     },
     basis: () => "자동화재탐지설비 설치 대상 연동",
   },
   {
-    id: "vis-2", fac: "visual", from: D.B11, to: INF, cert: "M", src: "hist24,cur4", cur: "1)~2)",
+    id: "vis-2", fac: "visual", from: D.B11, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "1)~2)",
     text: "자동화재탐지설비 설치 대상 중 운수시설·물류터미널·발전시설·장례시설 (2011.4.6. 개정, 2011.7.7. 시행)", scope: "자탐 설치 부분",
     dependsOn: "afd",
     when: (c) => (c.g("transport", "logistics", "power", "funeral") ? c.dep.afd : F),
@@ -795,7 +797,7 @@ export const CRITERIA = [
     when: (c) => c.g("clinic") && !!c.f.inpatient, basis: () => "입원실 있음",
   },
   {
-    id: "rep-midwife", fac: "report", from: D.C22a, to: INF, cert: "M", src: "hist24,cur4", cur: "5)나)",
+    id: "rep-midwife", fac: "report", from: D.C22a, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "5)나)",
     text: "조산원·산후조리원 (2022.2.25.)", scope: "해당 시설",
     when: (c) => c.g("midwife"), basis: (c) => c.u.name,
   },
@@ -830,7 +832,7 @@ export const CRITERIA = [
     when: (c) => ge(c.x.gf, 30), basis: GF,
   },
   {
-    id: "rep-ess", fac: "report", from: D.C22a, to: D.C, cert: "M", src: "hist24", cur: "",
+    id: "rep-ess", fac: "report", from: D.C22a, to: D.C, cert: "V", src: "eflaw,hist24", cur: "",
     text: "(종전) 발전시설 중 전기저장시설 (2022.2.25.~2022.11.30. — 2022.12.1. 전부개정 시 삭제)", scope: "해당 시설",
     when: (c) => c.g("ess"), basis: (c) => c.u.name,
   },
@@ -867,12 +869,12 @@ export const CRITERIA = [
   // ───────────────────────── 가스누설경보기 (2004.5.30. 신설) ─────────────────────────
   {
     id: "gas-1", fac: "gasleak", from: D.A, to: INF, cert: "M", src: "manual,cur4", cur: "1)·2)",
-    text: "가스시설이 설치된 숙박·노유자·판매·청소년(수련)·의료·문화집회 및 운동·종교시설", scope: "가스시설 설치 장소",
-    when: (c) => (c.g("lodging", "noyu", "retail", "training", "medical", "culture", "sports", "religion") ? !!c.f.gasUse : F),
+    text: "가스시설이 설치된 숙박·노유자·판매(2011.7.6.까지 영업시설 — 여객·화물터미널 등 포함)·청소년(수련)·의료·문화집회 및 운동·종교시설", scope: "가스시설 설치 장소",
+    when: (c) => (c.g("lodging", "noyu", "retail", "training", "medical", "culture", "sports", "religion") || salesOld(c) ? !!c.f.gasUse : F),
     basis: () => "가스시설 설치",
   },
   {
-    id: "gas-2", fac: "gasleak", from: D.B11, to: INF, cert: "M", src: "hist24,cur4", cur: "1)·2)",
+    id: "gas-2", fac: "gasleak", from: D.B11, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "1)·2)",
     text: "가스시설이 설치된 운수시설·물류터미널·장례시설 (2011.7.7. 추가)", scope: "가스시설 설치 장소",
     when: (c) => (c.g("transport", "logistics", "funeral") ? !!c.f.gasUse : F),
     basis: () => "가스시설 설치",
@@ -934,8 +936,8 @@ export const CRITERIA = [
     basis: (c) => `${c.u.name}, 수용인원 ${fmt(c.x.occ)}명`,
   },
   {
-    id: "res-co2", fac: "rescue", from: D.B12, to: INF, cert: "M", src: "use24,hist24,cur4", cur: "3)마)",
-    text: "공기호흡기: 이산화탄소소화설비 설치 장소 — 2012.2.5. 인명구조기구 화재안전기준 개정으로 비치(기존 대상 2013.2.5.까지 소급, 2024 용도별 자료), 2014.10.8. 시행령 별표 반영(법령집), 2018.6.27.부터 호스릴 이산화탄소소화설비 제외 — 물분무등 전체가 아님", scope: "해당 장소",
+    id: "res-co2", fac: "rescue", from: D.B12, to: INF, cert: "V", src: "eflaw,use24,hist24,cur4", cur: "3)마)",
+    text: "공기호흡기: 이산화탄소소화설비 설치 장소 — 2012.2.5. 시행령 별표(설치 대상)에 신설(법제처 2012.2.5. 시행판 원문: 출입구 외부 인근 1대 이상, 기존 대상 2013.2.5.까지 소급 — 2024 용도별 자료), 2014.10.8. 문구 정비, 2018.6.27.부터 호스릴 이산화탄소소화설비 제외 — 물분무등 전체가 아님", scope: "해당 장소",
     when: (c) => !!c.f.co2, basis: () => "이산화탄소소화설비 설치",
   },
 
@@ -1016,7 +1018,7 @@ export const CRITERIA = [
     when: (c) => (c.g("gas") ? ge(gasTon(c), 100) : F), basis: (c) => `탱크 ${fmt(gasTon(c))}톤`,
   },
   {
-    id: "ws-waste", fac: "waterSupply", from: D.C, to: INF, cert: "M", src: "hist24,cur4", cur: "다",
+    id: "ws-waste", fac: "waterSupply", from: D.C, to: INF, cert: "V", src: "eflaw,hist24,cur4", cur: "다",
     text: "자원순환 관련 시설 중 폐기물재활용시설·폐기물처분시설", scope: "해당 시설",
     when: (c) => c.g("waste"), basis: (c) => c.u.name,
   },
@@ -1031,19 +1033,19 @@ export const CRITERIA = [
   },
   {
     id: "sm-ug", fac: "smoke", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "3)",
-    text: "지하층·무창층에 설치된 근생·판매(영업)·숙박·위락 용도 바닥면적 합계 1천㎡ 이상 (2014 개정부터 '해당 층')", scope: "해당 부분",
-    when: (c) => (c.g("neigh", "retail", "lodging", "entertain") ? ugWlUseGE(c, 1000) : F),
+    text: "지하층·무창층에 설치된 근생·판매(영업 — 2011.7.6.까지 여객·화물터미널 등 포함)·숙박·위락 용도 바닥면적 합계 1천㎡ 이상 (2014 개정부터 '해당 층')", scope: "해당 부분",
+    when: (c) => (c.g("neigh", "retail", "lodging", "entertain") || salesOld(c) ? ugWlUseGE(c, 1000) : F),
     basis: (c) => `지하층·무창층 바닥면적 합계 ${fmt(ugWlTotal(c))}㎡(단일 용도 가정)`,
   },
   {
-    id: "sm-ug-trans", fac: "smoke", fromU: [D.B12s, D.B13], to: INF, cert: "M", src: "manual,hist24,s2,cur4", cur: "3)",
-    text: "지하층·무창층에 설치된 운수시설·창고시설(물류터미널) 바닥면적 합계 1천㎡ 이상 (법령집 2012.9.14. / 매뉴얼 2013.2.10.)", scope: "해당 부분",
+    id: "sm-ug-trans", fac: "smoke", from: D.B11, to: INF, cert: "V", src: "eflaw,s2,cur4", cur: "3)",
+    text: "지하층·무창층에 설치된 운수시설·창고시설(물류터미널) 바닥면적 합계 1천㎡ 이상 (2011.7.7. 용도 분류 개편 — 그 전은 판매시설 및 영업시설로 같은 기준; 법제처 시행령 판별 원문 확인)", scope: "해당 부분",
     when: (c) => (c.g("transport", "logistics") ? ugWlUseGE(c, 1000) : F),
     basis: (c) => `지하층·무창층 바닥면적 합계 ${fmt(ugWlTotal(c))}㎡`,
   },
   {
-    id: "sm-ug-med", fac: "smoke", fromU: [D.S15b, D.S15c], to: INF, cert: "M", src: "manual,reasons,s2,cur4", cur: "3)",
-    text: "지하층·무창층에 설치된 의료·노유자시설 바닥면적 합계 1천㎡ 이상 (2015.1.6. 개정, 부칙상 공포 후 3개월 — 매뉴얼 2015.4.7. / 법령집 2015.4.8.)", scope: "해당 부분",
+    id: "sm-ug-med", fac: "smoke", from: D.S15b, to: INF, cert: "V", src: "eflaw,reasons,s2,cur4", cur: "3)",
+    text: "지하층·무창층에 설치된 의료·노유자시설 바닥면적 합계 1천㎡ 이상 (2015.1.6. 개정, 공포 후 3개월 — 2015.4.7. 시행: 법제처 2015.4.7. 시행판 원문 확인)", scope: "해당 부분",
     when: (c) => (c.g("medical", "noyu") ? ugWlUseGE(c, 1000) : F),
     basis: (c) => `지하층·무창층 바닥면적 합계 ${fmt(ugWlTotal(c))}㎡`,
   },
@@ -1121,8 +1123,8 @@ export const CRITERIA = [
   // ───────────────────────── 연결살수설비 ─────────────────────────
   {
     id: "cs-retail", fac: "conspk", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "1)",
-    text: "판매시설(영업시설): 해당 용도 바닥면적 합계 1천㎡ 이상", scope: "해당 시설",
-    when: (c) => (c.g("retail") ? ge(c.x.useArea, 1000) : F), basis: UA,
+    text: "판매시설(2011.7.6.까지 판매시설 및 영업시설 — 여객·화물터미널·철도역사 등 포함): 해당 용도 바닥면적 합계 1천㎡ 이상", scope: "해당 시설",
+    when: (c) => (c.g("retail") || salesOld(c) ? ge(c.x.useArea, 1000) : F), basis: UA,
   },
   {
     id: "cs-retail-trans", fac: "conspk", from: D.B11, to: INF, cert: "M", src: "hist24,s2,cur4", cur: "1)",
@@ -1233,6 +1235,9 @@ function elOldExcl(c) {
   if (c.d < D.P94) return false;
   return c.g("parking", "gas", "ugduct") || (c.g("warehouse") && !c.g("logistics"));
 }
+/** 2004.5.30.~2011.7.6. 「판매시설 및 영업시설」의 영업시설 = 여객자동차터미널·화물터미널·철도역사·공항시설·항만시설 및 종합여객시설
+ *  (시행령 별표2 제4호 라~사목) → 지금의 운수시설·창고시설 중 물류터미널. 2011.7.7. 용도 분류 개편으로 운수시설·물류터미널로 나뉨 */
+const salesOld = (c) => c.d >= D.A && c.d < D.B11 && c.g("transport", "logistics");
 /** 옥내소화전설비 제외: 가스시설·지하구, 업무시설 중 원격 조정 무인변전소(2011.7.7.~, f.unmannedSub) */
 function hydExcl(c) {
   return c.g("gas", "ugduct") || (c.g("office") && !!c.f.unmannedSub && c.d >= D.B11);

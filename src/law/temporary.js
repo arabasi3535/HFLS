@@ -129,6 +129,10 @@ export function tempFacilities(rv) {
   if (g("apt", "row", "multi", "dorm")) consent.push("공동주택(제6호)");
   if (g("lodging")) consent.push("숙박시설(제6호)");
   if (g("midwife")) consent.push("조산원·산후조리원(제6호)");
+  if (g("clinic") && (f.inpatient || f.dialysis)) consent.push(`의원(${f.inpatient ? "입원실" : "인공신장실"} 있음, 제6호)`);
+  if (g("hangar")) consent.push("항공기 격납고(제5호)");
+  if (g("factory", "warehouse") && num(f.combustibleTimes) >= 750) consent.push(`특수가연물 ${fmt(num(f.combustibleTimes))}배(750배 이상, 제9호)`);
+  if (g("gas") && num(f.gasTankTon) >= 100) consent.push(`가스시설 지상 노출 탱크 ${fmt(num(f.gasTankTon))}톤(100톤 이상, 제10호)`);
   if (g("hazmat")) consent.push("위험물 저장 및 처리 시설(제6호)");
   if (g("ess")) consent.push("전기저장시설(제6호)");
   if (g("noyu_res")) consent.push("노유자 생활시설(제7호 — 단독·공동주택 안의 시설 등 예외 확인)");
@@ -138,7 +142,7 @@ export function tempFacilities(rv) {
     consent.length ? T.YES : T.CHK,
     consent.length
       ? `건축허가등 동의대상(시행령 제7조제1항) — ${consent.join(" · ")}`
-      : "건축허가등 동의대상(시행령 제7조제1항)이면 대상 — 입력값으로는 해당 기준을 찾지 못함(입원실·인공신장실 있는 의원, 공연장 지하·무창층 100㎡, 특수가연물 750배 등 확인)"
+      : "건축허가등 동의대상(시행령 제7조제1항)이면 대상 — 입력값으로는 해당 기준을 찾지 못함(공연장 지하·무창층 100㎡, 관망탑·항공관제탑·방송용 송수신탑, 풍력발전소 등 확인)"
   );
 
   // 간이소화장치 — 연면적 3천㎡ 이상 / 지하층·무창층·4층 이상의 층 바닥면적 600㎡ 이상

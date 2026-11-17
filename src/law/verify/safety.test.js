@@ -56,13 +56,25 @@ describe("소방안전관리대상물 등급", () => {
   });
   test("의무관리대상 공동주택(공동주택관리법 제2조①2) → 2급 기준 해당 여부", () => {
     const mm = (f) =>
-      run({ use: "row", area: 2000, gf: 4, bf: 0, floors: fl(4, 0, 500), f }).grade.levels[2].hit.some((c) => c.text.includes("의무관리대상"));
+      run({ use: "apt", area: 6000, gf: 6, bf: 0, floors: fl(6, 0, 1000), f }).grade.levels[2].hit.some((c) => c.text.includes("의무관리대상"));
+    // 세대 기준(가~마목)만 확인 — 스프링클러 대상(6층 이상) 연립으로 시험
     expect(mm({ households: 300 })).toBe(true);
     expect(mm({ households: 150, elevator: true })).toBe(true);
     expect(mm({ households: 150, centralHeat: true })).toBe(true);
     expect(mm({ households: 299 })).toBe(false);
     expect(mm({ households: 120, mmConsent: true })).toBe(true);
-    expect(run({ use: "row", area: 2000, gf: 4, bf: 0, floors: fl(4, 0, 500), f: { households: 300 } }).grade.grade).toBe("2급");
+  });
+  test("의무관리대상 공동주택 2급 제4)는 옥내소화전·스프링클러 설치 공동주택으로 한정(별표4 제3호가목4) 괄호, 2022.12.1. 제정부터)", () => {
+    const four = (r) => r.grade.levels[2].hit.some((c) => c.text.includes("의무관리대상"));
+    // 연립 4층 2,000㎡(옥내소화전·스프링클러 대상 아님) 300세대 → 제4) 해당 없음
+    const row = run({ use: "row", area: 2000, gf: 4, bf: 0, floors: fl(4, 0, 500), f: { households: 300 } });
+    expect(four(row)).toBe(false);
+    expect(row.grade.grade).not.toBe("2급");
+    expect(row.grade.notes.join(" ")).toContain("옥내소화전설비·스프링클러설비 설치 대상이 아니어서");
+    // 아파트 15층(스프링클러) 300세대 → 2급(제1)·제4) 모두 해당)
+    const apt = run({ use: "apt", area: 20000, gf: 15, bf: 1, floors: fl(15, 1, 1250), f: { households: 300, elevator: true } });
+    expect(apt.grade.grade).toBe("2급");
+    expect(four(apt)).toBe(true);
   });
   test("동·식물원은 1급 범위 제외 — 연면적 2만㎡여도 1급 아님", () => {
     const r = run({ use: "zoo", area: 20000, gf: 2, bf: 0, floors: fl(2, 0, 10000) });

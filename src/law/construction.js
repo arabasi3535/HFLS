@@ -64,7 +64,7 @@ const n = (v) => {
 const m2 = (x) => `${x.toLocaleString("ko-KR")}㎡`;
 
 /**
- * @param {object} p { apt, ugduct, hazmat, area, gf, bf, households, facs:{key:true}, hoseReelOnly, cabinetOnly }
+ * @param {object} p { apt, ugduct, hazmat, multiUse, area, gf, bf, households, facs:{key:true}, hoseReelOnly, cabinetOnly }
  */
 export function construction(p) {
   const has = (k) => !!(p.facs && p.facs[k]);
@@ -204,6 +204,7 @@ export function construction(p) {
   }
   if (p.mixedRes) notes.push("주택 겸용 복합건축물은 '아파트' 기준 적용 여부를 확인하세요(현재 아파트 여부 선택값으로 산정)");
   if (p.hazmat) notes.push("위험물 제조소등은 위험물안전관리법 절차(완공검사 등) 확인 — 소방공사감리 지정 여부 확인 필요");
+  if (p.multiUse) notes.push("「다중이용업소의 안전관리에 관한 특별법」에 따른 다중이용업소에서의 소방시설공사는 착공신고 대상에서 제외(영 제4조 각 호 외의 부분 단서) — 영업장 내부 공사는 다중이용업소법 절차(완비증명) 확인");
   if (p.hoseReelOnly && has("water")) notes.push("물분무등소화설비가 호스릴 방식뿐이면 중급기술자 기준(별표2 다목1)·고급감리원 기준(별표4 다목1)·감리 제3호에서 제외");
   if (p.cabinetOnly && has("sspk")) notes.push("캐비닛형 간이스프링클러설비는 감리 지정 제2호에서 제외(착공신고 대상에는 포함)");
   notes.push("하나의 공사 현장 기준(동별이 아닌 현장 연면적 합계·최고 층수)으로 입력하세요. 2개 이상 기준에 해당하면 상위 등급 1명으로 갈음 가능(별표2 비고 바·별표4 비고 마)");

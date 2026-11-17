@@ -170,8 +170,12 @@ function gradeFrom(rv, facts) {
     },
     g("ugduct") && { text: "지하구", v: true, basis: u.name },
     g("apt", "row", "multi", "mixed_res") && (() => {
+      // 별표4 제3호가목4): 의무관리대상 공동주택 중 소방시설법 시행령 별표4 제1호다목·라목에 따른 옥내소화전설비 또는 스프링클러설비가 설치된 것으로 한정
       const m = mandatoryManaged(u, f);
-      return { text: "「공동주택관리법」 제2조제1항제2호에 따른 의무관리대상 공동주택", v: m.v, basis: m.why };
+      const hs = facts.hydrant === true || facts.spk === true ? true : facts.hydrant === null || facts.spk === null ? null : false;
+      const v = m.v === false || hs === false ? false : m.v === true && hs === true ? true : null;
+      if (m.v === true && hs === false) notes.add("의무관리대상 공동주택이지만 옥내소화전설비·스프링클러설비 설치 대상이 아니어서 2급 제4)에 해당하지 않습니다(별표4 제3호가목4) 괄호 — 설치된 공동주택으로 한정).");
+      return { text: "「공동주택관리법」 제2조제1항제2호에 따른 의무관리대상 공동주택(옥내소화전설비 또는 스프링클러설비가 설치된 것으로 한정)", v, basis: `${m.why || ""}${hs === true ? " · 옥내소화전/스프링클러 설치" : hs === false ? " · 옥내소화전·스프링클러 없음" : ""}` };
     })(),
     g("heritage") && { text: "보물 또는 국보로 지정된 목조건축물", v: true, basis: u.name },
   ].filter(Boolean);

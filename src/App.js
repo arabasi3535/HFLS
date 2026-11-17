@@ -343,6 +343,9 @@ export default function App() {
               </h1>
               <PhoneInstall />
             </div>
+            <p className="tagline">
+              법제처 국가법령정보 OPEN API 연계 — 현행 법령과 시행일별 연혁을 실시간 조회하고, 허가 신청 시점 기준으로 소방시설 설치대상과 안전관리 사항을 검토합니다.
+            </p>
           </div>
           <div className="top-right">
             <button type="button" className="author" title="제작자 정보 보기" onClick={() => setProfile(true)}>

@@ -32,6 +32,7 @@ export function constructionFromSeed(seed) {
     ugduct: !!seed.ugduct,
     hazmat: !!seed.hazmat,
     mixedRes: !!seed.mixedRes,
+    multiUse: !!seed.multiUse,
     area: seed.area,
     gf: seed.gf,
     bf: seed.bf,

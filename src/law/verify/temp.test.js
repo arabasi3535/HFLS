@@ -53,3 +53,22 @@ describe("임시소방시설 — 시행령 별표8 제2호", () => {
     expect(s.alarm).toBe(T.NO);
   });
 });
+
+describe("임시소방시설 소화기 — 건축허가등 동의대상(시행령 제7조제1항) 보완 항목(v2.38.0)", () => {
+  const ext = (o) => tp(o).r.items.find((i) => i.key === "ext");
+  test("입원실 있는 의원 300㎡(400㎡ 미만) → 제6호로 동의대상", () => {
+    const e = ext({ use: "clinic", area: 300, gf: 1, bf: 0, floors: floors(1, 0, 300), f: { inpatient: true } });
+    expect(e.status).toBe(T.YES);
+    expect(e.why).toContain("입원실");
+  });
+  test("항공기 격납고 300㎡ → 제5호", () => {
+    expect(ext({ use: "hangar", area: 300, gf: 1, bf: 0, floors: floors(1, 0, 300) }).why).toContain("항공기 격납고(제5호)");
+  });
+  test("특수가연물 750배 공장 300㎡ → 제9호, 749배는 미해당", () => {
+    expect(ext({ use: "factory", area: 300, gf: 1, bf: 0, floors: floors(1, 0, 300), f: { combustibleTimes: 750 } }).why).toContain("제9호");
+    expect(ext({ use: "factory", area: 300, gf: 1, bf: 0, floors: floors(1, 0, 300), f: { combustibleTimes: 749 } }).status).toBe(T.CHK);
+  });
+  test("가스시설 지상 노출 탱크 100톤 → 제10호", () => {
+    expect(ext({ use: "gas", area: 50, gf: 1, bf: 0, floors: floors(1, 0, 50), f: { gasTankTon: 100 } }).why).toContain("제10호");
+  });
+});

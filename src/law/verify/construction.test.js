@@ -113,3 +113,9 @@ describe("착공 계산기 — 착공신고·감리 지정", () => {
     expect(facsFromKeys(["ext", "hydrant", "afd", "guide"])).toEqual({ hydrant: true, afd: true });
   });
 });
+
+test("다중이용업소에서의 소방시설공사 → 착공신고 대상 제외 안내(영 제4조 각 호 외의 부분 단서)", () => {
+  const r = run({ area: 800, facs: F("afd"), multiUse: true });
+  expect(r.notes.join(" ")).toMatch(/다중이용업소.*착공신고 대상에서 제외/);
+  expect(run({ area: 800, facs: F("afd") }).notes.join(" ")).not.toMatch(/다중이용업소/);
+});
