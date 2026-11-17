@@ -1,5 +1,5 @@
 import { GUIDE_GROUPS, SITE_GROUPS } from "../law/refLinks";
-import { PRACTICE_GROUPS, practiceUrl } from "../law/practiceDocs";
+import { PRACTICE_DOCS, practiceUrl } from "../law/practiceDocs";
 
 // ============================================================
 // 기타 자료 › 해설서·매뉴얼 / 관련 사이트 — 링크 모음(목록: src/law/refLinks.js)
@@ -73,7 +73,7 @@ export function SiteTab() {
 }
 
 export function PracticeTab() {
-  const n = PRACTICE_GROUPS.reduce((s, g) => s + g.items.length, 0);
+  const n = PRACTICE_DOCS.length;
   return (
     <div className="pp">
       <div className="pr-warn" role="note">
@@ -82,37 +82,34 @@ export function PracticeTab() {
       <div className="vd-head pp-head">
         <div>
           <b>실무 자료 — 한눈에 보기 {n}종</b>
-          <p>주제별 1쪽 요약(PDF, 2026. 11. 작성). 미리보기를 누르면 크게 열리고, 「내려받기」로 저장할 수 있습니다.</p>
+          <p>1쪽 요약(PDF, 2026. 11. 작성). 미리보기를 누르면 크게 열리고, 「내려받기」로 저장할 수 있습니다.</p>
         </div>
       </div>
-      {PRACTICE_GROUPS.map((g) => (
-        <section key={g.id} className="pp-sec">
-          <h4>
-            {g.name} <span>{g.items.length}</span>
-          </h4>
-          <div className="pr-grid">
-            {g.items.map((it) => (
-              <div key={it.f} className="pr-card">
-                <a className="pr-thumb" href={practiceUrl(it.f)} target="_blank" rel="noopener noreferrer" title="크게 보기">
-                  <img src={practiceUrl(it.f, "webp")} alt={`${it.t} 한눈에 보기 미리보기`} loading="lazy" width="360" height="509" />
-                </a>
-                <div className="pr-body">
-                  <div className="pr-t">{it.t} 한눈에 보기</div>
-                  <div className="pp-m">{it.core}</div>
-                  <div className="pr-btns">
-                    <a className="btn small" href={practiceUrl(it.f)} target="_blank" rel="noopener noreferrer">
-                      열기 ↗
-                    </a>
-                    <a className="btn small" href={practiceUrl(it.f)} download={`${it.t} 한눈에 보기.pdf`}>
-                      ⬇ 내려받기
-                    </a>
-                  </div>
+      <section className="pp-sec">
+        <div className="pr-grid">
+          {PRACTICE_DOCS.map((it, i) => (
+            <div key={it.f} className="pr-card">
+              <a className="pr-thumb" href={practiceUrl(it.f)} target="_blank" rel="noopener noreferrer" title="크게 보기">
+                <img src={practiceUrl(it.f, "webp")} alt={`${it.t} 한눈에 보기 미리보기`} loading="lazy" width="360" height="509" />
+              </a>
+              <div className="pr-body">
+                <div className="pr-t">
+                  {i + 1}. {it.t} 한눈에 보기
+                </div>
+                <div className="pp-m">{it.core}</div>
+                <div className="pr-btns">
+                  <a className="btn small" href={practiceUrl(it.f)} target="_blank" rel="noopener noreferrer">
+                    열기 ↗
+                  </a>
+                  <a className="btn small" href={practiceUrl(it.f)} download={`${it.t} 한눈에 보기.pdf`}>
+                    ⬇ 내려받기
+                  </a>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
-      ))}
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
