@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { act } from "react";
-import VersionTab, { groupLog } from "./VersionTab";
+import VersionTab from "./VersionTab";
 import LOG from "../changelog.json";
 import pkg from "../../package.json";
 
@@ -39,14 +39,6 @@ test("마크다운 블록 — 표·글머리(하위·이어지는 줄)·번호 �
   expect(b[4]).toEqual({ t: "ol", i: [{ s: "하나" }, { s: "둘" }] });
 });
 
-test("목차 묶음 — 가운데 번호별, 주요 버전 제목", () => {
-  const g = groupLog(LOG);
-  const g43 = g.find((x) => x.k === "2.43");
-  expect(g43.items.map((x) => x.v).slice(-1)).toEqual(["2.43.0"]);
-  expect(g43.title).toBe("업무자료 대조 점검 반영");
-  expect(g.find((x) => x.k === "2.7").items.map((x) => x.v)).toEqual(["2.7.1", "2.7"]);
-});
-
 test("하나씩 펼치기·전체 펼치기·전체 접기", () => {
   const log = parseChangelog(
     "## v1.2.1 변경사항 (2026-01-02) — 둘\n| 구분 | 전 | 후 |\n|---|---|---|\n| 항목B | 이전 | 이후 |\n\n## v1.2.0 변경사항 (2026-01-01)\n- 첫 기능 **굵게**\n"
@@ -69,17 +61,6 @@ test("하나씩 펼치기·전체 펼치기·전체 접기", () => {
   click("v1.2.0"); // 제목 줄(목차 칩은 v 없이 표시)
   expect(has("굵게")).toBe(true);
   expect(has("항목B")).toBe(false);
-  // 목차: 누른 항목 바로 아래(목차 안)에 내용 표시
-  const tocText = () => (div.querySelector(".vi-toc-body") || { textContent: "" }).textContent;
-  const chip = [...div.querySelectorAll(".vi-chips button")].find((x) => x.textContent === "1.2.0");
-  act(() => chip.dispatchEvent(new MouseEvent("click", { bubbles: true })));
-  expect(tocText()).toContain("굵게");
-  expect(tocText()).not.toContain("항목B");
-  expect(chip.parentElement.parentElement.querySelector(".vi-toc-body")).not.toBeNull(); // 그 목차 줄 안
-  act(() => div.querySelector(".vi-toc-t").dispatchEvent(new MouseEvent("click", { bubbles: true })));
-  expect(tocText()).toContain("굵게");
-  expect(tocText()).toContain("항목B"); // 묶음 제목 → 묶음 전체
-  act(() => div.querySelector(".vi-toc-t").dispatchEvent(new MouseEvent("click", { bubbles: true })));
-  expect(div.querySelector(".vi-toc-body")).toBeNull(); // 다시 누르면 닫힘
+  expect(div.querySelector(".vi-toc")).toBeNull(); // 목차 삭제(v2.45.2)
   act(() => root.unmount());
 });

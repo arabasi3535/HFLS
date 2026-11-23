@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ERAS, eraOf, dot, mergeDecree, stdNotes, filterRows, isFuture, lawLink, noText } from "../law/lawTimeline";
+import { ERAS, eraOf, dot, mergeDecree, mergeNotes, stdNotes, filterRows, isFuture, lawLink, noText } from "../law/lawTimeline";
+import { LAW_NOTES, RULE_NOTES } from "../law/lawNotes";
 import { STDS } from "./lawHistStds";
 
 // ============================================================
@@ -100,7 +101,7 @@ function Systems() {
 
 const WHY_CLS = (w) => (/제정/.test(w) ? "w-new" : /전부/.test(w) ? "w-all" : /부칙/.test(w) ? "w-add" : /타법/.test(w) ? "w-oth" : "w-part");
 
-function Row({ r, now, std }) {
+function Row({ r, now, std, tag }) {
   const link = lawLink(r);
   const future = isFuture(r, now);
   return (
@@ -123,7 +124,7 @@ function Row({ r, now, std }) {
       {r.notes &&
         r.notes.map((a, i) => (
           <div key={i} className="lt-note">
-            <span className="lt-tag">설치기준</span> {a.text}
+            <span className="lt-tag">{tag}</span> {a.text}
           </div>
         ))}
     </li>
@@ -155,7 +156,7 @@ function History() {
     if (!ready) return kind === "dec" && st.err ? mergeDecree([]) : [];
     if (kind === "dec") return mergeDecree(ready);
     if (kind === "std") return ready.map((v) => ({ ...v, notes: stdNotes(std).filter((a) => a.eff.replace(/-/g, "") === v.eff) }));
-    return ready;
+    return mergeNotes(ready, kind === "law" ? LAW_NOTES : RULE_NOTES);
   }, [ready, kind, std, st.err]);
   const rows = useMemo(() => filterRows(all, { major, era: kind === "std" ? "" : era, track: kind === "std" ? track : "", asc }), [all, major, era, track, kind, asc]);
   const nNote = all.filter((r) => r.notes && r.notes.length).length;
@@ -213,7 +214,7 @@ function History() {
           </span>
         ) : (
           <>
-            {all.length}건 중 {rows.length}건{kind === "dec" && nNote ? ` · 설치기준 관련 ${nNote}건 요약` : ""}
+            {all.length}건 중 {rows.length}건{nNote ? (kind === "dec" ? ` · 설치기준 관련 ${nNote}건 요약` : ` · 주요 개정 ${nNote}건 요약`) : ""}
             {major ? " · 타법개정 숨김" : ""}
           </>
         )}
@@ -231,13 +232,13 @@ function History() {
                   {E.short} <span>{E.law}{kind === "dec" ? " 시행령" : kind === "rule" ? " 시행규칙" : ""}</span>
                 </li>
               )}
-              <Row r={r} now={now} std={kind === "std"} />
+              <Row r={r} now={now} std={kind === "std"} tag={kind === "dec" ? "설치기준" : "주요 내용"} />
             </Fragment>
           );
         })}
       </ol>
       <div className="lt-src">
-        출처: 법제처 국가법령정보 OPEN API 연혁 목록(시행일 기준, 같은 개정의 부칙 시행일이 따로 있으면 줄이 나뉨). 「설치기준」 요약은 법제처 제·개정이유·연혁본 원문과 운영매뉴얼·법령집을 대조해 정리한 것입니다.
+        출처: 법제처 국가법령정보 OPEN API 연혁 목록(시행일 기준, 같은 개정의 부칙 시행일이 따로 있으면 줄이 나뉨). {kind === "dec" ? "「설치기준」 요약은 법제처 제·개정이유·연혁본 원문과 운영매뉴얼·법령집을 대조해 정리한 것입니다." : kind === "std" ? "" : "「주요 내용」은 법제처 제·개정이유에서 민원 업무에 필요한 내용만 줄인 것입니다(기한·기간 숫자는 원문 문장과 대조)."}
         {kind === "std" ? " 2022.12.1.부터 성능기준(NFPC, 고시)과 기술기준(NFTC, 공고)이 나뉨." : ""}
       </div>
     </div>

@@ -90,6 +90,21 @@ export function mergeDecree(versions, amend = AMENDMENTS) {
   return [...rows, ...extra];
 }
 
+/** 법률·시행규칙 주요 개정 요약(lawNotes.js) 붙이기 — 같은 번호·시행일 줄, 없으면 같은 번호의 첫 시행일 줄, 그것도 없으면 따로 한 줄 */
+export function mergeNotes(versions, notes) {
+  const rows = versions.map((v) => ({ ...v, notes: [] }));
+  const extra = [];
+  for (const a of notes) {
+    const eff = ymd(a.eff);
+    const no = digits(a.no);
+    const same = rows.filter((r) => digits(r.no) === no).sort((p, q) => ymd(p.eff).localeCompare(ymd(q.eff)));
+    const hit = same.find((r) => ymd(r.eff) === eff) || same[0];
+    if (hit) hit.notes.push(a);
+    else extra.push({ name: "", eff, pub: "", no, kind: "", why: "", mst: "", notes: [a], synth: true });
+  }
+  return [...rows, ...extra];
+}
+
 /** 화재안전기준 쪽 요약(예: 2022.9.8. 피난기구 NFSC 301) — std 번호별 */
 export function stdNotes(code, amend = AMENDMENTS) {
   return amend.filter((a) => isStdNote(a) && new RegExp(`NFSC ${code}\\b`).test(a.text));

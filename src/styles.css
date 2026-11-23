@@ -1291,17 +1291,6 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 .vi-btns { display: flex; gap: 6px; }
 .vi-btns .btn:disabled { opacity: 0.45; cursor: default; }
 .vi-rule { font-size: 12px; color: var(--muted); margin: 8px 0 10px; }
-.vi-toc { border: 1px solid var(--line2); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
-.vi-toc > summary { cursor: pointer; font-weight: 700; font-size: 13.5px; }
-.vi-toc ol { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
-.vi-toc li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 5px 0; border-top: 1px solid var(--line2); font-size: 13px; }
-.vi-toc-t { font: inherit; background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; text-align: left; }
-.vi-toc-t b { color: var(--accent); margin-right: 2px; }
-.vi-toc-t:hover span { text-decoration: underline; }
-.vi-toc-d { font-size: 11.5px; color: var(--muted); }
-.vi-chips { display: flex; flex-wrap: wrap; gap: 4px; flex-basis: 100%; padding-left: 2px; }
-.vi-chips button { font: inherit; font-size: 11.5px; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); border-radius: 999px; padding: 0 8px; cursor: pointer; }
-.vi-chips button.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 .vi-items { display: flex; flex-direction: column; gap: 6px; }
 .vi-item { border: 1px solid var(--line2); border-radius: 10px; scroll-margin-top: 12px; }
 .vi-item.open { border-color: var(--line); }
@@ -1382,9 +1371,4 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
   .lt-seg small { font-size: 10px; }
 }
 .lt-merge { display: flex; flex-direction: column; gap: 12px; }
-.vi-toc-t.on b, .vi-toc-t[aria-expanded="true"] b { text-decoration: underline; }
-.vi-toc-body { flex-basis: 100%; margin: 4px 0 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
-.vi-toc-ver + .vi-toc-ver { border-top: 1px solid var(--line2); }
-.vi-toc-vh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 8px 12px 0; }
-@media (max-width: 760px) { .vi-toc-vh .vi-title { padding-left: 0; } }
 @media (min-width: 761px) and (max-width: 1000px) { .lt-eras { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

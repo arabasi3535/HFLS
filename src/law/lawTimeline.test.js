@@ -61,3 +61,17 @@ test("설치기준 별표 번호(결과·검토서 근거 문구) — 2012.2.5.~
   expect(tableRef("2016-01-21")).toBe("구 화재예방소방시설법 시행령 별표5");
   expect(tableRef("2022-12-01")).toBe("소방시설법 시행령 별표4");
 });
+
+test("법률·시행규칙 주요 내용 붙이기 — 번호·시행일, 부칙으로 나뉜 줄은 같은 시행일 또는 첫 줄", () => {
+  const { mergeNotes } = require("./lawTimeline");
+  const { LAW_NOTES, RULE_NOTES } = require("./lawNotes");
+  const L = (eff, no, why) => ({ eff, pub: eff, no, kind: "법률", why, mst: "1" });
+  const m = mergeNotes([L("20180302", "15419", "일부개정"), L("20180903", "15419", "일부개정"), L("20221201", "18522", "전부개정"), L("20241201", "18522", "전부개정")], LAW_NOTES);
+  expect(m.find((r) => r.eff === "20180302").notes).toHaveLength(1);
+  expect(m.find((r) => r.eff === "20180903").notes).toHaveLength(0);
+  expect(m.find((r) => r.eff === "20221201").notes[0].text).toMatch(/화재예방법 분리/);
+  expect(m.filter((r) => r.synth).length).toBe(LAW_NOTES.length - 2); // 목록에 없는 번호는 따로 줄
+  const r = mergeNotes([{ eff: "20190813", no: "00132", why: "일부개정" }, { eff: "20200101", no: "00132", why: "일부개정" }, { eff: "20200814", no: "00132", why: "일부개정" }], RULE_NOTES.filter((x) => x.no === "132"));
+  expect(r.find((x) => x.eff === "20200101").notes[0].text).toMatch(/30일 → 7일/);
+  expect(RULE_NOTES.every((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.eff) && x.text)).toBe(true);
+});
