@@ -343,6 +343,13 @@ select.w-big { font-size: 15px; padding: 11px 12px; font-weight: 600; }
 .it { border-left: 3px solid var(--req); margin: 2px 6px; border-radius: 6px; }
 .it.retro { border-left-color: var(--retro); background: var(--retro-bg); }
 .it.strong { border-left-color: var(--strong); background: var(--strong-bg); }
+.it.vol { border-left-color: #2563eb; border-left-style: dashed; }
+.t-vol { background: #2563eb; color: #fff; }
+.legend-vol { color: #2563eb; font-weight: 600; }
+.vols { background: var(--panel); border: 1px solid var(--line); border-left: 4px dashed #2563eb; border-radius: 12px; padding: 12px 14px; }
+.vols .subs-h small { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.vol-cat { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; border-top: 1px solid var(--line2); }
+.vol-cat-h { flex: 0 0 82px; font-size: 12px; font-weight: 700; color: var(--ink2); padding-top: 4px; }
 .it.subbed .it-name { text-decoration: line-through; text-decoration-color: var(--muted); color: var(--muted); }
 .it-main { width: 100%; display: grid; grid-template-columns: auto auto 1fr 14px; gap: 8px; align-items: center; text-align: left; font: inherit; background: none; border: 0; color: var(--ink); padding: 8px 10px; cursor: pointer; border-radius: 6px; }
 .it-main:hover { background: var(--line2); }

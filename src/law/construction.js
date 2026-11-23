@@ -64,10 +64,13 @@ const n = (v) => {
 const m2 = (x) => `${x.toLocaleString("ko-KR")}㎡`;
 
 /**
- * @param {object} p { apt, ugduct, hazmat, multiUse, area, gf, bf, households, facs:{key:true}, hoseReelOnly, cabinetOnly }
+ * @param {object} p { apt, ugduct, hazmat, multiUse, area, gf, bf, households, facs:{key:true}, vol:{key:true}, hoseReelOnly, cabinetOnly }
+ *   vol: 자진 설치 설비(법정 설치 의무 없음) — 착공신고·소방기술자 배치에는 포함, 공사감리 산정에서는 제외
  */
 export function construction(p) {
   const has = (k) => !!(p.facs && p.facs[k]);
+  const isVol = (k) => !!(p.vol && p.vol[k]);
+  const hasS = (k) => has(k) && !isVol(k); // 공사감리 산정용(자진 설치 제외)
   const area = n(p.area);
   const gf = n(p.gf) || 0;
   const bf = n(p.bf) || 0;
@@ -131,15 +134,24 @@ export function construction(p) {
   // ---------- 공사감리 (영 제10조, 별표3·4) ----------
   const supvItems = SUPV_ITEMS.filter((it) =>
     it.keys.some((k) => {
-      if (!has(k)) return false;
+      if (!hasS(k)) return false;
       if (k === "water" && p.hoseReelOnly) return false;
       if (k === "sspk" && p.cabinetOnly) return false;
       return true;
     }),
   );
   let supv;
+  const volSupv = SUPV_ITEMS.filter((it) => it.keys.some((k) => has(k) && isVol(k)));
   if (!supvItems.length) {
-    supv = { status: "비대상", items: [], why: picked.length ? "영 제10조제2항 각 호의 시공에 해당하는 설비가 없음" : "신설하는 대상 설비가 없음" };
+    supv = {
+      status: "비대상",
+      items: [],
+      why: volSupv.length
+        ? `감리 지정 대상 설비가 자진 설치 설비뿐(${volSupv.map((x) => x.text.replace(/ 신설$/, "")).join("·")}) — 공사감리 면제로 비대상 처리`
+        : picked.length
+          ? "영 제10조제2항 각 호의 시공에 해당하는 설비가 없음"
+          : "신설하는 대상 설비가 없음",
+    };
   } else {
     const resident = (!apt && A >= 30000) || (apt && floors >= 16 && (hh || 0) >= 500);
     const kindWhy = resident
@@ -153,7 +165,9 @@ export function construction(p) {
     if (!ug && floors >= 40) L(5, "가목2)", `지하층 포함 ${floors}층 — 40층 이상`, true);
     if (!apt && A >= 30000 && A < 200000) L(4, "나목1)", `연면적 ${m2(A)} — 3만㎡ 이상 20만㎡ 미만(아파트 제외)`, true);
     if (!ug && floors >= 16 && floors < 40) L(4, "나목2)", `지하층 포함 ${floors}층 — 16층 이상 40층 미만`, true);
-    if (waterNR || smoke) L(3, "다목1)", [waterNR && "물분무등소화설비(호스릴 방식 제외)", smoke && "제연설비"].filter(Boolean).join("·") + " 설치", true);
+    const waterS = waterNR && !isVol("water");
+    const smokeS = smoke && !isVol("smoke");
+    if (waterS || smokeS) L(3, "다목1)", [waterS && "물분무등소화설비(호스릴 방식 제외)", smokeS && "제연설비"].filter(Boolean).join("·") + " 설치", true);
     if (apt && A >= 30000 && A < 200000) L(3, "다목2)", `아파트 연면적 ${m2(A)} — 3만㎡ 이상 20만㎡ 미만`, true);
     if (A >= 5000 && A < 30000) L(2, "라목", `연면적 ${m2(A)} — 5천㎡ 이상 3만㎡ 미만`, false);
     if (!ug && A < 5000) L(1, "마목1)", `연면적 ${m2(A)} — 5천㎡ 미만`, false);
@@ -202,6 +216,8 @@ export function construction(p) {
     if (has("outlet")) ex.push("비상콘센트설비를 전기공사업자가 공사");
     if (ex.length) notes.push(`착공신고 대상에서 빠지는 시공 주체: ${ex.join(" / ")} (영 제4조제1호)`);
   }
+  const volKeys = CX_KEYS.filter((k) => has(k) && isVol(k));
+  if (volKeys.length) notes.push(`자진 설치 설비(${volKeys.map((k) => NAME[k] || k).join("·")})는 착공신고·소방기술자 배치에는 포함하고, 공사감리 산정에서는 제외(면제)했습니다.`);
   if (p.mixedRes) notes.push("주택 겸용 복합건축물은 '아파트' 기준 적용 여부를 확인하세요(현재 아파트 여부 선택값으로 산정)");
   if (p.hazmat) notes.push("위험물 제조소등은 위험물안전관리법 절차(완공검사 등) 확인 — 소방공사감리 지정 여부 확인 필요");
   if (p.multiUse) notes.push("「다중이용업소의 안전관리에 관한 특별법」에 따른 다중이용업소에서의 소방시설공사는 착공신고 대상에서 제외(영 제4조 각 호 외의 부분 단서) — 영업장 내부 공사는 다중이용업소법 절차(완비증명) 확인");

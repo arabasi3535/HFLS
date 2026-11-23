@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CATS, getFacility } from "../law/facilities";
+import { CATS, FACILITIES, getFacility } from "../law/facilities";
 import { isReq, PARKING_WATER, subDefaultOn, substitutionsFor, resolveSubs } from "../law/installed";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
@@ -78,6 +78,7 @@ function Item({ it, open, onToggle, flash, guide }) {
           </div>
         )}
         {r && r.decided === true && <div className="det-line dec-line">입력 정보가 부족해 「확인 필요」였던 시설 — 검토자가 「적용」으로 정해 설치 대상에 넣었습니다.</div>}
+        {it.kind === "vol" && <div className="det-line vol-line">법정 설치 의무가 없는 자진 설치 설비 — 착공신고·소방기술자 배치에는 포함, 공사감리는 면제(비대상)로 산정, 자체점검 구분에 반영, 소방안전관리대상물 등급에는 반영하지 않음</div>}
         {it.kind === "strong" && <div className="det-line strong-line">소방시설법 제13조제1항 단서 — 강화된 기준을 기존 대상물에 적용할 수 있음(소방본부장·소방서장 재량)</div>}
         {items.map((i) => (
           <div className="det-crit" key={i.id}>
@@ -97,7 +98,7 @@ function Item({ it, open, onToggle, flash, guide }) {
   );
 }
 
-const EMPTY_SEL = { retro: {}, strong: {}, sub: {} };
+const EMPTY_SEL = { retro: {}, strong: {}, sub: {}, vol: {} };
 
 /** 인쇄: summary=true면 요약본(화면에 보이는 결과만, 설명 없이) */
 function printReport(summary) {
@@ -129,6 +130,8 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   const setRetroOn = upd("retro");
   const setStrongOn = upd("strong");
   const setSubOn = upd("sub");
+  const setVolOn = upd("vol");
+  const volOn = sel.vol;
 
   const { hist } = rv;
   const u = rv.use;
@@ -158,15 +161,20 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
     }
     const rs = resolveSubs(subs, subIsOn, m);
     for (const s of rs.applied) m.set(s.target, { ...m.get(s.target), sub: s });
+    // 자진 설치 설비(법정 의무 없음) — 설치 목록 맨 뒤 같은 분류에 「(자진)」으로 표시
+    for (const fac of FACILITIES) {
+      if (!volOn[fac.key] || m.has(fac.key)) continue;
+      m.set(fac.key, { key: fac.key, name: `${fac.name}(자진)`, cat: fac.cat, row: hist.byKey[fac.key], kind: "vol", check: false, scope: "자진 설치" });
+    }
     const out = [...m.values()];
     out.blocked = rs.blocked;
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hist, rv, existing, retroOn, strongOn, subOn, subs]);
+  }, [hist, rv, existing, retroOn, strongOn, subOn, subs, volOn]);
 
   // 안전관리 검토 — 소방안전관리대상물 2·3급은 최종 설치 목록(부칙 소급·강화기준 선택 반영)으로 판정
   const safety = useMemo(() => {
-    const applied = new Map(list.filter((i) => i.kind !== "base").map((i) => [i.key, i.check ? null : true]));
+    const applied = new Map(list.filter((i) => i.kind !== "base" && i.kind !== "vol").map((i) => [i.key, i.check ? null : true])); // 등급: 자진 설치 미반영
     // 자체점검용 '설치된 법정 설비': 설치 목록(대체된 설비는 빼고 대체 설비를 넣음, 주차장만 대체면 둘 다)
     const installed = new Map();
     for (const i of list) {
@@ -185,6 +193,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
     if (existing) return null;
     const inst = list.filter((i) => !i.sub || i.sub.partial).map((i) => i.key);
     for (const i of list) if (i.sub) inst.push(...(i.sub.viaKeys || []));
+    const vol = list.filter((i) => i.kind === "vol").map((i) => i.key);
     const f = rv.input.f || {};
     const grp0 = USE_GROUPS.find((x) => x.no === u.no);
     const sn0 = subName(u, "");
@@ -202,6 +211,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       bf: rv.input.bf,
       households: f.households || "",
       facs: [...new Set(inst)],
+      vol,
       chk: list.filter((i) => i.check).map((i) => i.name),
     };
   }, [existing, list, rv, u]);
@@ -325,7 +335,8 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       <div className="facs">
         <div className="facs-h">
           <span>
-            설치 대상 <b>{list.filter((i) => !i.sub || i.sub.partial).length}</b>종
+            설치 대상 <b>{list.filter((i) => (!i.sub || i.sub.partial) && i.kind !== "vol").length}</b>종
+            {list.some((i) => i.kind === "vol") && <span className="legend-vol"> · 자진 {list.filter((i) => i.kind === "vol").length}종</span>}
             {nRetro > 0 && <span className="legend-retro"> · 소급 {nRetro}종</span>}
           </span>
           <span className="facs-legend">
@@ -475,6 +486,31 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
         />
       )}
 
+      {/* 자진 설치 설비 — 법정 설치 대상이 아닌 설비를 자진 설치하는 경우 */}
+      <div className="vols no-print">
+        <div className="subs-h">
+          자진 설치 설비 추가 <small>법정 설치 대상이 아니지만 설치하는 설비 — 설치 목록·출력에 「(자진)」 표시, 착공신고·기술자에 포함, 공사감리는 면제(비대상), 자체점검 구분에 반영, 소방안전관리 등급은 변하지 않음</small>
+        </div>
+        {CATS.map((cat) => {
+          // 설치 목록에 있거나 「확인 필요」(적용·미적용으로 정함)인 설비는 제외
+          const cands = FACILITIES.filter((fac) => fac.cat === cat && (volOn[fac.key] || (!list.some((i) => i.key === fac.key) && hist.byKey[fac.key].status !== STATUS.CHK)));
+          if (!cands.length) return null;
+          return (
+            <div key={cat} className="vol-cat">
+              <span className="vol-cat-h">{cat}</span>
+              <div className="opt-chips">
+                {cands.map((fac) => (
+                  <label key={fac.key} className={`chip-t ${volOn[fac.key] ? "on" : ""}`}>
+                    <input type="checkbox" checked={!!volOn[fac.key]} onChange={(e) => setVolOn((o) => ({ ...o, [fac.key]: e.target.checked }))} />
+                    {fac.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       <div className="rep-actions no-print">
         <button type="button" className="w-run" onClick={() => printReport(true)} title="화면에 보이는 결과만 설명 없이 출력">
           {provisional.length > 0 ? "요약본 PDF·인쇄 (잠정)" : "요약본 PDF·인쇄"}
@@ -519,7 +555,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       )}
       <div className="mobile-bar no-print">
         <span>
-          설치 <b>{list.filter((x) => !x.sub || x.sub.partial).length}</b>종{nRetro > 0 ? ` · 소급 ${nRetro}` : ""}
+          설치 <b>{list.filter((x) => (!x.sub || x.sub.partial) && x.kind !== "vol").length}</b>종{nRetro > 0 ? ` · 소급 ${nRetro}` : ""}
           {nOpen > 0 ? ` · 확인 필요 ${nOpen}` : ""}
           {provisional.length > 0 ? " · 잠정" : ""}
         </span>

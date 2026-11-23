@@ -371,6 +371,7 @@ export default function Tools({ seed, onGoNew, link, onApply }) {
         bf: seed.bf ?? "",
         households: seed.households ?? "",
         facs: f,
+        vol: facsFromKeys(seed.vol),
         mixedRes: !!seed.mixedRes,
         seed: { at: seed.at, useLabel: seed.useLabel, chk: (seed.chk || []).filter((x) => x) },
       },

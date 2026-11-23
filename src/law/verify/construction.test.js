@@ -119,3 +119,25 @@ test("다중이용업소에서의 소방시설공사 → 착공신고 대상 제
   expect(r.notes.join(" ")).toMatch(/다중이용업소.*착공신고 대상에서 제외/);
   expect(run({ area: 800, facs: F("afd") }).notes.join(" ")).not.toMatch(/다중이용업소/);
 });
+
+describe("자진 설치 설비(v2.42.0) — 착공신고·기술자 포함, 공사감리 제외", () => {
+  test("옥내소화전(자진)만 → 착공신고 대상, 감리 비대상", () => {
+    const r = run({ area: 800, facs: F("hydrant"), vol: F("hydrant") });
+    expect(r.report.status).toBe("대상");
+    expect(r.report.items.join(" ")).toMatch(/옥내소화전설비/);
+    expect(r.tech.fields).toEqual(["기계분야"]);
+    expect(r.supv.status).toBe("비대상");
+    expect(r.supv.why).toMatch(/자진 설치 설비뿐/);
+    expect(r.notes.join(" ")).toMatch(/자진 설치 설비\(옥내소화전설비/);
+  });
+  test("법정 자탐 + 자진 스프링클러 → 감리 대상(자탐만), 감리 지정 항목에 스프링클러 없음", () => {
+    const r = run({ area: 800, facs: F("afd", "spk"), vol: F("spk") });
+    expect(r.supv.status).toBe("대상");
+    expect(r.supv.items.map((x) => x.no)).toEqual(["제5호"]);
+  });
+  test("자진 물분무등은 감리원 고급 기준(다목1)에서 제외", () => {
+    const r = run({ area: 800, facs: F("afd", "water"), vol: F("water") });
+    expect(r.supv.reasons.some((x) => x.ref === "다목1)")).toBe(false);
+    expect(r.tech.reasons.some((x) => x.ref === "다목1)")).toBe(true); // 기술자는 포함
+  });
+});

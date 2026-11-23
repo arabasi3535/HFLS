@@ -38,6 +38,7 @@ export function constructionFromSeed(seed) {
     bf: seed.bf,
     households: seed.households,
     facs: facsFromKeys(seed.facs),
+    vol: facsFromKeys(seed.vol),
   });
 }
 
