@@ -21,13 +21,15 @@ export function substitutionsFor(rows, u) {
     if (!t || !isReq(t.status)) continue;
     if (s.heritageOnly && !u.g.includes("heritage")) continue;
     if (s.parkingOnly) {
-      // 제5호: 차고·주차장에 스프링클러설비를 설치한 경우만 — 스프링클러설비가 설치 대상(확정)일 때만 후보
-      if (!by.spk || by.spk.status !== STATUS.REQ) continue;
+      // 제5호: 차고·주차장 물분무등 → 스프링클러설비 대체(실무상 대부분, 기본 선택)
+      //  · 스프링클러설비가 설치 대상이면 그 설비로 대체
+      //  · 설치 대상이 아니면 차고·주차장 부분에 스프링클러설비를 대체 설치(selfVia) — 설치 설비·자체점검·착공·감리에 스프링클러설비로 반영
       const ids = [...t.hits, ...t.maybes].map((i) => i.id);
       const park = ids.filter((id) => PARKING_WATER.includes(id));
       if (!park.length) continue;
       const partial = ids.some((id) => !PARKING_WATER.includes(id));
-      out.push({ ...s, partial, viaKeys: ["spk"] });
+      const own = !!by.spk && by.spk.status === STATUS.REQ;
+      out.push({ ...s, partial, viaKeys: ["spk"], selfVia: !own, replaceWith: own ? "스프링클러설비" : "스프링클러설비(차고·주차장 부분 대체 설치)" });
       continue;
     }
     if (s.any) continue; // 설비 외 조건(공공소화전·지락차단장치 등) — 관리자 상세에서만 안내
@@ -50,7 +52,8 @@ export function resolveSubs(subs, isOn, items) {
   const applied = [];
   const blocked = new Map();
   const gone = () => new Set(applied.filter((a) => !a.partial).map((a) => a.target));
-  const liveVia = (s, removed) => (s.viaKeys || []).filter((k) => items.has(k) && !removed.has(k));
+  // selfVia(제5호 차고·주차장 대체 설치): 대체 설비를 그 부분에 새로 설치하므로 설치 목록에 없어도 인정
+  const liveVia = (s, removed) => (s.viaKeys || []).filter((k) => (items.has(k) || s.selfVia) && !removed.has(k));
   for (const s of subs) {
     if (!isOn(s) || !items.has(s.target) || items.get(s.target).kind !== "base") continue;
     const removed = gone();
@@ -68,7 +71,7 @@ export function resolveSubs(subs, isOn, items) {
         continue;
       }
     }
-    applied.push({ ...s, viaKeys: via, replaceWith: via.map((k) => getFacility(k).name).join(" / ") });
+    applied.push({ ...s, viaKeys: via, replaceWith: s.selfVia ? s.replaceWith : via.map((k) => getFacility(k).name).join(" / ") });
   }
   // 나중에 빠진 설비 때문에 앞의 대체가 의지하는 설비가 줄었으면 viaKeys를 다시 좁힘
   const removed = gone();

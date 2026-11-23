@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.42.1",
+  version: "2.42.2",
   date: "2026-11-23",
-  note: "자진 설치 설비는 종합점검 대상 판단에서 제외(대체 설비는 반영)",
+  note: "차고·주차장 물분무등 → 스프링클러설비 대체 기본 적용(대체 설치), 설치 대상 수 정정",
 };
 
 export const D = {

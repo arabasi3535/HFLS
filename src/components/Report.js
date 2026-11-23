@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CATS, FACILITIES, getFacility } from "../law/facilities";
+import { CATS, FACILITIES, SUBSTITUTIONS, getFacility } from "../law/facilities";
 import { isReq, PARKING_WATER, subDefaultOn, substitutionsFor, resolveSubs, inspInstalled } from "../law/installed";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
@@ -91,6 +91,11 @@ function Item({ it, open, onToggle, flash, guide }) {
           </div>
         ))}
         {r && r.exHint && <div className="det-line">면제 검토: {r.exHint}</div>}
+        {SUBSTITUTIONS.filter((s) => s.any && !s.parkingOnly && s.target === it.key).map((s) => (
+          <div key={s.id} className="det-line">
+            면제 검토(별표5 {s.no}): {s.text}
+          </div>
+        ))}
         {r && <div className="det-std">설치기준: {r.std}</div>}
         <QaLink word={guide ? (guide.kind === "light" ? "유도등" : "유도표지") : it.name} />
       </div>
@@ -229,6 +234,16 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
 
+  // 실제 설치하는 법정 설비 수 — 대체된 설비는 빼고 대체 설비(제5호 차고·주차장 대체 설치 스프링클러 포함)를 셈, 자진 제외
+  const nInstall = (() => {
+    const keys = new Set();
+    for (const i of list) {
+      if (i.kind === "vol") continue;
+      if (!i.sub || i.sub.partial) keys.add(i.key);
+      if (i.sub) for (const k of i.sub.viaKeys || []) keys.add(k);
+    }
+    return keys.size;
+  })();
   const checks = hist.rows.filter((r) => r.status === STATUS.CHK || typeof r.decided === "boolean");
   const nOpen = checks.filter((r) => typeof r.decided !== "boolean").length;
   const strongCands = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("강화")) : [];
@@ -330,7 +345,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       <div className="facs">
         <div className="facs-h">
           <span>
-            설치 대상 <b>{list.filter((i) => (!i.sub || i.sub.partial) && i.kind !== "vol").length}</b>종
+            설치 대상 <b>{nInstall}</b>종
             {list.some((i) => i.kind === "vol") && <span className="legend-vol"> · 자진 {list.filter((i) => i.kind === "vol").length}종</span>}
             {nRetro > 0 && <span className="legend-retro"> · 소급 {nRetro}종</span>}
           </span>
@@ -550,7 +565,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       )}
       <div className="mobile-bar no-print">
         <span>
-          설치 <b>{list.filter((x) => (!x.sub || x.sub.partial) && x.kind !== "vol").length}</b>종{nRetro > 0 ? ` · 소급 ${nRetro}` : ""}
+          설치 <b>{nInstall}</b>종{nRetro > 0 ? ` · 소급 ${nRetro}` : ""}
           {nOpen > 0 ? ` · 확인 필요 ${nOpen}` : ""}
           {provisional.length > 0 ? " · 잠정" : ""}
         </span>

@@ -6,14 +6,26 @@ const floors = (list) => list.map(([level, area]) => ({ level, area, windowless:
 const rv = (o) => review({ action: "new", date: "2026-11-23", bf: 0, ...o }, "2026-11-23");
 const ids = (r) => substitutionsFor(r.hist.rows, r.use).map((s) => s.id);
 
-test("스프링클러설비가 설치 대상이 아니면 물분무등 ← 스프링클러(제5호) 대체 후보가 아님 — 종교시설 3층 1,474.82㎡, 내부 주차장 981㎡", () => {
-  const r = rv({ use: "religion", gf: 3, area: 1474.82, floors: floors([[1, 259.72], [2, 765.85], [3, 449.25]]), f: { parkingInside: 981 } });
+test("차고·주차장 물분무등은 스프링클러설비 설치 대상이 아니어도 제5호 대체(차고·주차장 부분 대체 설치)로 기본 적용(v2.42.2) — 근린생활시설 3층 600㎡, 내부 주차장 250㎡", () => {
+  const r = rv({ use: "neigh", gf: 3, area: 600, floors: floors([[1, 200], [2, 200], [3, 200]]), f: { parkingInside: 250 } });
   expect(r.hist.byKey.water.status).toBe(STATUS.REQ);
   expect(r.hist.byKey.spk.status).not.toBe(STATUS.REQ);
-  expect(ids(r)).not.toContain("s5");
+  const s5 = substitutionsFor(r.hist.rows, r.use).find((x) => x.id === "s5");
+  expect(s5.selfVia).toBe(true);
+  expect(s5.replaceWith).toMatch(/차고·주차장 부분 대체 설치/);
   const d = defaultInstalled(r, false);
-  expect(d.buildKeys).toContain("water");
-  expect(d.buildKeys).not.toContain("spk");
+  const w = d.list.find((i) => i.key === "water");
+  expect(w.sub.id).toBe("s5");
+  expect(d.buildKeys).not.toContain("water");
+  expect(d.buildKeys).toContain("spk"); // 대체 설치 스프링클러 — 착공·감리·자체점검에 반영
+});
+
+test("물분무등이 주차장 외(전기실 등)에도 필요하면 주차장 부분만 대체(partial)", () => {
+  const r = rv({ use: "neigh", gf: 3, area: 600, floors: floors([[1, 200], [2, 200], [3, 200]]), f: { parkingInside: 250, elecRoom: 400 } });
+  const s5 = substitutionsFor(r.hist.rows, r.use).find((x) => x.id === "s5");
+  expect(s5.partial).toBe(true);
+  const d = defaultInstalled(r, false);
+  expect(d.buildKeys).toEqual(expect.arrayContaining(["water", "spk"]));
 });
 
 test("스프링클러설비가 설치 대상이면 제5호 대체 후보·기본 적용", () => {

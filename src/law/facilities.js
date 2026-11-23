@@ -79,7 +79,7 @@ export const EXEMPTION_HINTS = {
 export const SUBSTITUTIONS = [
   { id: "s3", target: "spk", by: ["water", "autoext"], no: "제3호가목", text: "적응성 있는 자동소화장치 또는 물분무등소화설비를 설치하면 그 유효범위에서 면제 (전기저장시설 제외)" },
   { id: "s4", target: "sspk", by: ["spk", "water"], weak: ["water"], no: "제4호", text: "스프링클러설비·물분무소화설비·미분무소화설비를 설치하면 그 유효범위에서 면제" },
-  { id: "s5", target: "water", by: ["spk"], any: true, parkingOnly: true, no: "제5호", text: "차고·주차장에 스프링클러설비를 설치하면 그 유효범위에서 면제", replaceWith: "스프링클러설비" },
+  { id: "s5", target: "water", by: ["spk"], any: true, parkingOnly: true, no: "제5호", text: "물분무등소화설비를 설치해야 하는 차고·주차장에 스프링클러설비를 설치하면 그 유효범위에서 면제", replaceWith: "스프링클러설비" },
   { id: "s6", target: "outhyd", by: ["waterSupply"], heritageOnly: true, no: "제6호", text: "문화유산 목조건축물에 상수도소화용수설비(방수압력·방수량·옥외소화전함·호스 기준 충족)를 설치하면 면제" },
   { id: "s7", target: "alarm", by: ["single"], no: "제7호", text: "단독경보형 감지기를 2개 이상 연동하여 설치하면 그 유효범위에서 면제" },
   { id: "s8", target: "alarm", by: ["afd", "notify"], no: "제8호", text: "자동화재탐지설비 또는 화재알림설비를 설치하면 그 유효범위에서 면제" },
@@ -91,6 +91,7 @@ export const SUBSTITUTIONS = [
   { id: "s13", target: "leak", by: [], any: true, no: "제13호", text: "아크경보기 또는 전기 관련 법령에 따른 지락차단장치를 설치하면 그 유효범위에서 면제" },
   { id: "s15", target: "elight", by: ["guide"], no: "제15호", text: "피난구유도등 또는 통로유도등을 화재안전기준에 적합하게 설치하면 그 유도등의 유효범위에서 면제" },
   { id: "s16", target: "waterSupply", by: [], any: true, no: "제16호", text: "각 부분에서 수평거리 140m 이내에 공공 소화전이 있으면 면제 (설치 곤란 시 소화수조·저수조로 대체 가능)" },
+  { id: "s17", target: "smoke", by: [], any: true, no: "제17호", text: "공기조화설비를 화재 시 제연설비 기능으로 자동 전환되는 구조로 설치하거나, 직접 외부 공기와 통하는 배출구 면적 합계가 해당 제연구역 바닥면적의 1/100 이상(배출구~각 부분 수평거리 30m 이내, 공기유입구 기준 충족)이면 면제 — 노대와 연결된 특별피난계단·비상용승강기 승강장 등은 별도 규정" },
   { id: "s18", target: "standpipe", by: ["hydrant", "spk", "sspk", "conspk"], no: "제18호", text: "옥외 연결송수구·옥내 방수구를 부설한 옥내소화전·스프링클러·간이스프링클러·연결살수설비를 설치하면 그 유효범위에서 면제 (최상층 방수구 높이 70m 이상은 제외)" },
   { id: "s19", target: "conspk", by: ["spk", "sspk", "water"], weak: ["water"], no: "제19호", text: "송수구를 부설한 스프링클러·간이스프링클러·물분무소화설비·미분무소화설비를 설치하면 그 유효범위에서 면제" },
   { id: "s20", target: "radio", by: [], any: true, no: "제20호", text: "이동통신 구내중계기 선로설비 또는 무선이동중계기를 무선통신보조설비 기준에 적합하게 설치하면 면제" },
