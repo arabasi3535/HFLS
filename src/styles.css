@@ -345,6 +345,8 @@ select.w-big { font-size: 15px; padding: 11px 12px; font-weight: 600; }
 .it.strong { border-left-color: var(--strong); background: var(--strong-bg); }
 .it.vol { border-left-color: #2563eb; border-left-style: dashed; }
 .t-vol { background: #2563eb; color: #fff; }
+.tag.t-subinst { background: var(--v-bg); color: var(--v); border: 1px solid var(--v); }
+.it.subinst { border-left-color: var(--v); }
 .legend-vol { color: #2563eb; font-weight: 600; }
 .vols { background: var(--panel); border: 1px solid var(--line); border-left: 4px dashed #2563eb; border-radius: 12px; padding: 12px 14px; }
 .vols .subs-h small { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); margin-top: 2px; }

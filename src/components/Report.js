@@ -39,6 +39,7 @@ function Item({ it, open, onToggle, flash, guide }) {
         <span className="it-tags">
           {it.kind === "retro" && <span className="tag t-retro">소급</span>}
           {it.kind === "strong" && <span className="tag t-strong">강화기준</span>}
+          {it.kind === "subinst" && <span className="tag t-subinst">대체 설치</span>}
           {it.check && <span className="tag t-hist">연혁 확인</span>}
           {r && r.decided === true && <span className="tag t-dec">확인 후 적용</span>}
           {fullSub && <span className="tag t-sub">대체</span>}
@@ -78,6 +79,11 @@ function Item({ it, open, onToggle, flash, guide }) {
           </div>
         )}
         {r && r.decided === true && <div className="det-line dec-line">입력 정보가 부족해 「확인 필요」였던 시설 — 검토자가 「적용」으로 정해 설치 대상에 넣었습니다.</div>}
+        {it.kind === "subinst" && (
+          <div className="det-line subinst-line">
+            별표5 {it.subFor.no} — {getFacility(it.subFor.target).name}을(를) 설치해야 하는 차고·주차장에 스프링클러설비를 설치해 대체. 이 대상물의 법정 스프링클러설비 설치 대상은 아니지만 실제로 설치하는 설비 — 착공신고·소방기술자·공사감리·자체점검(종합점검 판단)에 반영, 소방안전관리대상물 등급은 그대로
+          </div>
+        )}
         {it.kind === "vol" && <div className="det-line vol-line">법정 설치 의무가 없는 자진 설치 설비 — 착공신고·소방기술자 배치에는 포함, 공사감리는 면제(비대상)로 산정, 자체점검(종합점검 대상 판단)·소방안전관리대상물 등급에는 반영하지 않음</div>}
         {it.kind === "strong" && <div className="det-line strong-line">소방시설법 제13조제1항 단서 — 강화된 기준을 기존 대상물에 적용할 수 있음(소방본부장·소방서장 재량)</div>}
         {items.map((i) => (
@@ -166,6 +172,25 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
     }
     const rs = resolveSubs(subs, subIsOn, m);
     for (const s of rs.applied) m.set(s.target, { ...m.get(s.target), sub: s });
+    // 대체로 새로 설치하는 설비(제5호 차고·주차장 스프링클러 등)가 설치 목록에 없으면 대체 대상 바로 앞에 「대체 설치」로 표시
+    const add = new Map();
+    for (const s of rs.applied) {
+      if (!s.selfVia) continue;
+      for (const k of s.viaKeys || []) {
+        if (m.has(k) || add.has(k)) continue;
+        const fac = getFacility(k);
+        add.set(k, { before: s.target, item: { key: k, name: fac.name, cat: fac.cat, row: hist.byKey[k], kind: "subinst", check: false, scope: `차고·주차장 부분 (${getFacility(s.target).name} 대체)`, subFor: s } });
+      }
+    }
+    if (add.size) {
+      const next = new Map();
+      for (const [k, v] of m) {
+        for (const a of add.values()) if (a.before === k) next.set(a.item.key, a.item);
+        next.set(k, v);
+      }
+      m.clear();
+      for (const [k, v] of next) m.set(k, v);
+    }
     // 자진 설치 설비(법정 의무 없음) — 설치 목록 맨 뒤 같은 분류에 「(자진)」으로 표시
     for (const fac of FACILITIES) {
       if (!volOn[fac.key] || m.has(fac.key)) continue;
@@ -179,7 +204,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
 
   // 안전관리 검토 — 소방안전관리대상물 2·3급은 최종 설치 목록(부칙 소급·강화기준 선택 반영)으로 판정
   const safety = useMemo(() => {
-    const applied = new Map(list.filter((i) => i.kind !== "base" && i.kind !== "vol").map((i) => [i.key, i.check ? null : true])); // 등급: 자진 설치 미반영
+    const applied = new Map(list.filter((i) => i.kind !== "base" && i.kind !== "vol" && i.kind !== "subinst").map((i) => [i.key, i.check ? null : true])); // 등급: 자진 설치·대체 설치 미반영
     const installed = inspInstalled(list);
     try {
       return safetyReview(rv, mode, applied, installed);
