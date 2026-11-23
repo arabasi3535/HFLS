@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.40.0",
+  version: "2.41.0",
   date: "2026-11-23",
-  note: "입력 화면 ↔ 무창층·수용인원 계산기 연결 — 층·면적 가져오기, 결과 반영",
+  note: "검토서 요약본 출력, 확인 필요 설비 적용·미적용 선택 반영",
 };
 
 export const D = {

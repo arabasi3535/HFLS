@@ -27,7 +27,7 @@ function scale(input, u) {
 
 function Item({ it, open, onToggle, flash, guide }) {
   const r = it.row;
-  const items = r ? [...r.hits, ...r.maybes] : [];
+  const items = r ? [...r.hits, ...r.maybes, ...(r.decided ? r.checks : [])] : [];
   // 주차장 물분무등만 대체되고 전기실 등 다른 부분이 남으면 물분무등 그대로 표시(대체는 주차장 부분만)
   const partial = !!(it.sub && it.sub.partial);
   const lead = partial ? items.find((i) => !PARKING_WATER.includes(i.id)) || items[0] : items[0];
@@ -40,6 +40,7 @@ function Item({ it, open, onToggle, flash, guide }) {
           {it.kind === "retro" && <span className="tag t-retro">소급</span>}
           {it.kind === "strong" && <span className="tag t-strong">강화기준</span>}
           {it.check && <span className="tag t-hist">연혁 확인</span>}
+          {r && r.decided === true && <span className="tag t-dec">확인 후 적용</span>}
           {fullSub && <span className="tag t-sub">대체</span>}
           {partial && <span className="tag t-sub">주차장 부분 대체</span>}
         </span>
@@ -76,6 +77,7 @@ function Item({ it, open, onToggle, flash, guide }) {
             {it.retro.deadlineNote ? ` (${it.retro.deadlineNote})` : ""}
           </div>
         )}
+        {r && r.decided === true && <div className="det-line dec-line">입력 정보가 부족해 「확인 필요」였던 시설 — 검토자가 「적용」으로 정해 설치 대상에 넣었습니다.</div>}
         {it.kind === "strong" && <div className="det-line strong-line">소방시설법 제13조제1항 단서 — 강화된 기준을 기존 대상물에 적용할 수 있음(소방본부장·소방서장 재량)</div>}
         {items.map((i) => (
           <div className="det-crit" key={i.id}>
@@ -97,7 +99,22 @@ function Item({ it, open, onToggle, flash, guide }) {
 
 const EMPTY_SEL = { retro: {}, strong: {}, sub: {} };
 
-export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode, adminMode, author, sel: selIn, setSel, provisional, onReport }) {
+/** 인쇄: summary=true면 요약본(화면에 보이는 결과만, 설명 없이) */
+function printReport(summary) {
+  const cls = "print-summary";
+  const body = document.body;
+  const done = () => {
+    body.classList.remove(cls);
+    window.removeEventListener("afterprint", done);
+  };
+  if (summary) {
+    body.classList.add(cls);
+    window.addEventListener("afterprint", done);
+  }
+  window.print();
+}
+
+export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode, adminMode, author, sel: selIn, setSel, provisional, onReport, onDecide }) {
   const existing = mode === "existing";
   const [open, setOpen] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
@@ -207,7 +224,8 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
 
-  const checks = hist.rows.filter((r) => r.status === STATUS.CHK);
+  const checks = hist.rows.filter((r) => r.status === STATUS.CHK || typeof r.decided === "boolean");
+  const nOpen = checks.filter((r) => typeof r.decided !== "boolean").length;
   const strongCands = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("강화")) : [];
   const noRetroAdds = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("소급 없음")) : [];
   const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
@@ -221,7 +239,9 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   return (
     <div className="report">
       <div className="print-head print-only">
-        <div className="ph-t">소방시설 적용·안전관리 검토서</div>
+        <div className="ph-t">
+          소방시설 적용·안전관리 검토서<span className="ps-only"> (요약)</span>
+        </div>
         <div className="ph-m">
           작성일 {fmtDate(rv.today)} · {author.org} {author.name}
         </div>
@@ -370,14 +390,33 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       {/* 확인 필요 */}
       {checks.length > 0 && (
         <div className="chks">
-          <div className="chks-h">확인 필요 — 입력 정보가 부족해 판정하지 못한 시설</div>
+          <div className="chks-h">
+            확인 필요 — 입력 정보가 부족해 판정하지 못한 시설
+            {onDecide && <small className="no-print"> 실제 해당 여부를 확인했으면 「적용」·「미적용」을 눌러 결과에 반영하십시오(다시 누르면 취소).</small>}
+          </div>
           <ul>
-            {checks.map((r) => (
-              <li key={r.fac.key}>
-                <b>{r.fac.name}</b>
-                <span>{r.checks.map((c) => c.text).join(" / ")}</span>
-              </li>
-            ))}
+            {checks.map((r) => {
+              const d = typeof r.decided === "boolean" ? r.decided : null;
+              return (
+                <li key={r.fac.key} className={d === true ? "dec-on" : d === false ? "dec-off" : ""}>
+                  <div className="chk-row">
+                    <b>{r.fac.name}</b>
+                    {onDecide ? (
+                      <span className="chk-btns no-print">
+                        <button type="button" className={d === true ? "on yes" : ""} onClick={() => onDecide(r.fac.key, d === true ? null : true)}>
+                          적용
+                        </button>
+                        <button type="button" className={d === false ? "on no" : ""} onClick={() => onDecide(r.fac.key, d === false ? null : false)}>
+                          미적용
+                        </button>
+                      </span>
+                    ) : null}
+                    <span className="chk-state print-only">{d === true ? "적용(검토자 확인)" : d === false ? "미적용(검토자 확인)" : "미정"}</span>
+                  </div>
+                  <span className="chk-crit">{r.checks.map((c) => c.text).join(" / ")}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -437,8 +476,11 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       )}
 
       <div className="rep-actions no-print">
-        <button type="button" className="w-run" onClick={() => window.print()}>
-          {provisional.length > 0 ? "PDF 저장 (잠정)" : "PDF 저장 / 인쇄"}
+        <button type="button" className="w-run" onClick={() => printReport(true)} title="화면에 보이는 결과만 설명 없이 출력">
+          {provisional.length > 0 ? "요약본 PDF·인쇄 (잠정)" : "요약본 PDF·인쇄"}
+        </button>
+        <button type="button" className="w-reset" onClick={() => printReport(false)} title="설치 근거·범위·설치기준 설명까지 모두 출력">
+          상세본 PDF·인쇄
         </button>
         <button
           type="button"
@@ -478,7 +520,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       <div className="mobile-bar no-print">
         <span>
           설치 <b>{list.filter((x) => !x.sub || x.sub.partial).length}</b>종{nRetro > 0 ? ` · 소급 ${nRetro}` : ""}
-          {checks.length > 0 ? ` · 확인 필요 ${checks.length}` : ""}
+          {nOpen > 0 ? ` · 확인 필요 ${nOpen}` : ""}
           {provisional.length > 0 ? " · 잠정" : ""}
         </span>
         <button

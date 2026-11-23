@@ -113,13 +113,25 @@ export function evaluateAt(input, date, overrides = {}) {
     }
   };
 
+  // 검토자 결정(input.dec: { 설비 key: true 적용 | false 미적용 }) — '확인 필요'(정보 부족)인 설비에만 반영
+  const dec = input.dec || {};
+  const applyDec = () => {
+    for (const k of Object.keys(byFac)) {
+      const b = byFac[k];
+      if (b.status !== STATUS.CHK || typeof dec[k] !== "boolean") continue;
+      b.decided = dec[k];
+      b.status = dec[k] ? STATUS.REQ : STATUS.NONE;
+    }
+  };
   const primary = CRITERIA.filter((c) => !c.dependsOn);
   const dependent = CRITERIA.filter((c) => c.dependsOn);
   primary.forEach(run);
   for (const k of Object.keys(byFac)) byFac[k].status = statusOf(byFac[k]);
+  applyDec();
   ctx.dep.afd = toDep(byFac.afd.status);
   dependent.forEach(run);
   for (const k of Object.keys(byFac)) byFac[k].status = statusOf(byFac[k]);
+  applyDec();
 
   const rows = FACILITIES.map((fac) => {
     const b = byFac[fac.key];

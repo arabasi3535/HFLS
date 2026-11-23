@@ -451,7 +451,15 @@ export default function App() {
                         }
                       : null
                   }
-                  mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)} />
+                  mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)}
+                  onDecide={(key, v) =>
+                    setInput((p) => {
+                      const dec = { ...(p.dec || {}) };
+                      if (v === null) delete dec[key];
+                      else dec[key] = v;
+                      return { ...p, dec };
+                    })
+                  } />
               ) : (
                 <div className="empty">
                   <div className="empty-t">{mode === "new" ? "오늘 허가 신청하는 건축물" : "이미 허가받은 건축물"}</div>

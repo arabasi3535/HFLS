@@ -421,7 +421,32 @@ select.w-big { font-size: 15px; padding: 11px 12px; font-weight: 600; }
   .it.retro, .it.strong, .opt-retro.on, .chip-t.on { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .tag, .lg, .it { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .opt-strong.none-on { display: none; }
+  /* 요약본: 화면에 보이는 결과만(설명·근거·면제 검토·안내 문구 없이) */
+  body.print-summary .it-det,
+  body.print-summary .sf-det,
+  body.print-summary .subs,
+  body.print-summary .note:not(.prov),
+  body.print-summary .chk-crit,
+  body.print-summary .cx-why,
+  body.print-summary .cx-ref,
+  body.print-summary .opt small,
+  body.print-summary .opt-ex,
+  body.print-summary .removed-note,
+  body.print-summary .cx-pnote { display: none !important; }
+  body.print-summary .ps-only { display: inline; }
+  body.print-summary .it-main { padding: 4px 8px; }
 }
+.ps-only { display: none; }
+.tag.t-dec { background: var(--v-bg); color: var(--v); }
+.chks-h small { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.chks li { display: flex; flex-direction: column; gap: 3px; }
+.chk-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.chk-btns { display: inline-flex; gap: 6px; margin-left: auto; }
+.chk-btns button { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); border-radius: 999px; padding: 3px 12px; cursor: pointer; }
+.chk-btns button.on.yes { background: var(--v); border-color: var(--v); color: #fff; }
+.chk-btns button.on.no { background: var(--muted); border-color: var(--muted); color: #fff; }
+.chks li.dec-off b { text-decoration: line-through; color: var(--muted); }
+.chk-state { margin-left: auto; font-size: 11px; font-weight: 700; }
 
 /* ===================== v2.6 — 실시간 반영 ===================== */
 .w-live { flex: 1; align-self: center; font-size: 12px; color: var(--muted); }
@@ -443,6 +468,8 @@ select.w-big { font-size: 15px; padding: 11px 12px; font-weight: 600; }
 @media print {
   .watermark { position: fixed; top: 40%; left: 0; right: 0; text-align: center; font-size: 120px; font-weight: 900; color: rgba(180, 30, 30, 0.12); transform: rotate(-20deg); z-index: 0; pointer-events: none; }
   .note.prov { display: block; }
+  .it.flash { animation: none; }
+  .it.flash .it-name::after { content: none; }
 }
 
 /* ===================== v2.7 — 사용 횟수·오류 신고 ===================== */
