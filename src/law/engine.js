@@ -45,6 +45,12 @@ function refText(fac, crit, date) {
   return `${tableRef(date)} — ${fac.name} 적용기준`;
 }
 
+const dayBefore = (iso) => {
+  const t = new Date(`${iso}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() - 1);
+  return t.toISOString().slice(0, 10);
+};
+
 const toDep = (st) => (st === STATUS.REQ ? true : st === STATUS.NONE ? false : null);
 
 /**
@@ -259,18 +265,24 @@ export function review(input, today, overrides = {}) {
 
   // 부칙 소급(의무) — 각 부칙의 '시행 당시 건축 완료(설치)된' 대상물: 사용승인일(설치완료일)로 판정
   const completed = input.completed || "";
-  const retro = RETRO_RULES.filter((r) => r.applies(u, input) && input.date < r.before && (!completed || completed < r.before)).map((r) => {
-    // 부칙은 '개정규정에 따라' 설치하도록 하므로, 부칙 시행일 기준 판정으로 실제 설치할 시설을 정함(예: 600㎡ 이상 SPK / 미만 간이SPK)
-    const at = evaluateAt(input, r.before, overrides);
-    return {
-      ...r,
-      needsCompletion: !completed,
-      facNames: r.facs.map((k) => getFacility(k).name),
-      expired: today > r.deadline,
-      histStatus: r.facs.map((k) => ({ k, name: getFacility(k).name, st: hist.byKey[k].status })),
-      atStatus: r.facs.map((k) => ({ k, name: getFacility(k).name, st: at.byKey[k].status, row: at.byKey[k] })),
-    };
-  });
+  const retro = RETRO_RULES.filter((r) => r.applies(u, input) && input.date < r.before && (!completed || completed < r.before))
+    .map((r) => {
+      // 부칙은 '개정규정에 따라' 설치하도록 하므로, 부칙 시행일 기준 판정으로 실제 설치할 시설을 정함(예: 600㎡ 이상 SPK / 미만 간이SPK)
+      const at = evaluateAt(input, r.before, overrides);
+      // newOnly: '개정규정에 따라 새로이' 설치하게 된 시설만(시행일 전날 기준으로 이미 대상이던 시설 제외)
+      const prev = r.newOnly ? evaluateAt(input, dayBefore(r.before), overrides) : null;
+      const facs = prev ? r.facs.filter((k) => RANK[at.byKey[k].status] >= 1 && RANK[prev.byKey[k].status] < 2 && at.byKey[k].status !== prev.byKey[k].status) : r.facs;
+      return {
+        ...r,
+        facs,
+        needsCompletion: !completed,
+        facNames: facs.map((k) => getFacility(k).name),
+        expired: today > r.deadline,
+        histStatus: facs.map((k) => ({ k, name: getFacility(k).name, st: hist.byKey[k].status })),
+        atStatus: facs.map((k) => ({ k, name: getFacility(k).name, st: at.byKey[k].status, row: at.byKey[k] })),
+      };
+    })
+    .filter((r) => r.facs.length);
   const retroExcluded = completed
     ? RETRO_RULES.filter((r) => r.applies(u, input) && input.date < r.before && completed >= r.before).map((r) => r.title)
     : [];

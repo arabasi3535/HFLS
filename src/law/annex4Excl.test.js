@@ -35,8 +35,9 @@ describe("스프링클러 — 문화집회·종교·운동시설(수용인원 10
 
 describe("스프링클러 층수 기준 예외", () => {
   const tall = (use, f) => bld(use, f, { area: 3000, gf: 6, floors: floors(6, 0, 500) });
-  test("스프링클러 없는 기존 건축물 용도변경: 2020.9.15.부터 6층 기준 제외", () => {
-    expect(st(evaluateAt(tall("office", { useChangeNoSpk: true }), "2020-09-14"), "spk")).toBe(STATUS.REQ);
+  test("스프링클러 없는 기존 건축물 용도변경: 2018.10.8.(소방청 지침)부터 6층 기준 제외", () => {
+    expect(st(evaluateAt(tall("office", { useChangeNoSpk: true }), "2018-10-07"), "spk")).toBe(STATUS.REQ);
+    expect(st(evaluateAt(tall("office", { useChangeNoSpk: true }), "2018-10-08"), "spk")).toBe(STATUS.NONE);
     expect(st(evaluateAt(tall("office", { useChangeNoSpk: true }), "2020-09-15"), "spk")).toBe(STATUS.NONE);
   });
   test("아파트 리모델링(연면적·층높이 불변): 6층·11층 기준 제외", () => {

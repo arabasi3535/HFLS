@@ -148,6 +148,9 @@ export default function Wizard({ mode, input, setInput, onReset, onTool, errors 
     tunnel: g("tunnel"),
     apt: g("apt"),
     households: g("apt", "row", "multi", "mixed_res"),
+    aptMgmtOld: g("apt") && between(D.P92, D.P01),
+    siteNew: !isExisting,
+    carStore: g("aircar") && !g("hangar", "parking") && between(D.P94, D.A),
     cooking: g("lodging") && between(D.B13, D.C),
     unmanned: g("office", "factory", "warehouse", "military", "power") && between(D.A, D.C),
     bigstore: g("bigstore"),
@@ -335,6 +338,48 @@ export default function Wizard({ mode, input, setInput, onReset, onTool, errors 
                 <Num value={input.f.households} onChange={(v) => setF("households", v)} />
               </Field>
             )}
+            {need.siteNew && g("lodging") && (
+              <Field label="객실 수" hint="완공검사 현장확인 의무(대형 숙박시설 100실 이상) 판단">
+                <Num value={input.f.lodgingRooms} onChange={(v) => setF("lodgingRooms", v)} />
+              </Field>
+            )}
+            {need.siteNew && g("medical") && (
+              <Field label="병상 수" hint="완공검사 현장확인 의무(대형병원 100병상 이상) 판단">
+                <Num value={input.f.beds} onChange={(v) => setF("beds", v)} />
+              </Field>
+            )}
+            {need.siteNew && g("bigstore") && (
+              <Field label="백화점 여부" hint="완공검사 현장확인 의무(백화점) 판단">
+                <select value={input.f.deptStore || ""} onChange={(e) => setF("deptStore", e.target.value || undefined)}>
+                  <option value="">— 확인 필요 —</option>
+                  <option value="yes">백화점</option>
+                  <option value="no">백화점 아님(대형마트 등)</option>
+                </select>
+              </Field>
+            )}
+            {need.aptMgmtOld && (
+              <>
+                <Field label="승강기 설치" hint="공동주택관리령 제7조 의무관리대상 판정(1992~2001 허가 아파트 — 자탐·차고 물분무등)">
+                  <select value={input.f.aptElevator || ""} onChange={(e) => setF("aptElevator", e.target.value || undefined)}>
+                    <option value="">— 확인 필요 —</option>
+                    <option value="yes">있음</option>
+                    <option value="no">없음</option>
+                  </select>
+                </Field>
+                <Field label="중앙집중식 난방방식" hint="개별난방이면 '아님'">
+                  <select value={input.f.aptCentralHeat || ""} onChange={(e) => setF("aptCentralHeat", e.target.value || undefined)}>
+                    <option value="">— 확인 필요 —</option>
+                    <option value="yes">중앙집중식</option>
+                    <option value="no">아님</option>
+                  </select>
+                </Field>
+              </>
+            )}
+            {need.carStore && (
+              <Field label="자동차 상시 보관 장소 바닥면적(㎡)" hint="자동차검사장·자동차정비공장 — 200㎡ 이상이면 물분무등(1994.7.20.~2004.5.29.)">
+                <Num value={input.f.carStoreArea} onChange={(v) => setF("carStoreArea", v)} />
+              </Field>
+            )}
             {need.completed && (
               <Field label="사용승인일(완공일)" hint="건축물대장 기준 — 부칙 소급·자체점검 시기 판정용">
                 <input type="date" value={input.completed || ""} onChange={(e) => set("completed", e.target.value)} />
@@ -395,7 +440,7 @@ export default function Wizard({ mode, input, setInput, onReset, onTool, errors 
             )}
             {(parseInt(input.gf, 10) || 0) >= 6 && (
               <Check checked={input.f.useChangeNoSpk} onChange={(v) => setF("useChangeNoSpk", v)}>
-                스프링클러설비가 없는 기존 건축물의 용도변경 <small>— 6층 이상 기준 제외(2020.9.15.~, 용도별 기준은 그대로)</small>
+                스프링클러설비가 없는 기존 건축물의 용도변경 <small>— 6층 이상 기준 제외(2018.10.8. 소방청 지침, 2020.9.15. 시행령 단서 — 용도별 기준은 그대로)</small>
               </Check>
             )}
             {g("factory", "warehouse") && (

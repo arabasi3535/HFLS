@@ -7,6 +7,7 @@ import SafetyPanel from "./SafetyPanel";
 import ConstructionPanel from "./ConstructionPanel";
 import { safetyReview } from "../law/safety";
 import { guideKind } from "../law/guide";
+import { practiceNotes } from "../law/practiceNotes";
 import { subName, groupLabel } from "./Wizard";
 import { USE_GROUPS } from "../law/uses";
 import QaLink from "./QaLink";
@@ -79,12 +80,16 @@ function Item({ it, open, onToggle, flash, guide }) {
           </div>
         )}
         {r && r.decided === true && <div className="det-line dec-line">입력 정보가 부족해 「확인 필요」였던 시설 — 검토자가 「적용」으로 정해 설치 대상에 넣었습니다.</div>}
-        {it.kind === "subinst" && (
-          <div className="det-line subinst-line">
-            별표5 {it.subFor.no} — {getFacility(it.subFor.target).name}을(를) 설치해야 하는 차고·주차장에 스프링클러설비를 설치해 대체. 이 대상물의 법정 스프링클러설비 설치 대상은 아니지만 실제로 설치하는 설비 — 착공신고·소방기술자·공사감리·자체점검(종합점검 판단)에 반영, 소방안전관리대상물 등급은 그대로
-          </div>
-        )}
-        {it.kind === "vol" && <div className="det-line vol-line">법정 설치 의무가 없는 자진 설치 설비 — 착공신고·소방기술자 배치에는 포함, 공사감리는 면제(비대상)로 산정, 자체점검(종합점검 대상 판단)·소방안전관리대상물 등급에는 반영하지 않음</div>}
+        {it.kind === "subinst" &&
+          (it.subFors || [it.subFor]).map((sf) => (
+            <div className="det-line subinst-line" key={sf.id}>
+              별표5 {sf.no} — {getFacility(sf.target).name}을(를) 설치해야 하는 {sf.parkingOnly ? "차고·주차장에" : "대상물에"} {it.name}을(를) 설치해 대체(대체설비).{" "}
+              {it.key === "afd"
+                ? "법정 설치 대상은 아니지만 실제로 설치하는 설비 — 착공신고·소방기술자에 반영, 공사감리자는 지정하지 않을 수 있음(소방시설 관련 업무처리 지침 소민센①, 2021.5.6.), 소방안전관리자 선임은 법정설비(비상경보설비 등) 기준이며 선임 대상이 아니면 자체점검 제외 가능(시행규칙 별표3 제2호가목 단서)"
+                : "법정 설치 대상은 아니지만 실제로 설치하는 설비 — 착공신고·소방기술자·공사감리·자체점검(종합점검 판단)에 반영(소방청 소방분석제도과-938, 2022.3.5.), 소방안전관리대상물 등급은 그대로"}
+            </div>
+          ))}
+        {it.kind === "vol" && <div className="det-line vol-line">법정 설치 의무가 없는 자진 설치 설비 — 착공신고·소방기술자 배치에는 포함, 공사감리자는 지정 생략 가능(관계인이 원하면 지정 가능 — 소민센① 각주3), 자체점검(종합점검 대상 판단)·소방안전관리대상물 등급에는 반영하지 않음</div>}
         {it.kind === "strong" && <div className="det-line strong-line">소방시설법 제13조제1항 단서 — 강화된 기준을 기존 대상물에 적용할 수 있음(소방본부장·소방서장 재량)</div>}
         {items.map((i) => (
           <div className="det-crit" key={i.id}>
@@ -150,6 +155,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   const sOn = (k) => !!strongOn[k]; // 강화기준: 기본 미반영
   const subs = useMemo(() => substitutionsFor(hist.rows, u), [hist, u]);
   const gk = useMemo(() => guideKind(rv), [rv]);
+  const pNotes = useMemo(() => practiceNotes(rv, mode), [rv, mode]);
   const subIsOn = (s) => (subOn[s.id] === undefined ? subDefaultOn(s) : subOn[s.id]);
 
   // 설치 목록 구성
@@ -174,12 +180,19 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
     for (const s of rs.applied) m.set(s.target, { ...m.get(s.target), sub: s });
     // 대체로 새로 설치하는 설비(제5호 차고·주차장 스프링클러 등)가 설치 목록에 없으면 대체 대상 바로 앞에 「대체 설치」로 표시
     const add = new Map();
+    const subScope = (x) => (x.parkingOnly ? `차고·주차장 부분 (${getFacility(x.target).name} 대체)` : `${getFacility(x.target).name} 대체`);
     for (const s of rs.applied) {
       if (!s.selfVia) continue;
       for (const k of s.viaKeys || []) {
-        if (m.has(k) || add.has(k)) continue;
+        if (m.has(k)) continue;
+        if (add.has(k)) {
+          const it = add.get(k).item;
+          it.subFors.push(s);
+          it.scope = it.subFors.map(subScope).join(" · ");
+          continue;
+        }
         const fac = getFacility(k);
-        add.set(k, { before: s.target, item: { key: k, name: fac.name, cat: fac.cat, row: hist.byKey[k], kind: "subinst", check: false, scope: `차고·주차장 부분 (${getFacility(s.target).name} 대체)`, subFor: s } });
+        add.set(k, { before: s.target, item: { key: k, name: fac.name, cat: fac.cat, row: hist.byKey[k], kind: "subinst", check: false, scope: subScope(s), subFor: s, subFors: [s] } });
       }
     }
     if (add.size) {
@@ -237,6 +250,17 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       households: f.households || "",
       facs: [...new Set(inst)],
       vol,
+      // 비상경보설비·단독경보형 감지기 대상에 대체 설치하는 자동화재탐지설비 — 공사감리자 지정 생략 가능(소민센① 각주1)
+      optSupv: list.some((i) => i.kind === "subinst" && i.key === "afd") ? ["afd"] : [],
+      site: {
+        uses: u.g,
+        rooms: f.lodgingRooms || "",
+        beds: f.beds || "",
+        deptStore: u.g.includes("bigstore") ? (f.deptStore === "yes" ? true : f.deptStore === "no" ? false : null) : null,
+        gas1000: (Number(f.gasTankTon) || 0) >= 1000,
+        ugSum: rv.hist && rv.hist.x ? rv.hist.x.ugSum : "",
+        tunnelLen: f.tunnelLen || "",
+      },
       chk: list.filter((i) => i.check).map((i) => i.name),
     };
   }, [existing, list, rv, u]);
@@ -326,6 +350,11 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       {hist.rowOld && <div className="note">소방법 시기 연립·다세대주택 — 당시 소방대상물 해당 여부를 연혁본으로 확인하십시오.</div>}
       {rv.housing && !u.g.includes("house") && !hist.rowGap && <div className="note">{rv.housing.title}: {rv.housing.retro}</div>}
       {u.g.includes("house") && rv.housing && <div className="note muted-note">{rv.housing.retro}</div>}
+      {pNotes.map((n) => (
+        <div key={n.id} className="note practice-note">
+          <b>{n.title}</b> — {n.text} <small className="muted">({n.basis})</small>
+        </div>
+      ))}
 
       {/* 소급·강화 선택 (기존 건축물) */}
       {existing && (rv.retro.length > 0 || strongCands.length > 0 || (rv.retroExcluded || []).length > 0) && (
@@ -524,7 +553,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       {/* 자진 설치 설비 — 법정 설치 대상이 아닌 설비를 자진 설치하는 경우 */}
       <div className="vols no-print">
         <div className="subs-h">
-          자진 설치 설비 추가 <small>법정 설치 대상이 아니지만 설치하는 설비 — 설치 목록·출력에 「(자진)」 표시, 착공신고·기술자에 포함, 공사감리는 면제(비대상), 종합점검 대상 판단·소방안전관리 등급에는 반영하지 않음(별표5 대체로 설치하는 설비는 반영)</small>
+          자진 설치 설비 추가 <small>법정 설치 대상이 아니지만 설치하는 설비 — 설치 목록·출력에 「(자진)」 표시, 착공신고·기술자에 포함, 공사감리자 지정 생략 가능, 종합점검 대상 판단·소방안전관리 등급에는 반영하지 않음(별표5 대체로 설치하는 설비는 반영)</small>
         </div>
         {CATS.map((cat) => {
           // 설치 목록에 있거나 「확인 필요」(적용·미적용으로 정함)인 설비는 제외

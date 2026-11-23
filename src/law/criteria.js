@@ -25,7 +25,6 @@ import { ge, lt, between, or, and, num, fmt, T, F, U } from "./logic";
 
 const INF = "9999-12-31";
 // 자료 간 시행일 차이가 남는 구간(그 사이 기준일은 '설치(연혁 확인)'으로 하향)
-const P99U = [D.P99, D.P99b]; // 1999 개정: 매뉴얼 1999.2.5. / 법령집 1999.7.29.(8.6. 시행)
 
 const n0 = (v) => num(v) ?? 0; // 부가조건 수치: 미입력은 0(해당없음)으로 보고 체크리스트로 안내
 const tunnelLen = (c) => (c.g("tunnel") ? num(c.f.tunnelLen) : 0);
@@ -105,24 +104,24 @@ export const CRITERIA = [
 
   // ───────────────────────── 옥내소화전설비 ─────────────────────────
   {
-    id: "hyd-1", fac: "hydrant", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "1)",
-    text: "연면적 3천㎡ 이상(터널 제외) 또는 지하층·무창층(축사 제외, 2010.2.4.~)·4층 이상 층 중 바닥면적 600㎡ 이상인 층이 있는 것 (가스시설·지하구, 원격 조정 무인변전소 2011.7.7.~ 제외 — 세부사항에서 체크)", scope: "모든 층",
+    id: "hyd-1", fac: "hydrant", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4,efHist,moleg19_0220", cur: "1)",
+    text: "연면적 3천㎡ 이상(터널 제외) 또는 지하층·무창층(축사 제외, 2010.2.4.~)·4층 이상 층 중 바닥면적 600㎡ 이상인 층이 있는 것 (가스시설·지하구, 원격 조정 무인변전소 2011.7.7.~ 제외 — 세부사항에서 체크) ※ 2004.5.30.~2024.12.30. 문구 「층수가 4층 이상인 것 중」: 지상 1~3층에만 600㎡ 이상 층이 있으면 [확인 필요](법제처 19-0220 — 4층 이상 대상물의 어느 층이라도 / 소방청 2023.11.28. — 4층 이상인 층만, 2024.12.31. 「4층 이상인 층 중에서」로 개정)", scope: "모든 층",
     when: (c) =>
       hydExcl(c) ? F
-        : or(and(ge(c.x.area, 3000), !c.g("tunnel")), c.g("cattle") && c.d >= D.B10 ? F : c.x.ugOrWlGE(600), c.x.upper4GE(600)),
-    basis: (c) => `${A(c)}, 지하·무창층 최대 ${fmt(c.x.ugOrWlMax)}㎡`,
+        : floor4Dispute(c, 600, or(and(ge(c.x.area, 3000), !c.g("tunnel")), c.g("cattle") && c.d >= D.B10 ? F : c.x.ugOrWlGE(600), c.x.upper4GE(600))),
+    basis: (c) => `${A(c)}, 지하·무창층 최대 ${fmt(c.x.ugOrWlMax)}㎡${floor4Note(c, 600)}`,
   },
   {
-    id: "hyd-2", fac: "hydrant", from: D.P92, to: INF, cert: "V", src: "manual,hist24,s2,cur4", cur: "2)",
-    text: "근생·판매(영업)·운수·의료·노유자·업무·숙박·위락·공장·창고·항공기및자동차·방송통신(통신촬영)·복합 + (2011.7.7.~) 국방·군사시설·발전시설·장례시설: 연면적 1,500㎡ 이상 또는 지하층·무창층·4층 이상 층 중 바닥면적 300㎡ 이상인 층 (교정시설 미포함; 원격 조정 무인변전소 2011.7.7.~ 제외)", scope: "모든 층",
+    id: "hyd-2", fac: "hydrant", from: D.P92, to: INF, cert: "V", src: "manual,hist24,s2,cur4,efHist,moleg19_0220", cur: "2)",
+    text: "근생·판매(영업)·운수·의료·노유자·업무·숙박·위락·공장·창고·항공기및자동차·방송통신(통신촬영)·복합 + (2011.7.7.~) 국방·군사시설·발전시설·장례시설: 연면적 1,500㎡ 이상 또는 지하층·무창층·4층 이상 층 중 바닥면적 300㎡ 이상인 층 (교정시설 미포함; 원격 조정 무인변전소 2011.7.7.~ 제외) ※ 2004.5.30.~2024.12.30. 「층수가 4층 이상인 것 중」: 지상 1~3층에만 300㎡ 이상 층이 있으면 [확인 필요](법제처 19-0220 / 소방청 2023.11.28.)", scope: "모든 층",
     when: (c) => {
       if (hydExcl(c)) return F;
-      const cond = or(ge(c.x.area, 1500), c.x.ugOrWlGE(300), c.x.upper4GE(300));
+      const cond = floor4Dispute(c, 300, or(ge(c.x.area, 1500), c.x.ugOrWlGE(300), c.x.upper4GE(300)));
       if (c.g("neigh", "retail", "transport", "medical", "noyu", "office", "lodging", "entertain", "factory", "warehouse", "aircar", "broadcast", "mixed")) return cond;
       if (c.g("military", "power", "funeral")) return c.d >= D.B11 ? cond : and(U, cond); // 2011.7.7. 전 당시 용도분류 확인 필요
       return F;
     },
-    basis: (c) => `${A(c)}${c.g("military", "power", "funeral") && c.d < D.B11 ? " — 2011.7.7. 전에는 목록에 없음(당시 용도분류 확인)" : ""}`,
+    basis: (c) => `${A(c)}${c.g("military", "power", "funeral") && c.d < D.B11 ? " — 2011.7.7. 전에는 목록에 없음(당시 용도분류 확인)" : ""}${floor4Note(c, 300)}`,
   },
   {
     id: "hyd-roof", fac: "hydrant", from: D.P97, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "3)",
@@ -180,9 +179,10 @@ export const CRITERIA = [
     when: (c) => (c.g("apt") && c.d < D.APT05 ? F : aptRemodel(c) ? F : ge(c.x.gf, 11)), basis: GF,
   },
   {
-    id: "spk-6f", fac: "spk", from: D.B18a, to: INF, cert: "V", src: "add27810,hist24,use24,s2,cur4,reasons", cur: "1)",
-    text: "층수 6층 이상 (모든 층) — 2017.1.26. 개정(제27810호), 부칙 제1조 단서: 공포 후 1년 경과한 날(2018.1.27.) 시행, 제2조제1항: 그날 이후 허가·협의 신청(신고)분부터 적용 — 단, 연면적·층높이 불변 아파트 리모델링, 스프링클러 없는 기존 대상물의 용도변경(2020.9.15.~, 일부 용도 제외)은 예외 — 세부사항에서 체크", scope: "모든 층",
-    when: (c) => (aptRemodel(c) || (c.f.useChangeNoSpk && c.d >= D.B20) ? F : ge(c.x.gf, 6)), basis: GF,
+    id: "spk-6f", fac: "spk", from: D.B18a, to: INF, cert: "V", src: "add27810,hist24,use24,s2,cur4,reasons,spkUseChange18", cur: "1)",
+    text: "층수 6층 이상 (모든 층) — 2017.1.26. 개정(제27810호), 부칙 제1조 단서: 공포 후 1년 경과한 날(2018.1.27.) 시행, 제2조제1항: 그날 이후 허가·협의 신청(신고)분부터 적용 — 단, 연면적·층높이 불변 아파트 리모델링, 스프링클러 없는 기존 대상물의 용도변경(2020.9.15. 시행령 단서, 일부 용도 제외 — 2018.10.8.~2020.9.14.은 소방청 업무지침으로 같은 예외)은 예외 — 세부사항에서 체크", scope: "모든 층",
+    when: (c) => (aptRemodel(c) || (c.f.useChangeNoSpk && c.d >= D.B18c) ? F : ge(c.x.gf, 6)),
+    basis: (c) => `${GF(c)}${c.f.useChangeNoSpk && c.d >= D.B18c && c.d < D.B20 ? " — 용도변경 예외: 소방청 「용도변경 시 스프링클러설비 설치에 관한 업무지침」(2018.10.8.) 적용 기간" : ""}`,
   },
   {
     id: "spk-dorm", fac: "spk", from: D.P95, to: INF, cert: "M", src: "manual,s1,s2,cur4", cur: "2)",
@@ -216,20 +216,13 @@ export const CRITERIA = [
     basis: (c) => `${UA(c)}, 수용인원 ${fmt(c.x.occ)}명`,
   },
   {
-    id: "spk-care", fac: "spk", from: D.P01, to: INF, cert: "M", src: "manual,hist24,s1,s2,cur4", cur: "5)",
-    text: "노유자시설·숙박이 가능한 수련(청소년)시설 600㎡ 이상(2001.5.21.), 정신보건시설·정신의료기관 600㎡ 이상(2004.5.30.) — 2014.10.8. 전은 연면적, 이후는 해당 용도 바닥면적 합계", scope: "모든 층",
+    id: "spk-care", fac: "spk", from: D.P01, to: INF, cert: "V", src: "efHist,manual,s1,s2,cur4", cur: "5)",
+    text: "노유자시설·숙박이 가능한 수련(청소년)시설 600㎡ 이상(2001.5.21.), 정신보건시설·정신의료기관 600㎡ 이상(2004.5.30.) — 2013.2.9.까지는 연면적, 2013.2.10.(제24304호)부터 해당 용도 바닥면적 합계 (2004.5.30.~2008.8.15.도 노유자시설 포함 — 제18404호·제19748호 원문)", scope: "모든 층",
     when: (c) => {
-      const noyuGap = c.g("noyu") && c.d >= D.A && c.d < D.B08; // 자료 간 불일치 구간은 별도 규칙(spk-care-noyu04)
-      if (noyuGap || !(c.g("noyu", "training_lodge") || (c.g("mental") && c.d >= D.A))) return F;
-      return ge(c.d < D.U14b ? c.x.area : c.x.useArea, 600);
+      if (!(c.g("noyu", "training_lodge") || (c.g("mental") && c.d >= D.A))) return F;
+      return ge(c.d < D.B13 ? c.x.area : c.x.useArea, 600);
     },
-    basis: (c) => (c.d < D.U14b ? A(c) : UA(c)),
-  },
-  {
-    id: "spk-care-noyu04", fac: "spk", from: D.A, to: D.B08, cert: "U", src: "manual,hist24", cur: "",
-    text: "노유자시설 연면적 600㎡ 이상 (2004.5.30.~2008.8.15.) — 운영매뉴얼은 포함, 법령집 본문은 '정신보건시설 및 숙박 수련시설'만 기재 → 자료 불일치, 당시 별표4 원문 확인 필요", scope: "모든 층",
-    when: (c) => (c.g("noyu") ? ge(c.x.area, 600) : F),
-    basis: A,
+    basis: (c) => (c.d < D.B13 ? A(c) : UA(c)),
   },
   {
     id: "spk-nursing", fac: "spk", from: D.U14b, to: INF, cert: "V", src: "manual,reasons,s2,cur4", cur: "5)",
@@ -286,19 +279,19 @@ export const CRITERIA = [
     when: (c) => c.f.radwaste === "withWater", basis: () => "소화수 수집·처리설비 있음",
   },
   {
-    id: "spk-nonfire", fac: "spk", from: D.U14b, to: INF, cert: "V", src: "manual,reasons,s2,cur4", cur: "10)",
-    text: "지붕·외벽이 불연재료가 아니거나 내화구조가 아닌 공장·창고: 물류터미널 2,500㎡·250명, 창고 2,500㎡, 랙식 750㎡, 지하·무창·4층 이상 층 500㎡, 특수가연물 500배 이상 (2014.10.8.)", scope: "모든 층",
+    id: "spk-nonfire", fac: "spk", from: D.U14b, to: INF, cert: "V", src: "manual,reasons,s2,cur4,efHist", cur: "10)",
+    text: "지붕·외벽이 불연재료가 아니거나 내화구조가 아닌 공장·창고: 물류터미널 2,500㎡·250명, 창고 2,500㎡, 랙식 750㎡, 지하·무창·4층 이상 층 500㎡, 특수가연물 500배 이상 (2014.10.8.) ※ 2024.12.30.까지 문구 「층수가 4층 이상인 것 중」: 지상 1~3층에만 500㎡ 이상 층이 있으면 [확인 필요](2021 질의회신집 — 4층 이상 건축물 전체 층 / 2024.12.31. 「4층 이상인 층 중」으로 개정). 지붕·외벽이 모두 불연재료이면서 내화구조인 경우만 제외(법제처 26-0479, 2026.7.14.)", scope: "모든 층",
     when: (c) => {
       if (!(c.g("factory", "warehouse") && c.f.nonFireproof)) return F;
       return or(
         c.g("logistics") ? or(ge(c.x.useArea, 2500), ge(c.x.occ, 250)) : F,
         c.g("warehouse") && !c.g("logistics") ? ge(c.x.useArea, 2500) : F,
-        c.x.ugWlOrUpper4GE(500),
+        floor4Dispute(c, 500, c.x.ugWlOrUpper4GE(500), D.U14b),
         ge(rackVal(c), 750),
         ge(comb(c), 500)
       );
     },
-    basis: (c) => `${UA(c)}, 불연·내화 아님`,
+    basis: (c) => `${UA(c)}, 불연·내화 아님${c.x.ugWlOrUpper4GE(500) !== T ? floor4Note(c, 500) : ""}`,
   },
   {
     id: "spk-corr", fac: "spk", from: D.B08, to: INF, cert: "V", src: "manual,reasons,s2,cur4", cur: "11)",
@@ -409,8 +402,8 @@ export const CRITERIA = [
     when: (c) => !upsExcl(c) && (c.g("parking") ? ge(c.x.area, 800) : F), basis: A,
   },
   {
-    id: "wat-inpark", fac: "water", from: D.P92, to: INF, cert: "V", src: "add27810,eflaw,manual,hist24,use24,s1,s2,cur4", cur: "3)",
-    text: "건축물 내부 차고·주차장 바닥면적 합계 200㎡ 이상 — 2018.1.27.~2022.11.30.은 「주차 용도 바닥면적이 200㎡ 이상인 층」(2017.1.26. 개정, 부칙 제1조 단서; 합계 200㎡ 이상이면 층별 면적 [확인 필요]) — 1997.9.27.~2001.5.20. 아파트 부설 차고는 의무관리대상 공동주택(300세대 이상 등)만, 50세대 미만 연립·다세대 제외(법령집 2022.12.1. / 2024 용도별 자료 2018.1.26. — 그 사이 확인 필요)", scope: "해당 부분",
+    id: "wat-inpark", fac: "water", from: D.P92, to: INF, cert: "V", src: "add27810,eflaw,efHist,aptMgmt,manual,hist24,use24,s1,s2,cur4", cur: "3)",
+    text: "건축물 내부 차고·주차장 바닥면적 합계 200㎡ 이상 — 2018.1.27.~2022.11.30.은 「주차 용도 바닥면적이 200㎡ 이상인 층」(2017.1.26. 개정, 부칙 제1조 단서; 합계 200㎡ 이상이면 층별 면적 [확인 필요]) — 1992.7.28.~2001.5.20. 아파트 부설 차고는 공동주택관리령 제7조 의무관리대상 공동주택만(1999.6.30.까지 300세대 이상·승강기·중앙집중식 난방 중 하나, 1999.7.1.부터 300세대 이상 또는 150세대 이상+승강기·중앙집중식 난방), 50세대 미만 연립·다세대 제외(법령집 2022.12.1. / 2024 용도별 자료 2018.1.26. — 그 사이 확인 필요)", scope: "해당 부분",
     when: (c) => {
       if (upsExcl(c)) return F;
       if (c.g("gas", "ugduct")) return F;
@@ -419,10 +412,8 @@ export const CRITERIA = [
       if (base !== T) return base;
       // 2018.1.27.~2022.11.30.: 「바닥면적이 200㎡ 이상인 층」(제27810호 부칙 제1조 단서) — 층별 주차면적 입력이 없어 합계만으로는 확정 불가
       if (c.d >= D.B18a && c.d < D.C) return U;
-      if (c.g("apt") && c.d >= D.P97 && c.d < D.P01) {
-        const hh = num(c.f.households);
-        return hh !== null && hh >= 300 ? T : U; // 의무관리대상(300세대↑·승강기·중앙집중난방) 여부
-      }
+      // 1992.7.28.~2001.5.20.: 아파트 부설 차고는 공동주택관리령 제7조(의무관리대상) 공동주택만(제13701호·제14334호·제15485호 원문)
+      if (c.g("apt") && c.d < D.P01) return aptMandatoryOld(c);
       if (c.g("row", "multi")) {
         const hh = num(c.f.households);
         const small = hh === null ? U : hh < 50;
@@ -431,7 +422,17 @@ export const CRITERIA = [
       }
       return T;
     },
-    basis: (c) => `내부 차고·주차장 ${fmt(Math.max(n0(c.f.parkingInside), n0(c.f.ugParking)))}㎡${n0(c.f.ugParking) ? `(지하 ${fmt(n0(c.f.ugParking))}㎡ 포함)` : ""}${c.f.households ? `, ${c.f.households}세대` : ""}${c.d >= D.B18a && c.d < D.C ? " — 이 기간은 주차 용도 바닥면적 200㎡ 이상인 층이 있어야 대상(층별 면적 확인)" : ""}`,
+    basis: (c) => `내부 차고·주차장 ${fmt(Math.max(n0(c.f.parkingInside), n0(c.f.ugParking)))}㎡${n0(c.f.ugParking) ? `(지하 ${fmt(n0(c.f.ugParking))}㎡ 포함)` : ""}${c.g("apt") && c.d < D.P01 ? ` — ${aptMgmtNote(c)}` : c.f.households ? `, ${c.f.households}세대` : ""}${c.d >= D.B18a && c.d < D.C ? " — 이 기간은 주차 용도 바닥면적 200㎡ 이상인 층이 있어야 대상(층별 면적 확인)" : ""}`,
+  },
+  {
+    id: "wat-carrepair", fac: "water", from: D.P94, to: D.A, cert: "V", src: "efHist", cur: "",
+    text: "(소방법) 자동차검사장 또는 자동차정비공장으로서 자동차를 상시 보관하는 장소의 바닥면적 200㎡ 이상 (제14334호 1994.7.20. 신설 제28조④제3호의2 — 2004.5.30. 제정 시행령 목록에 없음)", scope: "해당 장소",
+    when: (c) => {
+      if (upsExcl(c) || !c.g("aircar") || c.g("hangar", "parking")) return F;
+      const v = num(c.f.carStoreArea);
+      return v === null ? U : ge(v, 200);
+    },
+    basis: (c) => (num(c.f.carStoreArea) === null ? "자동차 상시 보관 장소 면적 미입력 — 자동차검사장·정비공장이면 입력" : `자동차 상시 보관 장소 ${fmt(num(c.f.carStoreArea))}㎡`),
   },
   {
     id: "wat-mech", fac: "water", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "4)",
@@ -553,11 +554,11 @@ export const CRITERIA = [
 
   // ───────────────────────── 자동화재탐지설비 ─────────────────────────
   {
-    id: "afd-old", fac: "afd", from: D.P92, to: D.A, cert: "M", src: "manual", cur: "",
-    text: "(소방법) 용도별 연면적 600·1,000·2,000㎡ 기준 — 1992.7.28./1994.7.20./1995.8.10./2001.5.21. 개정 시기별 용도군 적용(구 용도분류 근사 대응; 1994.7.20.~2001.5.20. 아파트는 의무관리대상만)",
+    id: "afd-old", fac: "afd", from: D.P92, to: D.A, cert: "M", src: "manual,efHist,aptMgmt,workMat", cur: "",
+    text: "(소방법) 용도별 연면적 600·1,000·2,000㎡ 기준 — 1992.7.28./1994.7.20./1995.8.10./2001.5.21. 개정 시기별 용도군 적용(구 용도분류 근사 대응; 1994.7.20.~2001.5.20. 아파트는 공동주택관리령 제7조 의무관리대상만 — 1999.7.1.부터 150세대 미만 제외)",
     scope: "모든 층",
     when: (c) => afdOld(c),
-    basis: (c) => `${A(c)} (${afdOldGroup(c)})`,
+    basis: (c) => `${A(c)} (${afdOldGroup(c)})${c.g("apt") && c.d >= D.P94 && c.d < D.P01 ? ` — ${aptMgmtNote(c)}` : ""}`,
   },
   {
     id: "afd-noyu-01", fac: "afd", from: D.P01, to: D.A, cert: "M", src: "hist24,manual", cur: "",
@@ -735,20 +736,14 @@ export const CRITERIA = [
 
   // ───────────────────────── 자동화재속보설비 ─────────────────────────
   {
-    id: "rep-old92", fac: "report", from: D.P92, toU: P99U, cert: "M", src: "manual,hist24", cur: "",
-    text: "(소방법) 판매·숙박·의료·통신촬영·전시·공장 및 창고시설 '바닥면적 1,500㎡ 이상' (1992.7.28. — 층 기준 명시는 1999 개정부터이므로 해당 용도 바닥면적 합계로 판정)", scope: "해당 대상물",
-    when: (c) => (c.g("retail", "lodging", "medical", "broadcast", "culture", "factory", "warehouse") ? ge(c.x.useArea, 1500) : F),
-    basis: UA,
-  },
-  {
-    id: "rep-old99a", fac: "report", fromU: P99U, to: D.A, cert: "M", src: "hist24,manual", cur: "",
-    text: "(소방법) 판매·숙박·의료·통신촬영·전시·공장·창고시설로서 바닥면적 1,500㎡ 이상인 층이 있는 것 (1999 개정 — 법령집 1999.8.6. / 매뉴얼 1999.2.5.)", scope: "해당 대상물",
+    id: "rep-old92", fac: "report", from: D.P92, to: D.A, cert: "V", src: "efHist,manual,hist24", cur: "",
+    text: "(소방법) 판매·숙박·의료·통신촬영·전시·공장 및 창고시설로서 바닥면적 1,500㎡ 이상인 층이 있는 것 (1992.7.28. 제13701호 제29조⑤부터 층 기준 — 원문 대조)", scope: "해당 대상물",
     when: (c) => (c.g("retail", "lodging", "medical", "broadcast", "culture", "factory", "warehouse") ? c.x.anyFloorAnyGE(1500) : F),
     basis: () => "층별 바닥면적 기준",
   },
   {
-    id: "rep-old99", fac: "report", fromU: P99U, to: D.A, cert: "M", src: "hist24,manual", cur: "",
-    text: "(소방법) 노유자시설, 숙박시설 있는 청소년시설 바닥면적 500㎡ 이상인 층이 있는 것 (1999 개정 — 법령집 1999.8.6. / 매뉴얼 1999.2.5.)", scope: "해당 대상물",
+    id: "rep-old99", fac: "report", from: D.P99b, to: D.A, cert: "V", src: "efHist,hist24,manual", cur: "",
+    text: "(소방법) 노유자시설, 숙박시설 있는 청소년시설 바닥면적 500㎡ 이상인 층이 있는 것 (제16489호, 1999.7.29. 공포·1999.8.6. 시행 — 원문 대조, 매뉴얼의 1999.2.5. 표기는 오기)", scope: "해당 대상물",
     when: (c) => (c.g("noyu", "training_lodge") ? c.x.anyFloorAnyGE(500) : F),
     basis: () => "층별 바닥면적 기준",
   },
@@ -851,8 +846,8 @@ export const CRITERIA = [
 
   // ───────────────────────── 누전경보기 ─────────────────────────
   {
-    id: "leak-old", fac: "leak", from: D.P92, toU: [D.P99b, D.A], cert: "M", src: "hist24,manual", cur: "",
-    text: "(소방법) 라스(철망) 비내화 건축물로서 ①연면적 500㎡ 이상(1992: 사업장, 1994.7.20.~: 업무·통신촬영·교육연구·전시시설은 1,000㎡) 또는 ②계약전류 100A 초과 — ①은 1999.7.29. 개정(8.6. 시행)으로 삭제(법령집; 매뉴얼은 2004.5.30.에 100A만 표기)", scope: "해당 건축물",
+    id: "leak-old", fac: "leak", from: D.P92, to: D.P99b, cert: "V", src: "efHist,hist24,manual", cur: "",
+    text: "(소방법) 라스(철망) 비내화 건축물로서 ①연면적 500㎡ 이상(1992: 사업장, 1994.7.20.~: 업무·통신촬영·교육연구·전시시설은 1,000㎡) 또는 ②계약전류 100A 초과 — ①은 제16489호(1999.8.6. 시행)로 삭제(원문 대조)", scope: "해당 건축물",
     when: (c) => {
       if ((c.g("gas", "ugduct") && c.d >= D.P94) || !lath(c)) return F;
       const t = c.g("office", "broadcast", "edu", "culture") || (c.d < D.P94 && c.g("factory")) ? 1000 : 500;
@@ -861,8 +856,8 @@ export const CRITERIA = [
     basis: (c) => `${A(c)}, 라스구조${c.f.leak100A ? ", 계약전류 100A 초과" : ""}`,
   },
   {
-    id: "leak-1", fac: "leak", fromU: [D.P99b, D.A], to: INF, cert: "M", src: "hist24,manual,cur4", cur: "",
-    text: "계약전류용량 100A 초과 + 라스(철망) 비내화구조 건축물 (가스시설·지하구·터널 제외; 면적 요건 삭제 — 법령집 1999.8.6. / 매뉴얼 2004.5.30.)", scope: "해당 건축물",
+    id: "leak-1", fac: "leak", from: D.P99b, to: INF, cert: "V", src: "efHist,hist24,manual,cur4", cur: "",
+    text: "계약전류용량 100A 초과 + 라스(철망) 비내화구조 건축물 (가스시설·지하구·터널 제외; 면적 요건은 1999.8.6.(제16489호) 삭제 — 원문 대조)", scope: "해당 건축물",
     when: (c) => (c.g("gas", "tunnel", "ugduct") ? F : and(lath(c), !!c.f.leak100A)), basis: () => "계약전류 100A 초과·라스구조",
   },
 
@@ -1255,6 +1250,21 @@ function assemblyExcl(c) {
   return false;
 }
 /** 물분무등소화설비 제외: 발전시설의 전기저장시설 중 무정전전원공급장치(UPS) 시설(2024.12.31.~, f.ups) */
+/**
+ * 「층수가 4층 이상인 것 중 바닥면적이 ○㎡ 이상인 층」(2004.5.30.~2024.12.30. 문구) 해석 쟁점
+ *  · 법제처 19-0220(2019.6.21.): 4층 이상 대상물의 어느 층이라도 → 지상 1~3층 포함
+ *  · 소방청 분석제도과-11899(2023.11.28.): 4층 이상인 층으로서 → 4층 이상 층만(시스템 기본)
+ *  · 제35151호(2024.12.31.): 「4층 이상인 층 중에서」로 개정
+ *  기본 판정(r)이 '해당 없음'이고 지상 4층 이상 건물의 1~3층에 기준 면적 이상 층이 있으면 [확인 필요]
+ */
+function floor4Dispute(c, t, r, from = D.A) {
+  if (r === T || c.d < from || c.d >= D.C24b || c.x.gf < 4) return r;
+  return c.x.lower3GE(t) === T ? U : r;
+}
+function floor4Note(c, t) {
+  if (c.d < D.A || c.d >= D.C24b || c.x.gf < 4 || c.x.upper4GE(t) === T || c.x.lower3GE(t) !== T) return "";
+  return ` — 4층 이상 층에는 ${fmt(t)}㎡ 이상 층이 없고 지상 1~3층에만 있음: 「층수가 4층 이상인 것 중」 해석 쟁점(법제처 19-0220 적용 시 설치 / 소방청 2023.11.28. 적용 시 미설치) → 적용·미적용 선택`;
+}
 function upsExcl(c) {
   return c.g("ess") && !!c.f.ups && c.d >= D.C24b;
 }
@@ -1344,12 +1354,34 @@ function afdOld(c) {
   if (c.g("tunnel")) return F;
   const s = afdOldSets(c);
   let r = or(s.s600 ? ge(c.x.area, 600) : F, s.s1000 ? ge(c.x.area, 1000) : F, s.s2000 ? ge(c.x.area, 2000) : F);
-  // 1994.7.20.~2001.5.20.: 아파트는 공동주택관리령 제7조① 의무관리대상(300세대 이상·승강기 설치·중앙집중난방)만
-  if (r === T && c.g("apt") && c.d >= D.P94 && c.d < D.P01) {
-    const hh = num(c.f.households);
-    if (!(hh !== null && hh >= 300)) r = U;
-  }
+  // 1994.7.20.~2001.5.20.: 아파트는 공동주택관리령 제7조① 의무관리대상만
+  if (r === T && c.g("apt") && c.d >= D.P94 && c.d < D.P01) r = aptMandatoryOld(c);
   return r;
+}
+
+/**
+ * 공동주택관리령 제7조제1항 의무관리대상 공동주택 여부(3값)
+ *  · 1999.6.30.까지(제14352호 등): 300세대 이상, 승강기 설치, 중앙집중식 난방방식 중 하나
+ *  · 1999.7.1.부터(제16069호 — 제7조 개정규정은 공포 후 6월 경과한 날 시행): 300세대 이상, 150세대 이상+승강기, 150세대 이상+중앙집중식 난방
+ *  입력: f.households(세대수), f.aptElevator·f.aptCentralHeat("yes"|"no"|미입력)
+ */
+export function aptMgmtNote(c) {
+  const r = aptMandatoryOld(c);
+  const hh = num(c.f.households);
+  const rule = c.d >= D.APT99 ? "300세대 이상 또는 150세대 이상+승강기·중앙집중식 난방" : "300세대 이상·승강기·중앙집중식 난방 중 하나";
+  const st = r === T ? "의무관리대상" : r === F ? "의무관리대상 아님" : "의무관리대상 여부 확인 필요(승강기·난방방식 입력)";
+  return `공동주택관리령 제7조(${rule}) — ${hh === null ? "세대수 미입력" : `${fmt(hh)}세대`}: ${st}`;
+}
+export function aptMandatoryOld(c) {
+  const hh = num(c.f.households);
+  if (hh !== null && hh >= 300) return T;
+  const post = c.d >= D.APT99;
+  if (post && hh !== null && hh < 150) return F;
+  const yes = (k) => c.f[k] === "yes";
+  const no = (k) => c.f[k] === "no";
+  if (yes("aptElevator") || yes("aptCentralHeat")) return post && hh === null ? U : T;
+  if (no("aptElevator") && no("aptCentralHeat") && hh !== null) return F;
+  return U;
 }
 function afdOldGroup(c) {
   const s = afdOldSets(c);

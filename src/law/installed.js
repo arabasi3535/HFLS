@@ -10,7 +10,16 @@ export const PARKING_WATER = ["wat-parkbldg", "wat-inpark", "wat-mech"];
 // 실무상 거의 항상 적용하는 대체 — 기본 선택
 export const SUB_DEFAULT_ON = new Set(["s4", "s5", "s8", "s8b", "s19", "s21"]);
 /** 기본 선택 여부 — 대체 설비가 물분무등뿐인 제4·19·21호(물분무·미분무만 인정, 포·가스계 제외)는 기본 해제 */
-export const subDefaultOn = (s) => SUB_DEFAULT_ON.has(s.id) && !s.weakOnly;
+export const subDefaultOn = (s) => SUB_DEFAULT_ON.has(s.id) && !s.weakOnly && !s.selfOpt;
+
+/**
+ * 대체 설비가 법정 설치 대상이 아니어도 그 설비를 새로 설치해 대체하는 경우(선택, 기본 해제)
+ *  · 간이스프링클러(제4호)·연결살수(제19호)·연소방지(제21호) 대상에 스프링클러설비 설치 — 대체설비로서 종합점검·감리 대상
+ *    (소방청 소방분석제도과-938, 2022.3.5. / 경북 2022.3.21. 공문)
+ *  · 비상경보설비(제8호)·단독경보형 감지기(제8호) 대상에 자동화재탐지설비 설치 — 대체설비
+ *    (소방시설 관련 업무처리 지침 소민센①, 2021.5.6.: 감리자 지정 생략 가능, 소방안전관리자 선임은 법정설비 기준 / 2025.9.15. 연찬)
+ */
+export const SELF_VIA = { s4: "spk", s19: "spk", s21: "spk", s8: "afd", s8b: "afd" };
 
 /** 대체 후보: 대상 시설이 설치 대상이고, 대체 시설이 설치 대상(또는 무관)인 경우 */
 export function substitutionsFor(rows, u) {
@@ -34,7 +43,13 @@ export function substitutionsFor(rows, u) {
     }
     if (s.any) continue; // 설비 외 조건(공공소화전·지락차단장치 등) — 관리자 상세에서만 안내
     const via = s.by.filter((k) => by[k] && by[k].status === STATUS.REQ);
-    if (!via.length) continue;
+    if (!via.length) {
+      const k = SELF_VIA[s.id];
+      if (!k) continue;
+      const tName = getFacility(s.target).name;
+      out.push({ ...s, viaKeys: [k], selfVia: true, selfOpt: true, replaceWith: `${getFacility(k).name}(${tName} 대체 설치)` });
+      continue;
+    }
     const weakOnly = !via.some((k) => !(s.weak || []).includes(k)); // 물분무등뿐 — 물분무·미분무소화설비일 때만 대체
     out.push({ ...s, viaKeys: via, weakOnly, replaceWith: via.map((k) => getFacility(k).name).join(" / ") });
   }

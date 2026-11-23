@@ -167,6 +167,8 @@ export function derive(b, u) {
     ugOrWlGE: (t) => anyFloorGE((f) => f.level < 0 || f.windowless, t),
     ugOrWlNoCattleGE: (t) => anyFloorGE((f) => f.level < 0 || f.windowless, t),
     upper4GE: (t) => anyFloorGE((f) => f.level >= 4, t),
+    lower3GE: (t) => anyFloorGE((f) => f.level >= 1 && f.level <= 3, t), // 지상 1~3층
+
     ugWlOrUpper4GE: (t) => anyFloorGE((f) => f.level < 0 || f.windowless || f.level >= 4, t),
     anyFloorAnyGE: (t) => anyFloorGE(() => true, t),
     floorsComplete: floors.length > 0 && floors.every((f) => fa(f) !== null),

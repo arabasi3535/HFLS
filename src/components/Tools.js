@@ -227,6 +227,7 @@ function Windowless({ st, setSt, onApply }) {
             마. 내부 또는 외부에서 쉽게 파괴·개방할 수 있을 것 — 일반유리 6mm 이하, 강화유리 5mm 이하, 복층유리(일반 6mm 이하+공기층+일반 6mm 이하 / 강화 5mm 이하+공기층+강화 5mm 이하), 그 밖에 소방서장이 인정하는 것
           </li>
           <li>프로젝트창: 하부창이 요건을 갖추고 상부창이 쉽게 파괴 가능한 유리로서 지름 50cm 원이 내접하면 상·하부 모두 인정</li>
+          <li>삼중유리: 지침의 인정 유리(일반·강화·복층)에 없고 일반적으로 쉽게 파괴하기 어려워 원칙적으로 인정하지 않음 — 관할 소방서와 협의 / 로이(Low-E)유리: 코팅 유리이므로 바탕 유리가 일반유리(6mm 이하)인지 강화유리(5mm 이하)인지로 판단(2025.9.16. 연찬)</li>
           <li>요건(나~마)을 갖추지 못한 개구부는 「제외」에 체크하십시오.</li>
         </ul>
         <div className="det-ref">출처: 「무창층 기준해석에 대한 업무처리 지침」(사용자 제공 자료)</div>
@@ -372,6 +373,9 @@ export default function Tools({ seed, onGoNew, link, onApply }) {
         households: seed.households ?? "",
         facs: f,
         vol: facsFromKeys(seed.vol),
+        optSupv: facsFromKeys(seed.optSupv),
+        multiUse: !!seed.multiUse,
+        site: seed.site ? { ...seed.site, uses: [...(seed.site.uses || [])] } : undefined,
         mixedRes: !!seed.mixedRes,
         seed: { at: seed.at, useLabel: seed.useLabel, chk: (seed.chk || []).filter((x) => x) },
       },

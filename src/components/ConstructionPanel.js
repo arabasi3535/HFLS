@@ -6,7 +6,8 @@ import { construction, facsFromKeys } from "../law/construction";
 // 설치 목록으로 바로 산정하고, 세부 조정은 보조 계산기 「착공 계산기」로 넘김
 // ============================================================
 
-const cls = (st) => (st === "대상" ? "sf-yes" : st === "확인 필요" ? "sf-chk" : "sf-no");
+const cls = (st) => (st === "대상" || st === "의무" || st === "현장확인" ? "sf-yes" : st === "확인 필요" || st === "가능" ? "sf-chk" : "sf-no");
+export const SITE_BADGE = { 의무: "현장확인 의무", 가능: "현장확인 가능", 현장확인: "현장확인(감리 없음)", 갈음: "감리보고서 갈음", "확인 필요": "확인 필요", "해당 없음": "해당 없음" };
 const T_SHORT = ["자격수첩", "초급 이상", "중급 이상", "고급 이상", "특급"];
 const S_SHORT = ["", "초급 이상", "중급 이상", "고급 이상", "특급 이상", "특급(소방기술사)"];
 
@@ -39,6 +40,8 @@ export function constructionFromSeed(seed) {
     households: seed.households,
     facs: facsFromKeys(seed.facs),
     vol: facsFromKeys(seed.vol),
+    optSupv: facsFromKeys(seed.optSupv),
+    site: seed.site,
   });
 }
 
@@ -109,6 +112,18 @@ export default function ConstructionPanel({ seed, onOpen }) {
                 ))}
               </ul>
               <div className="cx-ref">시행령 제11조 [별표4] &lt;개정 2019.12.10.&gt;</div>
+            </Card>
+          )}
+
+          {r.site && (
+            <Card title="완공검사 현장확인" badge={SITE_BADGE[r.site.status] || r.site.status} status={r.site.status} lead={r.site.why[r.site.why.length - 1]}>
+              <ul className="cx-why">
+                {r.site.why.map((x, i) => (
+                  <li key={i}>{x}</li>
+                ))}
+              </ul>
+              {r.supv.status === "대상" && <div className="cx-muted">최근 3년 영업정지(취소)·과징금 처분 이력 업체 현장 여부는 보조 계산기에서 체크하십시오.</div>}
+              <div className="cx-ref">{r.site.ref}</div>
             </Card>
           )}
 

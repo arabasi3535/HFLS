@@ -1,4 +1,5 @@
 import { construction, CX_FACS } from "../law/construction";
+import { SITE_BADGE } from "./ConstructionPanel";
 
 // ============================================================
 // 보조 계산기 — 소방공사 착공·감리 판정
@@ -15,7 +16,20 @@ const KINDS = [
   ["apt", "아파트"],
   ["ug", "지하구"],
 ];
-const cls = (st) => (st === "대상" ? "sf-yes" : st === "확인 필요" ? "sf-chk" : "sf-no");
+const cls = (st) => (st === "대상" || st === "의무" || st === "현장확인" ? "sf-yes" : st === "확인 필요" || st === "가능" ? "sf-chk" : "sf-no");
+// 완공검사 현장확인 판단용 용도(시행령 제5조제1호 + 지침 의무대상)
+const SITE_USES = [
+  ["culture", "문화 및 집회시설"],
+  ["religion", "종교시설"],
+  ["retail", "판매시설"],
+  ["noyu", "노유자시설"],
+  ["training", "수련시설"],
+  ["sports", "운동시설"],
+  ["lodging", "숙박시설"],
+  ["warehouse", "창고시설"],
+  ["ugmall", "지하상가"],
+  ["medical", "병원(의료시설)"],
+];
 
 function Box({ title, badge, status, children }) {
   return (
@@ -33,7 +47,16 @@ export default function ConstructionCalc({ st, setSt, onGoNew }) {
   const v = { kind: "gen", hazmat: false, area: "", gf: "", bf: "", households: "", facs: {}, hoseReelOnly: false, cabinetOnly: false, ...st };
   const set = (patch) => setSt({ ...v, ...patch });
   const setFac = (k, on) => set({ facs: { ...v.facs, [k]: on } });
-  const r = construction({ ...v, apt: v.kind === "apt", ugduct: v.kind === "ug" });
+  const site = { uses: [], rooms: "", beds: "", deptStore: null, gas1000: false, pbd: false, sanction: false, ...(v.site || {}) };
+  const setSite = (patch) => set({ site: { ...site, ...patch } });
+  const toggleUse = (k, on) => {
+    const u = new Set(site.uses);
+    if (on) u.add(k);
+    else u.delete(k);
+    if (k === "retail" && !on) u.delete("bigstore");
+    setSite({ uses: [...u] });
+  };
+  const r = construction({ ...v, apt: v.kind === "apt", ugduct: v.kind === "ug", site });
   const seed = v.seed;
   const F = ({ label, k, hint }) => (
     <label className="w-field">
@@ -118,6 +141,56 @@ export default function ConstructionCalc({ st, setSt, onGoNew }) {
         )}
       </div>
 
+      <div className="cx-facs cx-site">
+        <div className="cx-grp">
+          <div className="cx-grp-h">완공검사 현장확인 판단 (시행령 제5조·지침 &apos;26.1월)</div>
+          <div className="cx-grp-b">
+            {SITE_USES.map(([k, l]) => (
+              <label key={k} className={`cx-chk ${site.uses.includes(k) ? "on" : ""}`}>
+                <input type="checkbox" checked={site.uses.includes(k)} onChange={(e) => toggleUse(k, e.target.checked)} /> {l}
+              </label>
+            ))}
+            {!seed && (
+              <label className="cx-chk">
+                <input type="checkbox" checked={!!v.multiUse} onChange={(e) => set({ multiUse: e.target.checked })} /> 다중이용업소
+              </label>
+            )}
+          </div>
+          <div className="w-grid2">
+            {site.uses.includes("lodging") && (
+              <label className="w-field">
+                <span className="w-label">숙박시설 객실 수</span>
+                <input type="number" inputMode="numeric" value={site.rooms} onChange={(e) => setSite({ rooms: e.target.value })} />
+                <span className="w-hint">100실 이상 또는 3만㎡ 이상 — 대형 숙박시설</span>
+              </label>
+            )}
+            {site.uses.includes("medical") && (
+              <label className="w-field">
+                <span className="w-label">병상 수</span>
+                <input type="number" inputMode="numeric" value={site.beds} onChange={(e) => setSite({ beds: e.target.value })} />
+                <span className="w-hint">100병상 이상 — 대형병원</span>
+              </label>
+            )}
+          </div>
+          <div className="cx-grp-b">
+            {site.uses.includes("retail") && (
+              <label className="cx-chk">
+                <input type="checkbox" checked={site.deptStore === true} onChange={(e) => setSite({ deptStore: e.target.checked, uses: e.target.checked ? [...new Set([...site.uses, "bigstore"])] : site.uses.filter((x) => x !== "bigstore") })} /> 백화점
+              </label>
+            )}
+            <label className="cx-chk">
+              <input type="checkbox" checked={!!site.pbd} onChange={(e) => setSite({ pbd: e.target.checked })} /> 성능위주설계 대상 <small>(높이·영화상영관 10개·지하연계 복합건축물 등 — 층수·면적 기준은 자동 판단)</small>
+            </label>
+            <label className="cx-chk">
+              <input type="checkbox" checked={!!site.gas1000} onChange={(e) => setSite({ gas1000: e.target.checked })} /> 가연성가스 지상 노출 탱크 합계 1천톤 이상
+            </label>
+            <label className="cx-chk">
+              <input type="checkbox" checked={!!site.sanction} onChange={(e) => setSite({ sanction: e.target.checked })} /> 공사·감리업체 최근 3년 영업정지(취소)·과징금 처분 이력
+            </label>
+          </div>
+        </div>
+      </div>
+
       {!r.ok ? (
         <div className="tl-result">
           <div className="w-err">{r.msg}</div>
@@ -137,6 +210,10 @@ export default function ConstructionCalc({ st, setSt, onGoNew }) {
             <div>
               <span>공사감리</span>
               <b>{r.supv.status === "대상" ? r.supv.kind : "비대상"}</b>
+            </div>
+            <div>
+              <span>완공검사 현장확인</span>
+              <b>{SITE_BADGE[r.site.status] || r.site.status}</b>
             </div>
             <div>
               <span>책임감리원</span>
@@ -211,6 +288,16 @@ export default function ConstructionCalc({ st, setSt, onGoNew }) {
             <div className="cx-ref">소방시설공사업법 제17조, 시행령 제9조 [별표3] &lt;개정 2026.3.17.&gt;·제10조·제11조 [별표4] &lt;개정 2019.12.10.&gt;</div>
           </Box>
 
+          <Box title="완공검사 현장확인" badge={SITE_BADGE[r.site.status] || r.site.status} status={r.site.status}>
+            <ul className="cx-why">
+              {r.site.why.map((x, i) => (
+                <li key={i}>{x}</li>
+              ))}
+            </ul>
+            <div className="cx-line cx-muted">현장확인 방법(지침): 2인 이상 합동, 대상물 특성·관서 여건에 따라 전체 또는 중요 소방시설 위주 선별 검사 — 완공검사증명서는 신청일부터 3일 이내 발급</div>
+            <div className="cx-ref">{r.site.ref}</div>
+          </Box>
+
           <ul className="cx-notes">
             {r.notes.map((x, i) => (
               <li key={i}>{x}</li>
@@ -234,6 +321,7 @@ export default function ConstructionCalc({ st, setSt, onGoNew }) {
           <li>보조감리원: 20만㎡ 초과분 10만㎡마다 1명 이상 추가(비고 다), 일반 공사감리는 배치하지 않을 수 있음(비고 라)</li>
           <li>공사감리자 지정(영 제10조②): 옥내소화전·스프링클러설비등(캐비닛형 간이SP 제외)·물분무등(호스릴 제외)·옥외소화전·자동화재탐지·화재알림·비상방송·통합감시·소화용수·제연·연결송수관·연결살수·비상콘센트·무선통신보조·연소방지설비 신설 — 비상경보설비만 신설하는 공사는 해당 없음</li>
           <li>착공신고(영 제4조제1호): 기계 — 옥내소화전(호스릴 포함)·스프링클러설비등·물분무등·옥외소화전·소화용수·제연·연결송수관·연결살수·연소방지 / 전기 — 비상경보·자동화재탐지·화재알림·비상방송·비상콘센트·무선통신보조. 위험물 제조소등·다중이용업소 공사 제외</li>
+          <li>완공검사 현장확인: 감리자 없는 공사는 소방서 현장확인 / 감리자 있는 공사는 감리 결과보고서로 갈음하되 시행령 제5조 대상(문화집회·종교·판매·노유자·수련·운동·숙박·창고·지하상가·다중이용업소, 스프링클러설비등·물분무등 설치, 연면적 1만㎡ 이상 또는 11층 이상(아파트 제외), 가연성가스 1천톤 이상)은 현장확인 가능 — 그중 대형 숙박시설(100실 또는 3만㎡ 이상)·노유자시설·백화점·대형병원(100병상 이상)·성능위주설계 대상·최근 3년 처분 이력 업체 현장은 현장확인 의무(지침 &apos;26.1월)</li>
           <li>증설·개설·이전·정비 공사는 조문별 범위(구역 증설, 수신반·소화펌프·동력제어반 등)가 달라 이 계산기(신설 기준)로 판정하지 않습니다.</li>
         </ul>
       </details>

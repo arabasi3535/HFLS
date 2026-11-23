@@ -90,7 +90,7 @@ export const USES = [
 
   { id: "sports", no: "11", name: "운동시설", g: ["sports"] },
 
-  { id: "office", no: "12", name: "업무시설 (공공업무·일반업무)", g: ["office"] },
+  { id: "office", no: "12", name: "업무시설 (공공업무·일반업무·마을회관)", g: ["office"] },
   { id: "officetel", no: "12", name: "업무시설 — 오피스텔", g: ["office", "officetel"] },
 
   { id: "lodging", no: "13", name: "숙박시설 (일반·생활숙박시설·고시원 등)", g: ["lodging"] },
