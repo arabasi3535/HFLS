@@ -388,6 +388,51 @@ async function handleStd(qy, send, fail) {
   return send(200, out, cache);
 }
 
+// ---------- 용어 정의(v2.48.0) — 현행 법령·화재안전성능기준의 「정의」 조문 모음 ----------
+//  ?defs=fire|prevent|work|basic|multi|haz|build&format=json → 그 계열 법률·시행령·시행규칙의 정의 조문
+//  ?defs=std&page=N&format=json → 화재안전성능기준(NFPC) 6개씩
+//  조문을 용어별로 나누는 일은 화면(src/law/defs.js)에서 함
+const DEF_RE = /\((?:용어의\s*)?정의\)/;
+const DEF_PER = 6;
+const pickDefs = (d) => d.arts.filter((a) => !a.head && DEF_RE.test(a.label || "")).map(({ k, label, text }) => ({ k, label, text }));
+async function handleDefs(qy, send, fail) {
+  const today = toYmd(new Date(Date.now() + 9 * 3600 * 1000).toISOString());
+  const cache = "public, s-maxage=604800, stale-while-revalidate=2592000";
+  if (qy.defs === "std") {
+    const pages = Math.ceil(fsc.STDS.length / DEF_PER);
+    const page = Math.min(pages, Math.max(1, parseInt(qy.page, 10) || 1));
+    const idx = await fsc.loadIndex();
+    const items = await Promise.all(
+      fsc.STDS.slice((page - 1) * DEF_PER, page * DEF_PER).map(async ([std, name]) => {
+        try {
+          const r = fsc.resolve(fsc.chainOf(idx, std), today, "p");
+          if (!r.cur) return { std, name, error: "현행 기준 없음" };
+          const d = await fsc.loadAdm(r.cur.seq);
+          return { std, name, ver: r.cur, link: fsc.admLink(r.cur), arts: pickDefs(d) };
+        } catch (e) {
+          return { std, name, error: e.message };
+        }
+      })
+    );
+    return send(200, JSON.stringify({ ok: true, defs: "std", page, pages, date: today, items }), cache);
+  }
+  const fam = FAMS[qy.defs] && qy.defs !== "tech" ? qy.defs : "";
+  if (!fam) return fail(400, `defs는 ${Object.keys(FAMS).filter((k) => k !== "tech").join("|")}|std 중 하나입니다.`);
+  const items = await Promise.all(
+    Object.keys(KINDS).map(async (kind) => {
+      try {
+        const ver = await findOne(fam, kind, `19000101~${today}`, "prev");
+        if (!ver) return { kind, error: "현행 법령 없음" };
+        const d = await loadDoc(ver.mst, ver.eff);
+        return { kind, ver, link: lawLink(ver), arts: pickDefs(d) };
+      } catch (e) {
+        return { kind, error: e.message };
+      }
+    })
+  );
+  return send(200, JSON.stringify({ ok: true, defs: fam, name: FAMS[fam].name, date: today, items }), cache);
+}
+
 module.exports = async (req, res) => {
   const qy = req.query || {};
   const format = qy.format === "json" ? "json" : "text"; // 기본은 글(AI가 format을 빠뜨려도 읽기 쉽게) — 탭 화면은 format=json
@@ -399,12 +444,13 @@ module.exports = async (req, res) => {
   };
   const fail = (code, msg, extra) => send(code, format === "text" ? `오류: ${msg}\n\n${usageText()}` : { ok: false, error: msg, ...(extra || {}) });
 
-  if (!qy.fam && !qy.list && !qy.std) return send(200, format === "json" ? JSON.stringify({ ok: true, usage: usageText(), fams: Object.fromEntries(Object.entries(FAMS).map(([k, f]) => [k, { name: f.name, note: f.note }])), stds: fsc.STDS }) : usageText(), "public, s-maxage=86400");
+  if (!qy.fam && !qy.list && !qy.std && !qy.defs) return send(200, format === "json" ? JSON.stringify({ ok: true, usage: usageText(), fams: Object.fromEntries(Object.entries(FAMS).map(([k, f]) => [k, { name: f.name, note: f.note }])), stds: fsc.STDS }) : usageText(), "public, s-maxage=86400");
   const fam = FAMS[qy.fam] ? qy.fam : "fire";
   const kind = KINDS[qy.kind] ? qy.kind : "dec";
   if (!oc()) return fail(503, "서버에 법제처 인증값(LAW_OC)이 설정되지 않았습니다.");
   if (!(await rateOk(req))) return fail(429, "요청이 너무 많습니다. 10분 뒤 다시 시도하십시오.");
   try {
+    if (qy.defs) return await handleDefs(qy, send, fail);
     if (qy.std) return await handleStd(qy, send, fail);
     if (qy.list) {
       const versions = await listAll(fam, kind);

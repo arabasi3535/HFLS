@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.47.0",
-  date: "2026-11-23",
-  note: "개정 연혁 — 화재안전기준 7종 주요 내용 요약(판정 규칙 변경 없음)",
+  version: "2.48.0",
+  date: "2026-11-24",
+  note: "기타 자료 「용어 정의」 검색, 머리말 정리(판정 규칙 변경 없음)",
 };
 
 export const D = {

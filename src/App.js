@@ -3,7 +3,7 @@ import { makeShareUrl, readShareHash, copyText } from "./lib/share";
 import Wizard, { EMPTY } from "./components/Wizard";
 import Report from "./components/Report";
 import FileBar from "./components/FileBar";
-import { loadStats, adminAuth, loadNotice, saveNotice } from "./lib/remote";
+import { loadStats, adminAuth } from "./lib/remote";
 import LawWatchBar from "./components/LawWatch";
 import PhoneInstall from "./components/PhoneInstall";
 import { loadInspSub } from "./components/inspectSub";
@@ -110,35 +110,14 @@ export default function App() {
   const [stats, setStats] = useState(null);
   const [bug, setBug] = useState(false);
   const [profile, setProfile] = useState(false);
-  const [notice, setNotice] = useState(null);
   const [reportSeed, setReportSeed] = useState(null);
   const [inspSub, setInspSub] = useState(loadInspSub); // 점검 탭 하위 탭
   const [buildSeed, setBuildSeed] = useState(null);
   // 입력 화면 → 보조 계산기(무창층·수용인원) 연결: 보낸 층 정보, 계산 결과는 onToolApply로 되돌려 반영
   const [toolLink, setToolLink] = useState(null);
-  const [noteEdit, setNoteEdit] = useState(null); // 편집 중인 메모 문자열(null = 편집 안 함)
   const today = useMemo(todayKST, []);
 
-  // 업데이트 메모: 서버 저장값(현재 버전용)이 있으면 그것, 없으면 기본 메모
-  useEffect(() => {
-    let alive = true;
-    loadNotice().then((n) => alive && setNotice(n));
-    return () => {
-      alive = false;
-    };
-  }, []);
-  const defaultNote = RULES_REV.version === BUILD.version ? RULES_REV.note : "";
-  const relNote = notice && notice.version === BUILD.version ? notice.text : defaultNote;
-  const saveNote = async () => {
-    if (!adminPw) {
-      alert("메모 저장은 서버 관리자 비밀번호(Vercel 환경변수 ADMIN_PW)로 로그인한 경우에만 가능합니다.");
-      return;
-    }
-    const r = await saveNotice(adminPw, BUILD.version, noteEdit || "");
-    if (r.error) return alert(r.error);
-    setNotice(r.notice || null);
-    setNoteEdit(null);
-  };
+  // (v2.48.0) 버전 옆 업데이트 메모 칸 삭제 — 변경 내역은 「사용 안내 › 버전 정보」
 
   // 사용 횟수(접속 기준, 같은 탭은 1회) — 저장소 미설정이면 표시하지 않음
   useEffect(() => {
@@ -305,40 +284,6 @@ export default function App() {
               <span className="ver-badge" title={`빌드 ${BUILD.builtAt} KST · 커밋 ${BUILD.commit} · ${BUILD.env}\n판정규칙 ${RULES_REV.date}`}>
                 v{BUILD.version}
               </span>
-              {noteEdit !== null ? (
-                <span className="rel-form">
-                  <input
-                    value={noteEdit}
-                    maxLength={120}
-                    placeholder="이번 버전에서 추가·변경된 내용 (한 줄, 120자)"
-                    onChange={(e) => setNoteEdit(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") saveNote();
-                      if (e.key === "Escape") setNoteEdit(null);
-                    }}
-                    autoFocus
-                  />
-                  <button type="button" className="ok" onClick={saveNote}>
-                    저장
-                  </button>
-                  <button type="button" className="cancel" onClick={() => setNoteEdit(null)}>
-                    취소
-                  </button>
-                </span>
-              ) : (
-                <>
-                  {relNote && (
-                    <span className="rel-note" title={notice && notice.version === BUILD.version ? `${relNote}\n(${notice.at} 작성)` : relNote}>
-                      {relNote}
-                    </span>
-                  )}
-                  {adminMode && (
-                    <button type="button" className="rel-edit" onClick={() => setNoteEdit(relNote || "")} title="버전 옆 업데이트 메모 수정(관리자)">
-                      메모 수정
-                    </button>
-                  )}
-                </>
-              )}
               {stats && (
                 <span className="usage" title={`접속 기준(같은 탭 새로고침은 1회) · ${stats.date} 한국시간`}>
                   오늘 {stats.today.toLocaleString("ko-KR")} · 누적 {stats.total.toLocaleString("ko-KR")}
@@ -362,15 +307,8 @@ export default function App() {
               </h1>
               <PhoneInstall />
             </div>
-            <p className="tagline">
-              법제처 국가법령정보 OPEN API 연계 — 현행 법령과 시행일별 연혁을 실시간 조회하고, 허가 신청 시점 기준으로 소방시설 설치대상과 안전관리 사항을 검토합니다.
-            </p>
           </div>
           <div className="top-right">
-            <button type="button" className="author" title="제작자 정보 보기" onClick={() => setProfile(true)}>
-              <span className="author-org">{AUTHOR.org}</span>
-              <span className="author-name">{AUTHOR.name}</span>
-            </button>
             <button className={`admin-btn ${adminMode ? "on" : ""}`} onClick={login} title={adminMode ? "관리자 모드 해제" : "관리자"}>
               {adminMode ? "관리자 ON" : "관리자"}
             </button>
