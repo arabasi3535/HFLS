@@ -115,6 +115,8 @@ export default function App() {
   const [reportSeed, setReportSeed] = useState(null);
   const [inspSub, setInspSub] = useState(loadInspSub); // 점검 탭 하위 탭
   const [buildSeed, setBuildSeed] = useState(null);
+  // 입력 화면 → 보조 계산기(무창층·수용인원) 연결: 보낸 층 정보, 계산 결과는 onToolApply로 되돌려 반영
+  const [toolLink, setToolLink] = useState(null);
   const [noteEdit, setNoteEdit] = useState(null); // 편집 중인 메모 문자열(null = 편집 안 함)
   const today = useMemo(todayKST, []);
 
@@ -204,6 +206,25 @@ export default function App() {
   const mode = tab === "existing" ? "existing" : "new";
   const isInput = tab === "new" || tab === "existing";
   const setInput = (upd) => setInputs((p) => ({ ...p, [mode]: typeof upd === "function" ? upd(p[mode]) : upd }));
+  const openTool = (kind) => {
+    const inp = inputs[mode] || {};
+    setToolLink({ kind, mode, at: Date.now(), floors: (inp.floors || []).map((f) => ({ level: f.level, area: f.area })) });
+    setTab("tools");
+    window.scrollTo(0, 0);
+  };
+  /** 계산 결과 반영 — windowless: { [level]: true|false }, occ: 수용인원(명) */
+  const onToolApply = (md, kind, value) => {
+    setInputs((p) => {
+      const cur = p[md];
+      if (!cur) return p;
+      if (kind === "occ") return { ...p, [md]: { ...cur, occ: String(value) } };
+      if (kind === "windowless") return { ...p, [md]: { ...cur, floors: (cur.floors || []).map((f) => (f.level > 0 && value[f.level] !== undefined ? { ...f, windowless: value[f.level] } : f)) } };
+      return p;
+    });
+    setToolLink(null);
+    setTab(md);
+    window.scrollTo(0, 0);
+  };
 
   const deb = useDebounced(inputs, 350);
   const live = deb[mode];
@@ -407,7 +428,7 @@ export default function App() {
                 }}
                 hint="컴퓨터에서 엑셀로 작성해 올릴 수 있습니다."
               />
-              <Wizard key={mode} mode={mode} input={inputs[mode]} setInput={setInput} onReset={reset} errors={dateErr ? { date: dateErr.replace(/^건축허가일\(|\)$/g, "") } : {}} />
+              <Wizard key={mode} mode={mode} input={inputs[mode]} setInput={setInput} onReset={reset} onTool={openTool} errors={dateErr ? { date: dateErr.replace(/^건축허가일\(|\)$/g, "") } : {}} />
             </aside>
             <section id="result-top" className="results">
               {rv ? (
@@ -453,6 +474,8 @@ export default function App() {
           <Suspense fallback={<div className="empty">불러오는 중…</div>}>
             <Tools
               seed={buildSeed}
+              link={toolLink}
+              onApply={onToolApply}
               onGoNew={() => {
                 setTab("new");
                 window.scrollTo(0, 0);

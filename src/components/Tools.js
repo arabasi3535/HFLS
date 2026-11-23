@@ -108,22 +108,62 @@ function OpeningTable({ title, rows, onChange }) {
   );
 }
 
-function Windowless({ st, setSt }) {
+const modeName = (m) => (m === "existing" ? "기존 건축물" : "신축 건축물");
+const lvName = (l) => (l < 0 ? `지하 ${-l}층` : `지상 ${l}층`);
+
+/** 입력 화면에서 보낸 층·바닥면적으로 계산기 층 목록 구성 — 같은 화면에서 다시 보낸 경우 층별 개구부 입력은 유지 */
+export function floorsFromLink(link, prev) {
+  const keep = prev && prev.link && prev.link.mode === link.mode ? new Map((prev.floors || []).map((f) => [f.level, f])) : new Map();
+  const list = (link.floors || []).filter((f) => f && f.level).map((f) => {
+    const old = keep.get(f.level);
+    return old ? { ...old, area: f.area !== "" && f.area !== undefined ? f.area : old.area } : { ...floor0(f.level), area: f.area ?? "" };
+  });
+  return list.length ? list : [floor0(1)];
+}
+
+function Windowless({ st, setSt, onApply }) {
   const floors = st.floors && st.floors.length ? st.floors : [floor0(1)];
   const setFloors = (f) => setSt({ ...st, floors: f });
   const upd = (i, patch) => setFloors(floors.map((f, j) => (j === i ? { ...f, ...patch } : f)));
-  const addFloor = () => setFloors([...floors, floor0((floors[floors.length - 1]?.level || 0) + 1)]);
+  const addFloor = () => setFloors([...floors, floor0(Math.max(0, ...floors.map((f) => f.level)) + 1)]);
+  const results = floors.map((fl) => ({ level: fl.level, ...windowlessFloor(fl) }));
+  const ground = results.filter((r) => r.level > 0);
+  const decided = ground.filter((r) => (r.status === "무창층" || r.status === "유창층") && !r.noInput);
+  const link = st.link;
+  const apply = () => {
+    const v = {};
+    for (const r of decided) v[r.level] = r.status === "무창층";
+    onApply(link.mode, "windowless", v);
+  };
   return (
     <div className="tl-body">
       <div className="tl-intro">
         지상층별로 바닥면적과 개구부(가로×세로×개수)를 입력하면 <b>개구부 면적 합계가 바닥면적의 1/30 이하</b>인지로 무창층 여부를 판정합니다. 문은 1층만, 2층부터는 창문만 입력합니다. 세움터 등으로 면적을 이미 알면 아래 「개구부 면적 직접 입력」 칸에 면적만 넣어도 합산됩니다(치수 입력과 함께 쓰면 둘 다 더함).
       </div>
+      {link && (
+        <div className="tl-linked">
+          {modeName(link.mode)} 입력에서 가져온 층·바닥면적입니다. 지하층은 무창층 판정 대상이 아니어서(시행령 제2조제1호 "지상층 중") 「지하층」으로 분류합니다.
+        </div>
+      )}
       {floors.map((fl, i) => {
-        const r = windowlessFloor(fl);
+        const r = results[i];
+        if (fl.level < 0)
+          return (
+            <div key={i} className="tl-floor ug">
+              <div className="tl-floor-h">
+                <b>{lvName(fl.level)}</b>
+                <span className="tl-ug-area">바닥면적 {fl.area !== "" && fl.area !== undefined ? `${fmt(fl.area)}㎡` : "—"}</span>
+                <span className="tl-badge ug">지하층</span>
+                <button type="button" className="tl-x" title="층 삭제" onClick={() => setFloors(floors.filter((_, j) => j !== i))}>
+                  ×
+                </button>
+              </div>
+            </div>
+          );
         return (
           <div key={i} className={`tl-floor ${r.status === "무창층" ? "wl" : r.status === "유창층" ? "ok" : ""}`}>
             <div className="tl-floor-h">
-              <b>지상 {fl.level}층</b>
+              <b>{lvName(fl.level)}</b>
               <label className="tl-area">
                 바닥면적(㎡)
                 <input type="number" inputMode="decimal" value={fl.area} onChange={(e) => upd(i, { area: e.target.value })} />
@@ -156,6 +196,23 @@ function Windowless({ st, setSt }) {
           초기화
         </button>
       </div>
+      {link && onApply && (
+        <div className="tl-apply">
+          <div className="tl-apply-sum">
+            {ground.map((r) => (
+              <span key={r.level} className={`tl-badge ${r.noInput ? "" : r.status === "무창층" ? "wl" : r.status === "유창층" ? "ok" : ""}`}>
+                {r.level}층 {r.noInput ? "개구부 미입력" : r.status}
+              </span>
+            ))}
+          </div>
+          {decided.length < ground.length && (
+            <div className="w-hint">「입력 필요」·「개구부 미입력」 층은 반영하지 않고 입력 화면의 체크를 그대로 둡니다. 개구부가 전혀 없는 층은 입력 화면에서 직접 무창층에 체크하십시오.</div>
+          )}
+          <button type="button" className="w-run" disabled={!decided.length} onClick={apply}>
+            판정 결과를 {modeName(link.mode)} 무창층 칸에 반영 →
+          </button>
+        </div>
+      )}
       <details className="tl-ref">
         <summary>개구부 인정 요건 · 업무처리 지침</summary>
         <ul>
@@ -178,7 +235,7 @@ function Windowless({ st, setSt }) {
   );
 }
 
-function Occupancy({ st, setSt, onToAcademy }) {
+function Occupancy({ st, setSt, onToAcademy, onApply }) {
   const v = { type: "etc", area: "", excl: "", staff: "", beds1: "", beds2: "", seatArea: "", fixedSeats: "", benchWidth: "", ...st };
   const set = (k, x) => setSt({ ...v, [k]: x });
   const r = occupancy(v);
@@ -193,6 +250,7 @@ function Occupancy({ st, setSt, onToAcademy }) {
   return (
     <div className="tl-body">
       <div className="tl-intro">용도에 맞는 산정 구분을 고르고 면적을 입력하면 소방시설법 시행령 [별표7]에 따라 수용인원을 계산합니다.</div>
+      {st.link && <div className="tl-linked">{modeName(st.link.mode)} 입력에서 열었습니다. 산정한 뒤 아래 「반영」을 누르면 수용인원만 입력 화면에 들어갑니다.</div>}
       <label className="w-field">
         <span className="w-label">산정 구분(용도)</span>
         <select value={v.type} onChange={(e) => set("type", e.target.value)}>
@@ -231,9 +289,14 @@ function Occupancy({ st, setSt, onToAcademy }) {
         )}
       </div>
       <div className="tl-actions">
-        <button type="button" className="w-reset" onClick={() => setSt({ type: v.type })}>
+        <button type="button" className="w-reset" onClick={() => setSt({ type: v.type, link: st.link })}>
           초기화
         </button>
+        {st.link && onApply && r.ok && (
+          <button type="button" className="w-run" onClick={() => onApply(st.link.mode, "occ", r.result)}>
+            수용인원 {r.result.toLocaleString("ko-KR")}명을 {modeName(st.link.mode)}에 반영 →
+          </button>
+        )}
         {onToAcademy && v.type === "class" && r.ok && (
           <button type="button" className="w-run" onClick={() => onToAcademy(v.area, v.excl)}>
             학원 다중이용업소 판단에 학원으로 추가 →
@@ -280,9 +343,20 @@ const SUBS = [
   ["pump", "소화펌프 용량 산정"],
 ];
 
-export default function Tools({ seed, onGoNew }) {
+export default function Tools({ seed, onGoNew, link, onApply }) {
   const [all, setAll] = useState(load);
-  const [sub, setSub] = useState(seed ? "build" : all.sub || "windowless");
+  const [sub, setSub] = useState(link ? link.kind : seed ? "build" : all.sub || "windowless");
+  // 입력 화면 → 무창층·수용인원 계산기 연결(새로 보낸 것만 반영)
+  useEffect(() => {
+    if (!link) return;
+    setAll((p) => {
+      const prev = p[link.kind] || {};
+      if (prev.link && prev.link.at === link.at) return p;
+      if (link.kind === "windowless") return { ...p, windowless: { ...prev, floors: floorsFromLink(link, prev), link: { mode: link.mode, at: link.at } } };
+      return { ...p, occ: { ...prev, link: { mode: link.mode, at: link.at } } };
+    });
+    setSub(link.kind);
+  }, [link]);
   // 신축 건축물 산정 결과 → 착공 계산기 (새로 보낸 결과만 반영)
   useEffect(() => {
     if (!seed || (all.build && all.build.seed && all.build.seed.at === seed.at)) return;
@@ -332,8 +406,8 @@ export default function Tools({ seed, onGoNew }) {
           </button>
         ))}
       </nav>
-      {sub === "windowless" && <Windowless st={wl} setSt={setWl} />}
-      {sub === "occ" && <Occupancy st={oc} setSt={setOc} onToAcademy={toAcademy} />}
+      {sub === "windowless" && <Windowless st={wl} setSt={setWl} onApply={onApply} />}
+      {sub === "occ" && <Occupancy st={oc} setSt={setOc} onToAcademy={toAcademy} onApply={onApply} />}
       {sub === "build" && <ConstructionCalc st={bd} setSt={setBd} onGoNew={onGoNew} />}
       {sub === "haz" && <HazmatCalc st={hz} setSt={setHz} />}
       {sub === "academy" && <AcademyCalc st={ac} setSt={setAc} />}

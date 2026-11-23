@@ -35,6 +35,8 @@ export function openingRow(row) {
  */
 export function windowlessFloor(floor) {
   const area = n(floor.area);
+  // 지하층은 무창층 판정 대상이 아님(시행령 제2조제1호 "지상층 중") — 지하층으로 분류
+  if (floor.level < 0) return { area, doors: [], windows: [], direct: 0, sum: 0, limit: null, ratio: null, status: "지하층" };
   const doors = (floor.level === 1 ? floor.doors || [] : []).map((r) => ({ ...r, ...openingRow(r) }));
   const windows = (floor.windows || []).map((r) => ({ ...r, ...openingRow(r) }));
   // 면적 직접 입력(세움터 등에서 확인한 유효 개구부 면적, ㎡) — 0·빈칸·음수는 무시
@@ -43,6 +45,8 @@ export function windowlessFloor(floor) {
   if (area === null || area <= 0) return { area, doors, windows, direct, sum, limit: null, ratio: null, status: "입력 필요" };
   const limit = area / 30;
   const windowless = sum <= limit + 1e-9;
+  // 개구부를 하나도 입력하지 않은 층(치수·면적 모두 비어 있음) — 입력 화면 반영에서 제외
+  const noInput = direct === 0 && [...doors, ...windows].every((r) => r.empty);
   return {
     area,
     doors,
@@ -52,6 +56,7 @@ export function windowlessFloor(floor) {
     limit: r2(limit),
     ratio: sum / area,
     status: windowless ? "무창층" : "유창층",
+    noInput,
     need: windowless ? r2(Math.max(0, limit - sum)) : 0, // 유창층이 되려면 이 값을 '초과'하는 개구부가 더 필요
   };
 }

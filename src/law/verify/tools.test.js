@@ -81,3 +81,14 @@ describe("무창층 — 개구부 면적 직접 입력(v2.38.1)", () => {
     expect(r.status).toBe("유창층"); // 기준 20
   });
 });
+
+test("무창층 — 지하층은 판정 대상이 아니라 「지하층」으로 분류(v2.40.0)", () => {
+  const r = windowlessFloor({ level: -1, area: 500, windows: [{ w: 2, h: 2, cnt: 1 }] });
+  expect(r.status).toBe("지하층");
+  expect(r.limit).toBeNull();
+});
+
+test("무창층 — 개구부를 하나도 입력하지 않은 층은 noInput(입력 화면 반영 제외)", () => {
+  expect(windowlessFloor({ level: 3, area: 449.25, windows: [{ w: "", h: "", cnt: "1" }], areas: ["0", "0"] }).noInput).toBe(true);
+  expect(windowlessFloor({ level: 3, area: 449.25, windows: [], areas: ["0", "2"] }).noInput).toBe(false);
+});

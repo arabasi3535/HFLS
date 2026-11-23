@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.39.0",
+  version: "2.40.0",
   date: "2026-11-23",
-  note: "대체(면제) 오류 수정 — 대체 설비가 설치 대상일 때만 면제, 무창층 계산기 개구부 면적 직접 입력",
+  note: "입력 화면 ↔ 무창층·수용인원 계산기 연결 — 층·면적 가져오기, 결과 반영",
 };
 
 export const D = {

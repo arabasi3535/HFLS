@@ -468,6 +468,9 @@ select.w-big { font-size: 15px; padding: 11px 12px; font-weight: 600; }
 .rp-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .rp-acts { margin-left: auto; display: flex; gap: 12px; }
 .w-link.danger { color: var(--req); }
+.w-tool-link { display: block; width: 100%; text-align: left; margin-top: 8px; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--accent); background: var(--line2); border: 1px dashed var(--accent); border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+.w-tool-link:hover { background: var(--card); }
+.w-field .w-field { margin: 0; }
 .rp-msg { white-space: pre-wrap; margin: 6px 0 4px; font-size: 13.5px; }
 .rp-type { background: var(--chk-bg); color: var(--chk); }
 .rp-0 { background: var(--req-bg); color: var(--req); }
@@ -524,6 +527,14 @@ select.w-big { font-size: 15px; padding: 11px 12px; font-weight: 600; }
 .tl-floor { border: 1px solid var(--line); border-left: 4px solid var(--none); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .tl-floor.wl { border-left-color: var(--req); }
 .tl-floor.ok { border-left-color: var(--v); }
+.tl-floor.ug { border-left-color: var(--muted); padding: 8px 12px; }
+.tl-ug-area { font-size: 13px; color: var(--ink2); }
+.tl-badge.ug { background: var(--line2); color: var(--ink2); }
+.tl-linked { font-size: 12.5px; background: var(--line2); border-left: 3px solid var(--accent); border-radius: 6px; padding: 7px 10px; color: var(--ink2); }
+.tl-apply { border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.tl-apply-sum { display: flex; flex-wrap: wrap; gap: 6px; }
+.tl-apply-sum .tl-badge { margin-left: 0; }
+.tl-apply .w-run:disabled { opacity: 0.5; cursor: not-allowed; }
 .tl-floor-h { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .tl-floor-h b { font-size: 15px; }
 .tl-area { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink2); }

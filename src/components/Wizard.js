@@ -97,7 +97,7 @@ const Num = ({ value, onChange, placeholder }) => (
   <input type="number" inputMode="decimal" value={value ?? ""} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
 );
 
-export default function Wizard({ mode, input, setInput, onReset, errors }) {
+export default function Wizard({ mode, input, setInput, onReset, onTool, errors }) {
   const [showMore, setShowMore] = useState(false);
   const set = (k, v) => setInput((p) => ({ ...p, [k]: v }));
   const setF = (k, v) => setInput((p) => ({ ...p, f: { ...p.f, [k]: v } }));
@@ -249,6 +249,11 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
                     ))}
                   </div>
                   <div className="w-hint">비워 둔 층은 연면적 범위 안에서 판정합니다. 무창층: 건축법 시행령 기준 개구부 면적 1/30 이하인 지상층.</div>
+                  {onTool && (
+                    <button type="button" className="w-tool-link" onClick={() => onTool("windowless")}>
+                      🧮 무창층 계산기로 판정하기 — 입력한 층·바닥면적을 그대로 가져가고, 판정 결과를 여기에 반영 →
+                    </button>
+                  )}
                 </div>
               )}
             </>
@@ -279,9 +284,16 @@ export default function Wizard({ mode, input, setInput, onReset, errors }) {
 
           <div className="w-grid2">
             {need.occ && (
-              <Field label="수용인원(명)" hint="시행령 별표7 산정 — 비우면 면적으로 상한 추정">
-                <Num value={input.occ} onChange={(v) => set("occ", v)} />
-              </Field>
+              <div className="w-field">
+                <Field label="수용인원(명)" hint="시행령 별표7 산정 — 비우면 면적으로 상한 추정">
+                  <Num value={input.occ} onChange={(v) => set("occ", v)} />
+                </Field>
+                {onTool && (
+                  <button type="button" className="w-tool-link" onClick={() => onTool("occ")}>
+                    🧮 수용인원 산정 계산기 →
+                  </button>
+                )}
+              </div>
             )}
             {need.useArea && (
               <Field label="이 용도 바닥면적 합계(㎡)" hint="다른 용도와 함께 있는 건물만 입력">
