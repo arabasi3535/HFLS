@@ -29,3 +29,6 @@ const where = process.env.VERCEL ? "vercel" : process.env.GITHUB_ACTIONS ? "gith
 const info = { version: pkg.version, builtAt: kstNow(), commit: commit(), env: where };
 fs.writeFileSync(path.join(root, "src", "buildInfo.json"), JSON.stringify(info, null, 2) + "\n");
 console.log(`[build-info] v${info.version} · ${info.builtAt} KST · ${info.commit} (${where})`);
+
+// 사용 안내 › 버전 정보 — README.md 변경사항을 src/changelog.json으로 정리
+require("./changelog").writeChangelog(root);

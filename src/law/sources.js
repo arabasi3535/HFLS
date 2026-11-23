@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.43.1",
+  version: "2.44.0",
   date: "2026-11-23",
-  note: "무창층 계산기 — 입력 화면에서 새로 열 때마다 개구부 입력 비움(판정 규칙 변경 없음)",
+  note: "사용 안내에 「버전 정보」 탭 추가(판정 규칙 변경 없음)",
 };
 
 export const D = {

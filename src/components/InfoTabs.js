@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { LAW_SYSTEMS, AMENDMENTS, SOURCES } from "../law/sources";
 import { CRITERIA } from "../law/criteria";
 import { FACILITIES, getFacility } from "../law/facilities";
@@ -245,11 +245,56 @@ const GUIDE = [
   { tab: "점검 › 자체점검 보고서", what: "작동·종합점검 실시결과 보고서", out: ["별지 9호·10호 서식 PDF", "점검인력·점검일수", "저장·엑셀 서식"] },
   { tab: "점검 › 위험물 정기점검", what: "제조소등 일반점검표·위험물안전카드", out: ["별지 9~24호 서식 PDF", "지정수량 배수 자동", "저장·엑셀 서식"] },
   { tab: "점검 › 다중이용업 세부점검", what: "분기별 안전시설등 세부점검표", out: ["별지 10호 서식 PDF", "다음 분기 재사용"] },
+  { tab: "사용 안내 › 버전 정보", what: "버전별 변경 기록(README 변경사항)", out: ["목차", "하나씩·전체 펼치기"] },
+];
+
+// 사용 안내 하위 탭 — 메뉴별 기능(기존 안내) · 버전 정보(README 변경사항, 따로 불러옴)
+const VersionTab = lazy(() => import("./VersionTab"));
+const GUIDE_KEY = "hfls_guide_sub";
+const GUIDE_SUBS = [
+  ["menu", "메뉴별 기능"],
+  ["version", "버전 정보"],
 ];
 
 export function GuideTab({ adminMode }) {
+  const [sub, setSub] = useState(() => {
+    try {
+      const v = localStorage.getItem(GUIDE_KEY);
+      return GUIDE_SUBS.some((s) => s[0] === v) ? v : "menu";
+    } catch (e) {
+      return "menu";
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(GUIDE_KEY, sub);
+    } catch (e) {
+      /* 저장 불가 환경 */
+    }
+  }, [sub]);
   return (
     <div className="info guide">
+      <nav className="grp-tabs gd-tabs" role="tablist">
+        {GUIDE_SUBS.map(([k, l]) => (
+          <button key={k} type="button" role="tab" aria-selected={sub === k} className={sub === k ? "on" : ""} onClick={() => setSub(k)}>
+            {l}
+          </button>
+        ))}
+      </nav>
+      {sub === "version" ? (
+        <Suspense fallback={<div className="card">불러오는 중…</div>}>
+          <VersionTab />
+        </Suspense>
+      ) : (
+        <GuideMenu adminMode={adminMode} />
+      )}
+    </div>
+  );
+}
+
+function GuideMenu({ adminMode }) {
+  return (
+    <>
       <div className="card prose gd">
         <div className="card-t">메뉴별 기능</div>
         <div className="gd-grid">
@@ -313,7 +358,7 @@ export function GuideTab({ adminMode }) {
               <b>확인 필요·출력</b>: 입력 정보가 부족해 「확인 필요」로 나온 설비는 실제 해당 여부를 확인한 뒤 「적용」·「미적용」을 누르면 설치 목록·안전관리·착공 판정에 반영됩니다(다시 누르면 취소). 「요약본 PDF·인쇄」는 화면에 보이는 결과만 설명 없이, 「상세본」은 근거·범위·설치기준까지 출력합니다.
             </li>
             <li>
-              <b>무창층·수용인원</b>: 입력 화면의 「🧮 무창층 계산기로 판정하기」「🧮 수용인원 산정 계산기」로 계산기를 열면 층·바닥면적을 가져가고, 계산 뒤 「반영」을 누르면 무창층 체크·수용인원이 입력 화면에 들어갑니다(지하층은 무창층 판정 대상 아님).
+              <b>무창층·수용인원</b>: 입력 화면의 「🧮 무창층 계산기로 판정하기」「🧮 수용인원 산정 계산기」로 계산기를 열면 층·바닥면적을 가져가고(열 때마다 무창층 개구부·수용인원 입력은 비움), 계산 뒤 「반영」을 누르면 무창층 체크·수용인원이 입력 화면에 들어갑니다(지하층은 무창층 판정 대상 아님). 계산기 「초기화」는 가져온 층·바닥면적까지 모두 지웁니다(입력 화면 연결은 유지).
             </li>
             <li>
               <b>면제(별표5)</b>: 현행 별표5로 대체 후보를 제시합니다. 대체 설비가 실제 설치 대상일 때만 후보로 나오고(단, 차고·주차장 물분무등은 스프링클러설비 설치 대상이 아니어도 「스프링클러설비(차고·주차장 부분 대체 설치)」로 기본 대체 — 대체 설치한 스프링클러는 착공·감리·자체점검에 반영), 대체 설비가 다른 대체로 빠지면 「적용 안 됨」으로 표시합니다. 기본 선택: 간이SPK←SPK, 주차장 물분무등←SPK, 비상경보·단독경보형←자탐, 연결살수←SPK, 연소방지←SPK(물분무등만 있으면 물분무·미분무 여부 확인이 필요해 기본 해제). 기존 건축물은 당시 별표(면제 규정) 문구를 함께 확인.
@@ -343,6 +388,6 @@ export function GuideTab({ adminMode }) {
           </ul>
         </div>
       )}
-    </div>
+    </>
   );
 }

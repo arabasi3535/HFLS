@@ -1285,3 +1285,46 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 .grp-tabs button { font: inherit; font-size: 14.5px; font-weight: 600; color: var(--muted); background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px; padding: 9px 14px 8px; cursor: pointer; white-space: nowrap; }
 .grp-tabs button:hover { color: var(--ink); }
 .grp-tabs button.on { color: var(--brand); border-bottom-color: var(--brand); font-weight: 700; }
+
+/* 사용 안내 › 버전 정보(v2.44.0) */
+.gd-tabs { margin-bottom: 12px; }
+.vi-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.vi-meta { font-size: 13px; color: var(--ink2); margin-top: -2px; }
+.vi-btns { display: flex; gap: 6px; }
+.vi-btns .btn:disabled { opacity: 0.45; cursor: default; }
+.vi-rule { font-size: 12px; color: var(--muted); margin: 8px 0 10px; }
+.vi-toc { border: 1px solid var(--line2); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+.vi-toc > summary { cursor: pointer; font-weight: 700; font-size: 13.5px; }
+.vi-toc ol { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
+.vi-toc li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 5px 0; border-top: 1px solid var(--line2); font-size: 13px; }
+.vi-toc-t { font: inherit; background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; text-align: left; }
+.vi-toc-t b { color: var(--accent); margin-right: 2px; }
+.vi-toc-t:hover span { text-decoration: underline; }
+.vi-toc-d { font-size: 11.5px; color: var(--muted); }
+.vi-chips { display: flex; flex-wrap: wrap; gap: 4px; flex-basis: 100%; padding-left: 2px; }
+.vi-chips button { font: inherit; font-size: 11.5px; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); border-radius: 999px; padding: 0 8px; cursor: pointer; }
+.vi-chips button.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.vi-items { display: flex; flex-direction: column; gap: 6px; }
+.vi-item { border: 1px solid var(--line2); border-radius: 10px; scroll-margin-top: 12px; }
+.vi-item.open { border-color: var(--line); }
+.vi-sum { font: inherit; width: 100%; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; background: none; border: 0; padding: 9px 12px; cursor: pointer; text-align: left; color: var(--ink); }
+.vi-arrow { color: var(--muted); width: 10px; }
+.vi-v { font-size: 14px; }
+.vi-kind { font-size: 11px; border-radius: 999px; padding: 0 7px; }
+.vi-kind.k-major { background: color-mix(in srgb, var(--brand) 14%, transparent); color: var(--brand); font-weight: 700; }
+.vi-kind.k-minor { background: var(--line2); color: var(--muted); }
+.vi-title { flex: 1; min-width: 0; font-size: 13.5px; }
+.vi-auto { color: var(--ink2); }
+.vi-date { font-size: 12px; color: var(--muted); margin-left: auto; }
+.vi-body { padding: 2px 12px 12px; font-size: 13px; line-height: 1.6; }
+.vi-body code { font-size: 12px; background: var(--line2); padding: 0 4px; border-radius: 4px; word-break: break-all; }
+.vi-tbl { margin: 4px 0 8px; }
+.vi-tbl th { white-space: normal; }
+.vi-tbl td { min-width: 90px; }
+.vi-list { margin: 4px 0 8px; padding-left: 20px; }
+.vi-list li { margin: 2px 0; }
+.vi-list ul { padding-left: 18px; margin: 2px 0; }
+.vi-h { font-weight: 700; margin: 10px 0 4px; }
+.vi-p { margin: 4px 0 8px; }
+.vi-q { margin: 4px 0 8px; padding: 4px 10px; border-left: 3px solid var(--line); color: var(--ink2); }
+@media (max-width: 760px) { .vi-title { order: 5; flex-basis: 100%; padding-left: 18px; } .vi-tbl td { min-width: 120px; } }

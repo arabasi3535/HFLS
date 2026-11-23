@@ -117,6 +117,21 @@ export function floorsFromLink(link) {
   return list.length ? list : [floor0(1)];
 }
 
+/** 입력 화면에서 계산기를 열 때 계산기 상태 — 새로 보낸 것(at이 다름)이면 입력을 비우고 새로 시작, 같으면 그대로(계산기 탭 안에서 옮겼다 돌아온 경우)
+ *  무창층: 층·바닥면적(기본정보)만 가져옴 / 수용인원: 입력 모두 비움(v2.44.0) */
+export function linkedPart(prev, link) {
+  if (prev && prev.link && prev.link.at === link.at) return prev;
+  if (link.kind === "windowless") return { floors: floorsFromLink(link), link: { mode: link.mode, at: link.at, floors: (link.floors || []).filter((f) => f && f.level).map((f) => ({ level: f.level, area: f.area ?? "" })) } };
+  return { link: { mode: link.mode, at: link.at } };
+}
+
+/** 「초기화」 — 입력 화면에서 연 경우도 층·바닥면적까지 모두 지움(v2.44.0). 입력 화면 연결(반영 버튼)만 남김 */
+export function resetPart(kind, st) {
+  const link = st && st.link ? { mode: st.link.mode, at: st.link.at, cleared: true } : undefined;
+  if (kind === "windowless") return link ? { floors: [floor0(1)], link } : { floors: [floor0(1)] };
+  return link ? { link } : {};
+}
+
 function Windowless({ st, setSt, onApply }) {
   const floors = st.floors && st.floors.length ? st.floors : [floor0(1)];
   const setFloors = (f) => setSt({ ...st, floors: f });
@@ -138,7 +153,7 @@ function Windowless({ st, setSt, onApply }) {
       </div>
       {link && (
         <div className="tl-linked">
-          {modeName(link.mode)} 입력에서 가져온 층·바닥면적입니다(계산기로 새로 보낼 때마다 개구부 입력은 비워짐). 지하층은 무창층 판정 대상이 아니어서(시행령 제2조제1호 "지상층 중") 「지하층」으로 분류합니다.
+          {!link.cleared ? `${modeName(link.mode)} 입력에서 가져온 층·바닥면적입니다(계산기로 새로 보낼 때마다 개구부 입력은 비워짐).` : `${modeName(link.mode)} 입력에서 열었습니다(초기화로 층·바닥면적까지 지움 — 층을 직접 입력하십시오).`} 지하층은 무창층 판정 대상이 아니어서(시행령 제2조제1호 "지상층 중") 「지하층」으로 분류합니다.
         </div>
       )}
       {floors.map((fl, i) => {
@@ -191,8 +206,8 @@ function Windowless({ st, setSt, onApply }) {
         <button
           type="button"
           className="w-reset"
-          title={link ? "개구부 입력을 지우고 입력 화면에서 가져온 층·바닥면적으로 되돌립니다" : "모든 입력을 지웁니다"}
-          onClick={() => setSt(link ? { ...st, floors: floorsFromLink(link) } : { floors: [floor0(1)] })}
+          title="층·바닥면적까지 모든 입력을 지웁니다"
+          onClick={() => setSt(resetPart("windowless", st))}
         >
           초기화
         </button>
@@ -291,7 +306,7 @@ function Occupancy({ st, setSt, onToAcademy, onApply }) {
         )}
       </div>
       <div className="tl-actions">
-        <button type="button" className="w-reset" onClick={() => setSt({ type: v.type, link: st.link })}>
+        <button type="button" className="w-reset" title="산정 구분까지 모든 입력을 지웁니다" onClick={() => setSt(resetPart("occ", st))}>
           초기화
         </button>
         {st.link && onApply && r.ok && (
@@ -353,9 +368,8 @@ export default function Tools({ seed, onGoNew, link, onApply }) {
     if (!link) return;
     setAll((p) => {
       const prev = p[link.kind] || {};
-      if (prev.link && prev.link.at === link.at) return p;
-      if (link.kind === "windowless") return { ...p, windowless: { floors: floorsFromLink(link), link: { mode: link.mode, at: link.at, floors: (link.floors || []).filter((f) => f && f.level).map((f) => ({ level: f.level, area: f.area ?? "" })) } } };
-      return { ...p, occ: { ...prev, link: { mode: link.mode, at: link.at } } };
+      const next = linkedPart(prev, link);
+      return next === prev ? p : { ...p, [link.kind]: next };
     });
     setSub(link.kind);
   }, [link]);
