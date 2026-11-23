@@ -69,8 +69,8 @@ function Systems() {
         ))}
       </div>
       <div className="lt-eras">
-        {[...ERAS].reverse().map((e) => (
-          <div key={e.id} className={`lt-era s${ERAS.indexOf(e)}`}>
+        {ERAS.map((e, i) => (
+          <div key={e.id} className={`lt-era s${i}`}>
             <div className="lt-era-h">
               <b>{e.short}</b>
               <span>
@@ -78,14 +78,6 @@ function Systems() {
               </span>
             </div>
             <dl>
-              <dt>법률</dt>
-              <dd>
-                {e.law} <small>{e.lawNo}</small>
-              </dd>
-              <dt>시행령</dt>
-              <dd>{e.dec}</dd>
-              <dt>시행규칙</dt>
-              <dd>{e.rule}</dd>
               <dt>설치기준</dt>
               <dd>{e.table}</dd>
               <dt>기술기준</dt>
@@ -98,7 +90,6 @@ function Systems() {
                 ))}
               </dd>
             </dl>
-            {e.note && <div className="lt-era-note">{e.note}</div>}
           </div>
         ))}
       </div>

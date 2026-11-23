@@ -3,10 +3,11 @@ import { ERAS, eraOf, dot, mergeDecree, stdNotes, filterRows, lawLink, noText } 
 const V = (eff, no, why, pub) => ({ eff, pub: pub || eff, no, kind: "대통령령", why, mst: "9" });
 
 test("시기 구분 — 시행일 기준, 타법폐지는 앞 시기", () => {
-  expect(ERAS.map((e) => e.id)).toEqual(["fireact", "maint", "maint12", "prev", "now"]);
+  expect(ERAS.map((e) => e.id)).toEqual(["fireact", "maint", "prev", "now"]); // 2012.2.5. 개정은 같은 법(v2.45.1)
   expect(eraOf(V("20040530", "18404", "제정"))).toBe("maint");
   expect(eraOf(V("20040530", "18374", "타법폐지"))).toBe("fireact");
-  expect(eraOf(V("20130210", "24304", "일부개정"))).toBe("maint12");
+  expect(eraOf(V("20130210", "24304", "일부개정"))).toBe("maint");
+  expect(eraOf(V("20160121", "26916", "일부개정"))).toBe("prev");
   expect(eraOf(V("20221201", "33004", "전부개정"))).toBe("now");
   expect(eraOf(V("19580704", "1382", "제정"))).toBe("fireact");
   expect(dot("9999-12-31")).toBe("현재");

@@ -1332,14 +1332,13 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 .lt .card { padding: 14px 16px; }
 .lt-sys .s0, .lt-era-row.s0 { --era: #8a6d3b; }
 .lt-sys .s1, .lt-era-row.s1 { --era: #2f7d5b; }
-.lt-sys .s2, .lt-era-row.s2 { --era: #2b6cb0; }
-.lt-sys .s3, .lt-era-row.s3 { --era: #7b4fb0; }
-.lt-sys .s4, .lt-era-row.s4 { --era: #b3261e; }
+.lt-sys .s2, .lt-era-row.s2 { --era: #7b4fb0; }
+.lt-sys .s3, .lt-era-row.s3 { --era: #b3261e; }
 .lt-bar { display: flex; gap: 2px; border-radius: 8px; overflow: hidden; margin: 6px 0 12px; }
 .lt-seg { flex: 1 1 0; min-width: 0; background: var(--era); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px 4px; text-align: center; line-height: 1.25; }
 .lt-seg b { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .lt-seg small { font-size: 11px; opacity: 0.9; }
-.lt-eras { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.lt-eras { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .lt-era { border: 1px solid var(--line2); border-left: 4px solid var(--era); border-radius: 8px; padding: 9px 12px; font-size: 13px; }
 .lt-era-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
 .lt-era-h b { color: var(--era); font-size: 14.5px; }
@@ -1378,7 +1377,8 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 @media (max-width: 760px) {
   .lt-note { margin-left: 0; }
   .lt-eras { grid-template-columns: 1fr; }
-  .lt-seg b { font-size: 10px; white-space: normal; word-break: keep-all; }
+  .lt-era dl { grid-template-columns: 58px 1fr; }
+  .lt-seg b { font-size: 10px; white-space: normal; word-break: break-all; overflow: visible; }
   .lt-seg small { font-size: 10px; }
 }
 .lt-merge { display: flex; flex-direction: column; gap: 12px; }
@@ -1387,3 +1387,4 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 .vi-toc-ver + .vi-toc-ver { border-top: 1px solid var(--line2); }
 .vi-toc-vh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 8px 12px 0; }
 @media (max-width: 760px) { .vi-toc-vh .vi-title { padding-left: 0; } }
+@media (min-width: 761px) and (max-width: 1000px) { .lt-eras { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.45.0",
+  version: "2.45.1",
   date: "2026-11-23",
-  note: "기타 자료 「법령 연혁」(연혁법 찾기+법령 체계·개정 연혁)",
+  note: "법령 연혁 — 법령 체계 간략화(판정 규칙 변경 없음)",
 };
 
 export const D = {
