@@ -286,14 +286,6 @@ function parseAdm(j) {
   const files = arr(f["첨부파일링크"]).map((u, i) => ({ name: names[i] || `첨부 ${i + 1}`, url: absLink(u) })).filter((x) => x.url);
   return { info, arts, byls, files };
 }
-/** (v2.46.0 확인용) 법제처 행정규칙 본문 응답에 어떤 항목이 있는지 — 제·개정이유 항목이 있는지 보려고 씀. 키 이름과 「이유·개정문」 항목 앞부분만 돌려줌 */
-async function admFields(seq) {
-  const j = await lawJson("lawService.do", { target: "admrul", ID: seq }, 20000);
-  const S = (j && (j.AdmRulService || Object.values(j)[0])) || {};
-  const b = S["행정규칙기본정보"] || {};
-  const pick = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => /이유|개정문|제정문/.test(k)).map(([k, v]) => [k, (typeof v === "string" ? v : JSON.stringify(v)).slice(0, 1500)]));
-  return { top: Object.keys(S), basic: Object.keys(b), reason: { ...pick(S), ...pick(b) } };
-}
 const mem = new Map();
 async function loadAdm(seq) {
   const key = `hfls:lawat:adm:${seq}`;
@@ -320,4 +312,4 @@ const admNo = (v) => `${v.org || ""}${v.kind} 제${String(v.no).replace(/^제|�
 const dash = (s) => (/^\d{8}$/.test(String(s)) ? `${String(s).slice(0, 4)}-${String(s).slice(4, 6)}-${String(s).slice(6)}` : String(s || ""));
 const admLine = (v) => `${v.name} [${admNo(v)}, ${dash(v.pub)} 발령, ${dash(v.eff)} 시행${v.why ? `, ${v.why}` : ""}]`;
 
-module.exports = { STDS, STD_NAME, NOTES, FIRST, SPLIT, codeOf, pickAdm, normCode, loadIndex, chainOf, resolve, splitTech, fmtArt, fmtTech, parseAdm, loadAdm, admFields, admLink, admNo, admLine, _reset: () => { memIdx = null; mem.clear(); } };
+module.exports = { STDS, STD_NAME, NOTES, FIRST, SPLIT, codeOf, pickAdm, normCode, loadIndex, chainOf, resolve, splitTech, fmtArt, fmtTech, parseAdm, loadAdm, admLink, admNo, admLine, _reset: () => { memIdx = null; mem.clear(); } };

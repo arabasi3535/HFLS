@@ -362,7 +362,6 @@ async function handleStd(qy, send, fail) {
     if (date < fsc.FIRST) return fail(404, `화재안전기준은 2004.6.4.부터 시행된 고시입니다. 그 전의 설비 기술기준은 「소방기술기준에관한규칙」에서 확인하십시오 — ${BASE}?fam=tech&kind=law&date=${dash(date)}&format=text`, { before: { fam: "tech", kind: "law" } });
     return fail(404, `${dash(date)}에는 ${std} ${fsc.STD_NAME[std]} 기준이 아직 없었습니다(최초 시행 ${dash(chain[0].eff)}).`, { first: chain[0].eff });
   }
-  if (qy.fields) return send(200, { ok: true, std, ver: r.cur, fields: await fsc.admFields(r.cur.seq) }, "no-store"); // 확인용(v2.46.0)
   const d = await fsc.loadAdm(r.cur.seq);
   const notes = [];
   if (r.note) notes.push(r.note);

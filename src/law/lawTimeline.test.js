@@ -75,3 +75,19 @@ test("법률·시행규칙 주요 내용 붙이기 — 번호·시행일, 부칙
   expect(r.find((x) => x.eff === "20200101").notes[0].text).toMatch(/30일 → 7일/);
   expect(RULE_NOTES.every((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.eff) && x.text)).toBe(true);
 });
+
+test("화재안전기준 주요 내용 — 설비별 시행일·번호, 같은 번호(타법) 여러 설비에 써도 설비별로 따로", () => {
+  const { STD_NOTES } = require("./stdNotes");
+  expect(Object.keys(STD_NOTES).sort()).toEqual(["101", "103", "103A", "103B", "203", "301", "303"]);
+  for (const [k, list] of Object.entries(STD_NOTES)) {
+    for (const a of list) {
+      expect(a.eff).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(a.no).toMatch(/^\d{4}-\d+$/);
+      expect(a.text.length).toBeGreaterThan(5);
+    }
+    expect(new Set(list.map((a) => `${a.eff}|${a.no}`)).size).toBe(list.length); // 중복 없음
+    expect(k).toBeTruthy();
+  }
+  expect(STD_NOTES["103"].find((a) => a.no === "2025-25").text).toMatch(/습식/);
+  expect(STD_NOTES["103A"].find((a) => a.no === "2025-25").text).toMatch(/난연재료/);
+});

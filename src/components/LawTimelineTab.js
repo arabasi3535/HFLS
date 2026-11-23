@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { ERAS, eraOf, dot, mergeDecree, mergeNotes, stdNotes, filterRows, isFuture, lawLink, noText } from "../law/lawTimeline";
 import { LAW_NOTES, RULE_NOTES } from "../law/lawNotes";
+import { STD_NOTES } from "../law/stdNotes";
 import { STDS } from "./lawHistStds";
 
 // ============================================================
@@ -155,7 +156,13 @@ function History() {
   const all = useMemo(() => {
     if (!ready) return kind === "dec" && st.err ? mergeDecree([]) : [];
     if (kind === "dec") return mergeDecree(ready);
-    if (kind === "std") return ready.map((v) => ({ ...v, notes: stdNotes(std).filter((a) => a.eff.replace(/-/g, "") === v.eff) }));
+    if (kind === "std") {
+      const own = STD_NOTES[std] || [];
+      return ready.map((v) => {
+        const mine = own.filter((a) => a.eff.replace(/-/g, "") === v.eff && a.no === v.no);
+        return { ...v, notes: mine.length ? mine : stdNotes(std).filter((a) => a.eff.replace(/-/g, "") === v.eff) };
+      });
+    }
     return mergeNotes(ready, kind === "law" ? LAW_NOTES : RULE_NOTES);
   }, [ready, kind, std, st.err]);
   const rows = useMemo(() => filterRows(all, { major, era: kind === "std" ? "" : era, track: kind === "std" ? track : "", asc }), [all, major, era, track, kind, asc]);
@@ -238,7 +245,7 @@ function History() {
         })}
       </ol>
       <div className="lt-src">
-        출처: 법제처 국가법령정보 OPEN API 연혁 목록(시행일 기준, 같은 개정의 부칙 시행일이 따로 있으면 줄이 나뉨). {kind === "dec" ? "「설치기준」 요약은 법제처 제·개정이유·연혁본 원문과 운영매뉴얼·법령집을 대조해 정리한 것입니다." : kind === "std" ? "" : "「주요 내용」은 법제처 제·개정이유에서 민원 업무에 필요한 내용만 줄인 것입니다(기한·기간 숫자는 원문 문장과 대조)."}
+        출처: 법제처 국가법령정보 OPEN API 연혁 목록(시행일 기준, 같은 개정의 부칙 시행일이 따로 있으면 줄이 나뉨). {kind === "dec" ? "「설치기준」 요약은 법제처 제·개정이유·연혁본 원문과 운영매뉴얼·법령집을 대조해 정리한 것입니다." : kind === "std" ? (STD_NOTES[std] ? " 「주요 내용」은 행정규칙 제·개정문의 개정이유·부칙에서 민원 업무에 필요한 내용만 줄인 것입니다(개정이유가 없는 옛 판은 요약 없음)." : " 이 설비는 아직 「주요 내용」 요약이 없습니다(소화기구·스프링클러·간이·화재조기진압용·자동화재탐지·피난기구·유도등 정리됨).") : "「주요 내용」은 법제처 제·개정이유에서 민원 업무에 필요한 내용만 줄인 것입니다(기한·기간 숫자는 원문 문장과 대조)."}
         {kind === "std" ? " 2022.12.1.부터 성능기준(NFPC, 고시)과 기술기준(NFTC, 공고)이 나뉨." : ""}
       </div>
     </div>
