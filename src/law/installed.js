@@ -9,6 +9,8 @@ export const isReq = (s) => s === STATUS.REQ || s === STATUS.REQ_CHK;
 export const PARKING_WATER = ["wat-parkbldg", "wat-inpark", "wat-mech"];
 // 실무상 거의 항상 적용하는 대체 — 기본 선택
 export const SUB_DEFAULT_ON = new Set(["s4", "s5", "s8", "s8b", "s19", "s21"]);
+/** 기본 선택 여부 — 대체 설비가 물분무등뿐인 제4·19·21호(물분무·미분무만 인정, 포·가스계 제외)는 기본 해제 */
+export const subDefaultOn = (s) => SUB_DEFAULT_ON.has(s.id) && !s.weakOnly;
 
 /** 대체 후보: 대상 시설이 설치 대상이고, 대체 시설이 설치 대상(또는 무관)인 경우 */
 export function substitutionsFor(rows, u) {
@@ -19,6 +21,8 @@ export function substitutionsFor(rows, u) {
     if (!t || !isReq(t.status)) continue;
     if (s.heritageOnly && !u.g.includes("heritage")) continue;
     if (s.parkingOnly) {
+      // 제5호: 차고·주차장에 스프링클러설비를 설치한 경우만 — 스프링클러설비가 설치 대상(확정)일 때만 후보
+      if (!by.spk || by.spk.status !== STATUS.REQ) continue;
       const ids = [...t.hits, ...t.maybes].map((i) => i.id);
       const park = ids.filter((id) => PARKING_WATER.includes(id));
       if (!park.length) continue;
@@ -29,9 +33,46 @@ export function substitutionsFor(rows, u) {
     if (s.any) continue; // 설비 외 조건(공공소화전·지락차단장치 등) — 관리자 상세에서만 안내
     const via = s.by.filter((k) => by[k] && by[k].status === STATUS.REQ);
     if (!via.length) continue;
-    out.push({ ...s, viaKeys: via, replaceWith: via.map((k) => getFacility(k).name).join(" / ") });
+    const weakOnly = !via.some((k) => !(s.weak || []).includes(k)); // 물분무등뿐 — 물분무·미분무소화설비일 때만 대체
+    out.push({ ...s, viaKeys: via, weakOnly, replaceWith: via.map((k) => getFacility(k).name).join(" / ") });
   }
   return out;
+}
+
+/**
+ * 선택한 대체를 실제 설치 목록에 맞춰 확정 — 대체 설비가 실제로 설치되는 경우에만 면제
+ *  · 대체 설비(via)가 설치 목록(items: key → 항목)에 있어야 하고, 그 설비가 다른 대체로 빠지지 않아야 함
+ *    예) 물분무등 ← 스프링클러 를 고르면, 자탐 ← 물분무등 은 스프링클러로도 대체되지 않는 한 적용 불가
+ *  · 서로 대체(자탐 ← 화재알림, 화재알림 ← 자탐)는 먼저 고른 것만 적용
+ *  → { applied: [sub(viaKeys = 실제 설치되는 대체 설비만)], blocked: Map(id → 사유) }
+ */
+export function resolveSubs(subs, isOn, items) {
+  const applied = [];
+  const blocked = new Map();
+  const gone = () => new Set(applied.filter((a) => !a.partial).map((a) => a.target));
+  const liveVia = (s, removed) => (s.viaKeys || []).filter((k) => items.has(k) && !removed.has(k));
+  for (const s of subs) {
+    if (!isOn(s) || !items.has(s.target) || items.get(s.target).kind !== "base") continue;
+    const removed = gone();
+    const via = liveVia(s, removed);
+    if (!via.length) {
+      blocked.set(s.id, `${(s.viaKeys || []).map((k) => getFacility(k).name).join(" / ")}이(가) 다른 대체로 설치되지 않아 적용할 수 없음`);
+      continue;
+    }
+    // 이 대체로 대상 시설이 빠지면, 이미 적용한 대체 중 그 시설에만 기대던 것이 깨지는지 확인
+    if (!s.partial) {
+      const after = new Set([...removed, s.target]);
+      const breaks = applied.filter((a) => !liveVia(a, after).length);
+      if (breaks.length) {
+        blocked.set(s.id, `${getFacility(s.target).name}이(가) ${breaks.map((a) => getFacility(a.target).name).join(" / ")}의 대체 설비로 쓰이고 있어 함께 적용할 수 없음`);
+        continue;
+      }
+    }
+    applied.push({ ...s, viaKeys: via, replaceWith: via.map((k) => getFacility(k).name).join(" / ") });
+  }
+  // 나중에 빠진 설비 때문에 앞의 대체가 의지하는 설비가 줄었으면 viaKeys를 다시 좁힘
+  const removed = gone();
+  return { applied: applied.map((a) => ({ ...a, viaKeys: liveVia(a, a.partial ? removed : new Set([...removed].filter((k) => k !== a.target))) })), blocked };
 }
 
 /**
@@ -50,7 +91,8 @@ export function defaultInstalled(rv, existing) {
       }
     }
   }
-  for (const s of substitutionsFor(rv.hist.rows, rv.use)) if (SUB_DEFAULT_ON.has(s.id) && m.has(s.target) && m.get(s.target).kind === "base") m.set(s.target, { ...m.get(s.target), sub: s });
+  const { applied: subs } = resolveSubs(substitutionsFor(rv.hist.rows, rv.use), subDefaultOn, m);
+  for (const s of subs) m.set(s.target, { ...m.get(s.target), sub: s });
   const list = [...m.values()];
   const applied = new Map(list.filter((i) => i.kind !== "base").map((i) => [i.key, i.check ? null : true]));
   const installed = new Map();

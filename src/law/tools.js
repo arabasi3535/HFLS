@@ -37,14 +37,17 @@ export function windowlessFloor(floor) {
   const area = n(floor.area);
   const doors = (floor.level === 1 ? floor.doors || [] : []).map((r) => ({ ...r, ...openingRow(r) }));
   const windows = (floor.windows || []).map((r) => ({ ...r, ...openingRow(r) }));
-  const sum = r2([...doors, ...windows].filter((r) => r.counted).reduce((s, r) => s + r.area, 0));
-  if (area === null || area <= 0) return { area, doors, windows, sum, limit: null, ratio: null, status: "입력 필요" };
+  // 면적 직접 입력(세움터 등에서 확인한 유효 개구부 면적, ㎡) — 0·빈칸·음수는 무시
+  const direct = r2((floor.areas || []).map((v) => n(v)).filter((v) => v !== null && v > 0).reduce((s, v) => s + v, 0));
+  const sum = r2([...doors, ...windows].filter((r) => r.counted).reduce((s, r) => s + r.area, 0) + direct);
+  if (area === null || area <= 0) return { area, doors, windows, direct, sum, limit: null, ratio: null, status: "입력 필요" };
   const limit = area / 30;
   const windowless = sum <= limit + 1e-9;
   return {
     area,
     doors,
     windows,
+    direct,
     sum,
     limit: r2(limit),
     ratio: sum / area,

@@ -67,3 +67,17 @@ describe("피난기구 — 노유자시설 3층 이상 해당 층 표시", () =>
     expect(r.byKey.escape.hits.map((h) => h.basis).join()).toContain("지상 3~5층");
   });
 });
+
+describe("무창층 — 개구부 면적 직접 입력(v2.38.1)", () => {
+  test("면적 칸만 입력해도 판정, 0·빈칸은 무시", () => {
+    expect(windowlessFloor({ level: 2, area: 300, windows: [], areas: ["4", "6", "0", "", "0", "0", "0", "0"] }).status).toBe("무창층"); // 10 = 300/30
+    const r = windowlessFloor({ level: 2, area: 300, windows: [], areas: ["4", "6.5", "0"] });
+    expect(r.direct).toBe(10.5);
+    expect(r.status).toBe("유창층");
+  });
+  test("치수 입력과 면적 입력을 함께 쓰면 합산", () => {
+    const r = windowlessFloor({ level: 1, area: 600, doors: [{ w: 2, h: 2, cnt: 1 }], windows: [{ w: 2, h: 1, cnt: 3 }], areas: ["10.5", "0"] });
+    expect(r.sum).toBe(20.5); // 4 + 6 + 10.5
+    expect(r.status).toBe("유창층"); // 기준 20
+  });
+});

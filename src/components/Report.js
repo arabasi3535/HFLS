@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CATS, getFacility } from "../law/facilities";
-import { isReq, PARKING_WATER, SUB_DEFAULT_ON, substitutionsFor } from "../law/installed";
+import { isReq, PARKING_WATER, subDefaultOn, substitutionsFor, resolveSubs } from "../law/installed";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
 import SafetyPanel from "./SafetyPanel";
@@ -119,7 +119,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   const sOn = (k) => !!strongOn[k]; // 강화기준: 기본 미반영
   const subs = useMemo(() => substitutionsFor(hist.rows, u), [hist, u]);
   const gk = useMemo(() => guideKind(rv), [rv]);
-  const subIsOn = (s) => (subOn[s.id] === undefined ? SUB_DEFAULT_ON.has(s.id) : subOn[s.id]);
+  const subIsOn = (s) => (subOn[s.id] === undefined ? subDefaultOn(s) : subOn[s.id]);
 
   // 설치 목록 구성
   const list = useMemo(() => {
@@ -139,8 +139,11 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
         m.set(c.fac.key, { key: c.fac.key, name: c.fac.name, cat: c.fac.cat, row: rv.curr.byKey[c.fac.key], kind: "strong", check: c.c === STATUS.REQ_CHK });
       }
     }
-    for (const s of subs) if (subIsOn(s) && m.has(s.target) && m.get(s.target).kind === "base") m.set(s.target, { ...m.get(s.target), sub: s });
-    return [...m.values()];
+    const rs = resolveSubs(subs, subIsOn, m);
+    for (const s of rs.applied) m.set(s.target, { ...m.get(s.target), sub: s });
+    const out = [...m.values()];
+    out.blocked = rs.blocked;
+    return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hist, rv, existing, retroOn, strongOn, subOn, subs]);
 
@@ -344,18 +347,23 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
           <div className="subs-h">
             설치 면제(대체) 검토 <small>현행 시행령 별표5 — 실제 설치하는 설비 기준으로 선택</small>
           </div>
-          {subs.map((s) => (
-            <label key={s.id} className={`sub-opt ${subIsOn(s) ? "on" : ""}`}>
-              <input type="checkbox" checked={subIsOn(s)} onChange={(e) => setSubOn((o) => ({ ...o, [s.id]: e.target.checked }))} />
-              <span>
-                <b>{getFacility(s.target).name}</b> ← {s.replaceWith}
-                <small>
-                  {s.no}: {s.text}
-                  {s.partial ? " — 주차장 부분만 대체, 전기실 등 그 밖의 부분은 물분무등소화설비 유지" : ""}
-                </small>
-              </span>
-            </label>
-          ))}
+          {subs.map((s) => {
+            const why = subIsOn(s) && list.blocked ? list.blocked.get(s.id) : null;
+            return (
+              <label key={s.id} className={`sub-opt ${subIsOn(s) && !why ? "on" : ""} ${why ? "blocked" : ""}`}>
+                <input type="checkbox" checked={subIsOn(s)} onChange={(e) => setSubOn((o) => ({ ...o, [s.id]: e.target.checked }))} />
+                <span>
+                  <b>{getFacility(s.target).name}</b> ← {s.replaceWith}
+                  <small>
+                    {s.no}: {s.text}
+                    {s.partial ? " — 주차장 부분만 대체, 전기실 등 그 밖의 부분은 물분무등소화설비 유지" : ""}
+                    {s.weakOnly ? " — 물분무등 중 물분무·미분무소화설비로 설치하는 경우만(포·이산화탄소·할론 등은 해당 없음), 설치 범위가 대상 전체를 덮는지 확인" : ""}
+                  </small>
+                  {why && <em className="sub-blocked">적용 안 됨 — {why}</em>}
+                </span>
+              </label>
+            );
+          })}
         </div>
       )}
 

@@ -27,7 +27,49 @@ const save = (v) => {
 };
 const fmt = (x, d = 2) => (x === null || x === undefined ? "—" : Number(x).toLocaleString("ko-KR", { maximumFractionDigits: d }));
 const row0 = () => ({ w: "", h: "", cnt: "1", excluded: false });
-const floor0 = (level) => ({ level, area: "", doors: level === 1 ? [row0()] : [], windows: [row0()] });
+const AREA_N = 8; // 면적 직접 입력 — 한 줄 칸 수
+const areaRow = () => Array(AREA_N).fill("0");
+const floor0 = (level) => ({ level, area: "", doors: level === 1 ? [row0()] : [], windows: [row0()], areas: areaRow() });
+
+/** 개구부 면적 직접 입력 — 세움터 등에서 확인한 유효 개구부 면적(㎡)을 칸마다 입력(기본값 0) */
+function AreaInputs({ values, direct, onChange }) {
+  const vals = values && values.length ? values : areaRow();
+  const set = (i, v) => onChange(vals.map((x, j) => (j === i ? v : x)));
+  return (
+    <div className="tl-op tl-direct">
+      <div className="tl-op-h">
+        <span>
+          개구부 면적 직접 입력(㎡) <small>세움터 등에서 확인한 면적 — 요건(가~마)을 갖춘 개구부만</small>
+        </span>
+        <span className="tl-direct-act">
+          <b>{fmt(direct)}㎡</b>
+          <button type="button" className="w-link" onClick={() => onChange([...vals, ...areaRow()])}>
+            + 줄 추가
+          </button>
+          {vals.length > AREA_N && (
+            <button type="button" className="w-link" onClick={() => onChange(vals.slice(0, vals.length - AREA_N))}>
+              − 줄 삭제
+            </button>
+          )}
+        </span>
+      </div>
+      <div className="tl-direct-grid">
+        {vals.map((v, i) => (
+          <input
+            key={i}
+            type="number"
+            inputMode="decimal"
+            value={v}
+            aria-label={`개구부 면적 ${i + 1}`}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => set(i, e.target.value)}
+            onBlur={(e) => e.target.value === "" && set(i, "0")}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function OpeningTable({ title, rows, onChange }) {
   const set = (i, k, v) => onChange(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
@@ -74,7 +116,7 @@ function Windowless({ st, setSt }) {
   return (
     <div className="tl-body">
       <div className="tl-intro">
-        지상층별로 바닥면적과 개구부(가로×세로×개수)를 입력하면 <b>개구부 면적 합계가 바닥면적의 1/30 이하</b>인지로 무창층 여부를 판정합니다. 문은 1층만, 2층부터는 창문만 입력합니다.
+        지상층별로 바닥면적과 개구부(가로×세로×개수)를 입력하면 <b>개구부 면적 합계가 바닥면적의 1/30 이하</b>인지로 무창층 여부를 판정합니다. 문은 1층만, 2층부터는 창문만 입력합니다. 세움터 등으로 면적을 이미 알면 아래 「개구부 면적 직접 입력」 칸에 면적만 넣어도 합산됩니다(치수 입력과 함께 쓰면 둘 다 더함).
       </div>
       {floors.map((fl, i) => {
         const r = windowlessFloor(fl);
@@ -95,6 +137,7 @@ function Windowless({ st, setSt }) {
             </div>
             {fl.level === 1 && <OpeningTable title="문(출입구)" rows={r.doors} onChange={(rows) => upd(i, { doors: rows.map(({ w, h, cnt, excluded }) => ({ w, h, cnt, excluded })) })} />}
             <OpeningTable title="창문" rows={r.windows} onChange={(rows) => upd(i, { windows: rows.map(({ w, h, cnt, excluded }) => ({ w, h, cnt, excluded })) })} />
+            <AreaInputs values={fl.areas} direct={r.direct} onChange={(areas) => upd(i, { areas })} />
             {r.limit !== null && (
               <div className="tl-calc">
                 유효 개구부 합계 <b>{fmt(r.sum)}㎡</b> {r.status === "무창층" ? "≤" : ">"} 바닥면적 {fmt(r.area)}㎡ × 1/30 = <b>{fmt(r.limit)}㎡</b>
