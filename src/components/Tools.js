@@ -111,13 +111,9 @@ function OpeningTable({ title, rows, onChange }) {
 const modeName = (m) => (m === "existing" ? "기존 건축물" : "신축 건축물");
 const lvName = (l) => (l < 0 ? `지하 ${-l}층` : `지상 ${l}층`);
 
-/** 입력 화면에서 보낸 층·바닥면적으로 계산기 층 목록 구성 — 같은 화면에서 다시 보낸 경우 층별 개구부 입력은 유지 */
-export function floorsFromLink(link, prev) {
-  const keep = prev && prev.link && prev.link.mode === link.mode ? new Map((prev.floors || []).map((f) => [f.level, f])) : new Map();
-  const list = (link.floors || []).filter((f) => f && f.level).map((f) => {
-    const old = keep.get(f.level);
-    return old ? { ...old, area: f.area !== "" && f.area !== undefined ? f.area : old.area } : { ...floor0(f.level), area: f.area ?? "" };
-  });
+/** 입력 화면에서 보낸 층·바닥면적으로 계산기 층 목록 구성 — 새로 보낼 때마다 개구부 입력은 비우고 층·바닥면적(기본정보)만 가져옴 */
+export function floorsFromLink(link) {
+  const list = ((link && link.floors) || []).filter((f) => f && f.level).map((f) => ({ ...floor0(f.level), area: f.area ?? "" }));
   return list.length ? list : [floor0(1)];
 }
 
@@ -142,7 +138,7 @@ function Windowless({ st, setSt, onApply }) {
       </div>
       {link && (
         <div className="tl-linked">
-          {modeName(link.mode)} 입력에서 가져온 층·바닥면적입니다. 지하층은 무창층 판정 대상이 아니어서(시행령 제2조제1호 "지상층 중") 「지하층」으로 분류합니다.
+          {modeName(link.mode)} 입력에서 가져온 층·바닥면적입니다(계산기로 새로 보낼 때마다 개구부 입력은 비워짐). 지하층은 무창층 판정 대상이 아니어서(시행령 제2조제1호 "지상층 중") 「지하층」으로 분류합니다.
         </div>
       )}
       {floors.map((fl, i) => {
@@ -192,7 +188,12 @@ function Windowless({ st, setSt, onApply }) {
         <button type="button" className="w-reset" onClick={addFloor}>
           + 층 추가
         </button>
-        <button type="button" className="w-reset" onClick={() => setSt({ floors: [floor0(1)] })}>
+        <button
+          type="button"
+          className="w-reset"
+          title={link ? "개구부 입력을 지우고 입력 화면에서 가져온 층·바닥면적으로 되돌립니다" : "모든 입력을 지웁니다"}
+          onClick={() => setSt(link ? { ...st, floors: floorsFromLink(link) } : { floors: [floor0(1)] })}
+        >
           초기화
         </button>
       </div>
@@ -353,7 +354,7 @@ export default function Tools({ seed, onGoNew, link, onApply }) {
     setAll((p) => {
       const prev = p[link.kind] || {};
       if (prev.link && prev.link.at === link.at) return p;
-      if (link.kind === "windowless") return { ...p, windowless: { ...prev, floors: floorsFromLink(link, prev), link: { mode: link.mode, at: link.at } } };
+      if (link.kind === "windowless") return { ...p, windowless: { floors: floorsFromLink(link), link: { mode: link.mode, at: link.at, floors: (link.floors || []).filter((f) => f && f.level).map((f) => ({ level: f.level, area: f.area ?? "" })) } } };
       return { ...p, occ: { ...prev, link: { mode: link.mode, at: link.at } } };
     });
     setSub(link.kind);
