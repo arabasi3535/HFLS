@@ -17,7 +17,6 @@ import BUILD from "./buildInfo.json";
 const InspectTab = lazy(() => import("./components/InspectTab"));
 const Tools = lazy(() => import("./components/Tools"));
 const GuideTab = lazy(() => import("./components/InfoTabs").then((m) => ({ default: m.GuideTab })));
-const HistoryTab = lazy(() => import("./components/InfoTabs").then((m) => ({ default: m.HistoryTab })));
 const RulesTab = lazy(() => import("./components/InfoTabs").then((m) => ({ default: m.RulesTab })));
 const ReportsTab = lazy(() => import("./components/Feedback").then((m) => ({ default: m.ReportsTab })));
 const BugReportModal = lazy(() => import("./components/Feedback").then((m) => ({ default: m.BugReportModal })));
@@ -260,7 +259,7 @@ export default function App() {
     if (adminMode) {
       setAdminMode(false);
       setAdminPw("");
-      if (tab === "history" || tab === "rules" || tab === "reports") setTab("new");
+      if (tab === "rules" || tab === "reports") setTab("new");
       return;
     }
     const pw = window.prompt("관리자 비밀번호");
@@ -291,7 +290,6 @@ export default function App() {
     ["guide", "사용 안내"],
     ...(adminMode
       ? [
-          ["history", "법령 연혁"],
           ["rules", "규칙·검증"],
           ["reports", "오류 신고함"],
         ]
@@ -380,7 +378,7 @@ export default function App() {
         </div>
         <nav className="tabs">
           {tabs.map(([k, l]) => (
-            <button key={k} className={`${tab === k ? "on" : ""} ${k === "history" || k === "rules" || k === "reports" ? "adm" : ""}`} onClick={() => setTab(k)}>
+            <button key={k} className={`${tab === k ? "on" : ""} ${k === "rules" || k === "reports" ? "adm" : ""}`} onClick={() => setTab(k)}>
               {l}
             </button>
           ))}
@@ -530,7 +528,6 @@ export default function App() {
         )}
         <Suspense fallback={<div className="empty">불러오는 중…</div>}>
           {tab === "guide" && <GuideTab adminMode={adminMode} />}
-          {adminMode && tab === "history" && <HistoryTab />}
           {adminMode && tab === "rules" && <RulesTab adminMode={adminMode} overrides={overrides} setOverrides={setOverrides} />}
           {adminMode && tab === "reports" && (
             <ReportsTab

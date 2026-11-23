@@ -5,7 +5,7 @@ import { STDS } from "./lawHistStds";
 // ============================================================
 // 연혁법 찾기 — 기준일(허가일 등)에 시행 중이던 소방 관계 법령의 조문·별표 원문 (api/lawat.js → 법제처 OPEN API)
 //  · 사람: 법령·종류·기준일 → 그 판의 목차·조문·별표·개정 연혁
-//  · AI: 사용자가 쓰는 AI에 붙여 넣을 프롬프트 예시(이 사이트 주소를 열어 원문을 읽게 함)
+//  · (v2.45.0) AI 프롬프트 예시 삭제, 「기타 자료 › 법령 연혁」 맨 위로(아래에 법령 체계·개정 연혁)
 //  · 화재안전기준(v2.34.0): 설비(번호 순)·기준일 → NFSC 또는 NFPC·NFTC 판의 조문(절)·별표·첨부파일·부칙
 // ============================================================
 
@@ -72,7 +72,6 @@ export default function LawHistTab() {
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState("");
 
-  const base = typeof window !== "undefined" && window.location && /^https?:/.test(window.location.origin) ? `${window.location.origin}/api/lawat` : "https://hfls.vercel.app/api/lawat";
   const isStd = mode === "std";
   const sel = () => (isStd ? { std, ...(ty ? { ty } : {}) } : { fam, kind });
   const run = async (what, fn) => {
@@ -142,48 +141,6 @@ export default function LawHistTab() {
   };
 
   const ver = res && res.ver;
-  const dq = date || "YYYY-MM-DD";
-  const stdName = (STDS.find((x) => x[0] === std) || STDS[2])[1];
-  const famName = isStd ? `${stdName}의 화재안전기준(${std})` : (FAMS.find((f) => f[0] === fam) || FAMS[0])[1].replace(/ \(.*\)$/, "");
-  const kindName = isStd ? "" : (KINDS.find((k) => k[0] === kind) || KINDS[1])[1];
-  const sq = isStd ? `std=${std}${ty ? `&ty=${ty}` : ""}` : `fam=${fam}&kind=${kind}`;
-  const lead = `너는 소방시설 인허가 검토를 돕는 조사원이야. 아래 HFLS 주소를 직접 열어 법제처 원문을 읽고, 그 원문에 있는 내용만으로 답해 줘. 원문에서 확인되지 않는 것은 추측하지 말고 「확인 필요」라고 적어.\n\n[사용법] ${base}\n`;
-  const form = "\n\n답변 형식: ① 결론 ② 근거(법령명·공포번호·시행일·조문/별표 번호와 원문 짧은 인용) ③ 원문 링크 ④ 확인 필요 사항";
-  const prompts = isStd
-    ? [
-        {
-          id: "p1",
-          title: "허가 시점 설치기준(화재안전기준) 확인",
-          text: `${lead}[그 시점 목차] ${base}?${sq}&date=${dq}\n(조문·절은 &jo=번호(옛 판 10, NFTC 2.1), 별표는 &byl=번호, 낱말 검색은 &q=낱말, 경과조치는 &jo=부칙)\n\n질문: ${dq}에 건축허가를 신청한 [용도·층수·연면적] 건축물의 ${stdName}에 대해 [헤드 수평거리·수원 양·설치 위치 등 확인할 내용] 기준을 알려 줘. 그때 시행 중이던 ${famName} 원문을 직접 열어 확인해.${form}`,
-        },
-        {
-          id: "p2",
-          title: "화재안전기준 개정 연혁 추적",
-          text: `${lead}[개정 연혁 목록] ${base}?std=${std}&list=1\n(각 판은 &date=시행일 로 열고, &q=낱말 로 위치를 찾아. 2022.12.1.부터는 성능기준(ty=p)과 기술기준(ty=t)이 나뉨)\n\n질문: ${stdName}의 [확인할 기준] 이 언제 어떻게 바뀌었는지 시행일 순으로 정리해 줘. 바뀐 판마다 조문(절)을 직접 열어 전/후 문구를 비교해.${form}`,
-        },
-        {
-          id: "p3",
-          title: "두 시점 비교",
-          text: `${lead}[시점 A] ${base}?std=${std}&date=[A 날짜]&q=[낱말]\n[시점 B] ${base}?std=${std}&date=[B 날짜]&q=[낱말]\n(조문·절 번호가 판마다 다르니 먼저 &q=낱말 이나 목차로 위치를 찾은 뒤 &jo=번호 로 열어)\n\n질문: 두 시점의 ${stdName} [확인할 기준]을 표로 비교하고, 달라진 부분만 전/후로 보여 줘.${form}`,
-        },
-      ]
-    : [
-    {
-      id: "p1",
-      title: "허가 시점 설치기준 확인",
-      text: `${lead}[그 시점 목차] ${base}?${sq}&date=${dq}\n(조문은 &jo=번호, 별표는 &byl=번호, 낱말 검색은 &q=낱말 을 붙여 열어)\n\n질문: ${dq}에 건축허가를 신청한 [용도·층수·연면적] 건축물에 [소방시설 이름]을 설치해야 했는지 알려 줘. 그때 시행 중이던 ${famName} ${kindName}의 해당 별표·조문을 직접 열어 확인해.${form}`,
-    },
-    {
-      id: "p2",
-      title: "개정 연혁 추적",
-      text: `${lead}[개정 연혁 목록] ${base}?${sq}&list=1\n(각 판은 &date=시행일 로 열고, &q=낱말 로 위치를 찾아)\n\n질문: [소방시설 이름] 설치 기준이 언제 어떻게 바뀌었는지 시행일 순으로 정리해 줘. 바뀐 판마다 별표·조문을 직접 열어 전/후 문구를 비교해.${form}`,
-    },
-    {
-      id: "p3",
-      title: "두 시점 비교",
-      text: `${lead}[시점 A] ${base}?${sq}&date=[A 날짜]&byl=[별표 번호]\n[시점 B] ${base}?${sq}&date=[B 날짜]&byl=[별표 번호]\n(별표 번호가 판마다 다를 수 있으니 먼저 &date=날짜 만 열어 목차를 확인해)\n\n질문: 두 시점의 [소방시설 이름] 설치 대상 기준을 표로 비교하고, 달라진 부분만 전/후로 보여 줘.${form}`,
-    },
-  ];
   const viewCopy = () => {
     if (!view || !ver) return "";
     const body = view.type === "q" ? view.hits.map((h) => `- ${h.where}: …${h.snip}…`).join("\n") : view.text || Object.entries(view.links || {}).map(([k, u]) => `${k.toUpperCase()}: ${u}`).join("\n");
@@ -409,29 +366,6 @@ export default function LawHistTab() {
           </div>
         </div>
       )}
-
-      <details className="pp-sec lw-sec lh-ai" open>
-        <summary>
-          <h4>🤖 내 AI에게 물어보기 — 프롬프트 예시</h4>
-        </summary>
-        <p className="lh-ai-p">
-          아래 글을 복사해 <b>웹 페이지를 직접 열 수 있는 AI</b>(웹 검색·브라우징 기능이 켜진 ChatGPT·Claude·Gemini·Perplexity 등)에 붙여 넣고 [대괄호]만 바꾸십시오. AI가 이 사이트를 통해 법제처 원문을 읽고 답합니다. 위에서 고른 {isStd ? "설비·기준 종류" : "법령·종류"}·기준일이 주소에 자동으로 들어갑니다.
-        </p>
-        <p className="lh-ai-p lh-sub">
-          주소를 열지 못하는 AI라면 위 원문 화면의 「출처와 함께 복사」로 원문을 붙여 넣으십시오. AI 답변은 참고용이며, 최종 판단은 법제처 원문으로 확인하십시오.
-        </p>
-        {prompts.map((p) => (
-          <div key={p.id} className="lh-prompt">
-            <div className="lh-view-h">
-              <b>{p.title}</b>
-              <button type="button" className="btn small" onClick={() => copy(p.id, p.text)}>
-                {copied === p.id ? "복사됨 ✓" : "복사"}
-              </button>
-            </div>
-            <pre className="lh-pre sm">{p.text}</pre>
-          </div>
-        ))}
-      </details>
     </div>
   );
 }

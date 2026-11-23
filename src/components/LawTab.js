@@ -30,10 +30,10 @@ export default function LawTab({ onHist }) {
             옆의{" "}
             {onHist ? (
               <button type="button" className="lw-hist-link" onClick={onHist}>
-                「연혁법 찾기」
+                「법령 연혁」
               </button>
             ) : (
-              "「연혁법 찾기」"
+              "「법령 연혁」"
             )}
             에서 기준일로 바로 불러올 수 있습니다.
           </p>

@@ -69,5 +69,17 @@ test("하나씩 펼치기·전체 펼치기·전체 접기", () => {
   click("v1.2.0"); // 제목 줄(목차 칩은 v 없이 표시)
   expect(has("굵게")).toBe(true);
   expect(has("항목B")).toBe(false);
+  // 목차: 누른 항목 바로 아래(목차 안)에 내용 표시
+  const tocText = () => (div.querySelector(".vi-toc-body") || { textContent: "" }).textContent;
+  const chip = [...div.querySelectorAll(".vi-chips button")].find((x) => x.textContent === "1.2.0");
+  act(() => chip.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  expect(tocText()).toContain("굵게");
+  expect(tocText()).not.toContain("항목B");
+  expect(chip.parentElement.parentElement.querySelector(".vi-toc-body")).not.toBeNull(); // 그 목차 줄 안
+  act(() => div.querySelector(".vi-toc-t").dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  expect(tocText()).toContain("굵게");
+  expect(tocText()).toContain("항목B"); // 묶음 제목 → 묶음 전체
+  act(() => div.querySelector(".vi-toc-t").dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  expect(div.querySelector(".vi-toc-body")).toBeNull(); // 다시 누르면 닫힘
   act(() => root.unmount());
 });

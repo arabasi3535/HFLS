@@ -129,13 +129,9 @@ export default function VersionTab({ log = LOG }) {
       else n.add(v);
       return n;
     });
-  const go = (v) => {
-    setOpen((p) => new Set(p).add(v));
-    setTimeout(() => {
-      const el = document.getElementById(idOf(v));
-      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 30);
-  };
+  // 목차: 누른 항목 바로 아래에 내용 표시(묶음 제목 → 그 묶음 전체, 세부 버전 칩 → 그 버전만). 다시 누르면 닫힘
+  const [toc, setToc] = useState(null);
+  const pick = (k, v) => setToc((p) => (p && p.k === k && p.v === v ? null : { k, v }));
   const allOpen = log.length > 0 && open.size === log.length;
   const first = log[log.length - 1];
   return (
@@ -163,18 +159,37 @@ export default function VersionTab({ log = LOG }) {
         <ol>
           {groups.map((g) => (
             <li key={g.k}>
-              <button type="button" className="vi-toc-t" onClick={() => go(g.items[g.items.length - 1].v)}>
-                <b>v{g.k}</b> <span>{g.title}</span>
+              <button type="button" className={"vi-toc-t" + (toc && toc.k === g.k && !toc.v ? " on" : "")} aria-expanded={!!(toc && toc.k === g.k)} onClick={() => pick(g.k, null)}>
+                <span className="vi-arrow">{toc && toc.k === g.k ? "▾" : "▸"}</span> <b>v{g.k}</b> <span>{g.title}</span>
               </button>
               <span className="vi-toc-d">{g.from === g.to ? fmtDate(g.to) : `${fmtDate(g.from)}~${fmtDate(g.to)}`}</span>
               {g.items.length > 1 && (
                 <span className="vi-chips">
                   {[...g.items].reverse().map((x) => (
-                    <button key={x.v} type="button" className={open.has(x.v) ? "on" : ""} onClick={() => go(x.v)} title={x.title || x.auto || ""}>
+                    <button key={x.v} type="button" className={toc && toc.v === x.v ? "on" : ""} onClick={() => pick(g.k, x.v)} title={x.title || x.auto || ""}>
                       {x.v}
                     </button>
                   ))}
                 </span>
+              )}
+              {toc && toc.k === g.k && (
+                <div className="vi-toc-body">
+                  {g.items
+                    .filter((x) => !toc.v || x.v === toc.v)
+                    .map((x) => (
+                      <div key={x.v} className="vi-toc-ver">
+                        <div className="vi-toc-vh">
+                          <b className="vi-v">v{x.v}</b>
+                          <span className={"vi-kind " + (x.major ? "k-major" : "k-minor")}>{x.major ? "주요" : "세부"}</span>
+                          <span className="vi-title">{x.title || <span className="vi-auto">{x.auto}</span>}</span>
+                          <span className="vi-date">{fmtDate(x.date)}</span>
+                        </div>
+                        <div className="vi-body">
+                          <Blocks blocks={x.blocks} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
               )}
             </li>
           ))}

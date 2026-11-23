@@ -1,8 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { LAW_SYSTEMS, AMENDMENTS, SOURCES } from "../law/sources";
+import { SOURCES } from "../law/sources";
 import { CRITERIA } from "../law/criteria";
 import { FACILITIES, getFacility } from "../law/facilities";
-import { RETRO_RULES, STRENGTHENED } from "../law/retro";
 
 const fd = (d) => (d && d !== "9999-12-31" ? d.replace(/-/g, ".") + "." : "현재");
 const win = (c) => {
@@ -10,86 +9,6 @@ const win = (c) => {
   const b = c.to ? fd(c.to) : `${fd(c.toU[0])}~${fd(c.toU[1])} 사이`;
   return `${a} → ${b}`;
 };
-
-export function HistoryTab() {
-  return (
-    <div className="info">
-      <div className="card">
-        <div className="card-t">법령 체계 변천</div>
-        <div className="sys-list">
-          {LAW_SYSTEMS.map((s) => (
-            <div key={s.id} className={`sys ${s.supported ? "" : "unsup"}`}>
-              <div className="sys-h">
-                <b>{s.label}</b>
-                <span className="muted">
-                  {fd(s.from)} ~ {fd(s.to)}
-                </span>
-              </div>
-              <div className="small">{s.act}</div>
-              <div className="small muted">
-                {s.table} · {s.std}
-              </div>
-              <div className="small">{s.note}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="card">
-        <div className="card-t">시행령 개정 연혁 — 소방시설 설치기준 관련 (법제처 제·개정이유 기준)</div>
-        <div className="table-wrap">
-          <table className="review">
-            <thead>
-              <tr>
-                <th>시행일</th>
-                <th>대통령령</th>
-                <th>구분</th>
-                <th>주요 내용</th>
-                <th>검증</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...AMENDMENTS].sort((p, q) => (p.eff < q.eff ? -1 : p.eff > q.eff ? 1 : 0)).map((a, i) => (
-                <tr key={i}>
-                  <td className="nowrap">{fd(a.eff)}</td>
-                  <td className="nowrap">{a.no}</td>
-                  <td className="nowrap small">{a.kind}</td>
-                  <td className="small">{a.text}</td>
-                  <td>
-                    <span className={`cert ${a.cert === "V" ? "cert-v" : a.cert === "M" ? "cert-m" : "cert-i"}`}>
-                      {a.cert === "V" ? "확인" : a.cert === "M" ? "연혁자료" : "추정"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="muted small">
-          출처: <a href={SOURCES.reasons.url} target="_blank" rel="noreferrer">{SOURCES.reasons.title}</a>
-        </div>
-      </div>
-      <div className="card">
-        <div className="card-t">소급·특례 규정</div>
-        <ul className="plain">
-          {RETRO_RULES.map((r) => (
-            <li key={r.id}>
-              <b>{r.title}</b> — 기한 {fd(r.deadline)} · {r.basis}
-            </li>
-          ))}
-          <li>
-            <b>강화기준 적용(재량)</b> — {STRENGTHENED.basis}
-          </li>
-          <li>
-            <b>주택용소방시설</b> — 소방시설법 제10조(구 법 제8조, 2012.2.5. 시행), 기존 주택 5년 유예
-          </li>
-          <li>
-            <b>증축·용도변경</b> — 시행령 제15조 (2025.11.25. 개정: 60분 방화문 구획 추가, 2022.12.1. 이후 증축 신청분 소급)
-          </li>
-        </ul>
-      </div>
-    </div>
-  );
-}
 
 export function RulesTab({ adminMode, overrides, setOverrides }) {
   const [fac, setFac] = useState("");
@@ -240,7 +159,7 @@ const GUIDE = [
   { tab: "신축 건축물", what: "현행 별표4로 설치할 소방시설 판정", out: ["검토서 PDF(요약본·상세본)", "확인 필요 설비 적용·미적용 선택", "안전관리 등급·자체점검·방염·전용구역", "착공·감리", "임시소방시설", "건설현장 소방안전관리", "엑셀·공유 링크"] },
   { tab: "기존 건축물", what: "허가일 당시 기준으로 판정, 소급·강화기준 구분", out: ["검토서 PDF(요약본·상세본)", "확인 필요 설비 적용·미적용 선택", "자체점검 보고서로 연결", "엑셀·공유 링크"] },
   { tab: "보조 계산기", what: "검토에 필요한 계산", out: ["무창층", "수용인원", "착공·감리", "위험물 지정수량 배수", "학원 다중이용업", "소화펌프 용량"] },
-  { tab: "기타 자료", what: "업무 참고 자료 모음", out: ["소방 영상(소방관서·안전원·재후준)", "법령 원문·개정 알림", "연혁법 찾기(허가일 기준 법령·화재안전기준 원문·AI 프롬프트)", "질의회신·법령해석 PDF", "해설서·매뉴얼(소방청 법령자료실 등)", "논문(무료 학술지)", "관련 사이트(소민터·위험물·화재통계 등)", "실무 자료(한눈에 보기 PDF — 참고용)"] },
+  { tab: "기타 자료", what: "업무 참고 자료 모음", out: ["소방 영상(소방관서·안전원·재후준)", "법령 원문·개정 알림", "법령 연혁(연혁법 찾기 — 허가일 기준 법령·화재안전기준 원문, 법령 체계, 개정 연혁)", "질의회신·법령해석 PDF", "해설서·매뉴얼(소방청 법령자료실 등)", "논문(무료 학술지)", "관련 사이트(소민터·위험물·화재통계 등)", "실무 자료(한눈에 보기 PDF — 참고용)"] },
   { tab: "미니게임", what: "「소방 인허가 시티」 — 초급(허가 동의)·중급(착공·준공 후 안전관리)·고급(기존 건축물 연혁) 검토 게임, HFLS 판정으로 채점", out: ["난이도별 도시·계급·랭킹", "소방관 캐릭터 출동", "항목별 근거 공개"] },
   { tab: "점검 › 자체점검 보고서", what: "작동·종합점검 실시결과 보고서", out: ["별지 9호·10호 서식 PDF", "점검인력·점검일수", "저장·엑셀 서식"] },
   { tab: "점검 › 위험물 정기점검", what: "제조소등 일반점검표·위험물안전카드", out: ["별지 9~24호 서식 PDF", "지정수량 배수 자동", "저장·엑셀 서식"] },
