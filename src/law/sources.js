@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.42.0",
+  version: "2.42.1",
   date: "2026-11-23",
-  note: "자진 설치 설비 추가 — (자진) 표시, 착공신고 포함·감리 면제, 자체점검 반영",
+  note: "자진 설치 설비는 종합점검 대상 판단에서 제외(대체 설비는 반영)",
 };
 
 export const D = {

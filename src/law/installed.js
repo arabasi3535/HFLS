@@ -104,3 +104,19 @@ export function defaultInstalled(rv, existing) {
   for (const i of list) if (i.sub) buildKeys.push(...(i.sub.viaKeys || []));
   return { list, applied, installed, buildKeys: [...new Set(buildKeys)], chkKeys: list.filter((i) => i.check).map((i) => i.key) };
 }
+
+/**
+ * 자체점검(종합점검 대상 판단)용 '설치된 법정 설비' — 결과 화면 설치 목록에서
+ *  · 대체된 설비는 빼고 대체 설비(viaKeys)를 넣음(주차장만 대체면 둘 다)
+ *  · 자진 설치 설비(kind "vol")는 넣지 않음 — 법정 설치 의무가 없어 종합점검 대상 판단에서 제외
+ * → Map(key → true | null(연혁 확인))
+ */
+export function inspInstalled(list) {
+  const installed = new Map();
+  for (const i of list) {
+    if (i.kind === "vol") continue;
+    if (!i.sub || i.sub.partial) installed.set(i.key, i.check ? null : true);
+    if (i.sub) for (const k of i.sub.viaKeys || []) if (!installed.has(k) || installed.get(k) !== true) installed.set(k, true);
+  }
+  return installed;
+}

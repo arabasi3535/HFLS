@@ -1,6 +1,7 @@
 // 확인 필요 설비 — 검토자 결정(적용/미적용) 반영(v2.41.0)
 import { review, STATUS } from "./engine";
 import { safetyReview } from "./safety";
+import { inspInstalled } from "./installed";
 
 const floors = (list) => list.map(([level, area]) => ({ level, area, windowless: false }));
 const base = { action: "new", use: "religion", date: "2026-11-23", gf: 3, bf: 0, area: 1474.82, floors: floors([[1, 259.72], [2, 765.85], [3, 449.25]]), f: { parkingInside: 981 } };
@@ -35,13 +36,19 @@ test("이미 판정되는 설비(설치·해당없음)에는 결정이 영향 �
   expect(r.hist.byKey.hydrant.status).toBe(STATUS.NONE);
 });
 
-test("자진 스프링클러 → 자체점검 종합점검 대상, 소방안전관리 등급은 그대로(v2.42.0)", () => {
-  const r = rv({ dec: { spk: false, smoke: false } });
-  const before = safetyReview(r, "new");
-  const installed = new Map();
-  for (const row of r.hist.rows) if (row.status === STATUS.REQ) installed.set(row.fac.key, true);
-  installed.set("spk", true); // 자진
-  const after = safetyReview(r, "new", new Map(), installed);
-  expect(after.grade.grade).toBe(before.grade.grade);
-  expect(after.insp.summary).toMatch(/종합/);
+test("자진 스프링클러는 종합점검 대상 판단에서 제외, 대체 설비는 포함(v2.42.1)", () => {
+  // 업무시설 3층 800㎡ — 법정 설비만으로는 자체점검 비대상
+  const o = review({ action: "new", use: "office", date: "2026-11-23", gf: 3, bf: 0, area: 800, floors: floors([[1, 300], [2, 250], [3, 250]]), f: {} }, "2026-11-23");
+  const legal = o.hist.rows.filter((row) => row.status === STATUS.REQ).map((row) => ({ key: row.fac.key, kind: "base" }));
+  const withVol = [...legal, { key: "spk", kind: "vol" }, { key: "hydrant", kind: "vol" }];
+  const inst = inspInstalled(withVol);
+  expect(inst.has("spk")).toBe(false);
+  const a = safetyReview(o, "new", new Map(), inspInstalled(legal));
+  const b = safetyReview(o, "new", new Map(), inst);
+  expect(b.insp.summary).toBe(a.insp.summary);
+  expect(b.grade.grade).toBe(a.grade.grade);
+  // 대체: 물분무등 ← 스프링클러(대체 설비 viaKeys)는 설치된 설비로 반영
+  const sub = inspInstalled([{ key: "water", kind: "base", sub: { viaKeys: ["spk"], partial: false } }]);
+  expect(sub.get("spk")).toBe(true);
+  expect(sub.has("water")).toBe(false);
 });

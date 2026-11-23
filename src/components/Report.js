@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CATS, FACILITIES, getFacility } from "../law/facilities";
-import { isReq, PARKING_WATER, subDefaultOn, substitutionsFor, resolveSubs } from "../law/installed";
+import { isReq, PARKING_WATER, subDefaultOn, substitutionsFor, resolveSubs, inspInstalled } from "../law/installed";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
 import SafetyPanel from "./SafetyPanel";
@@ -78,7 +78,7 @@ function Item({ it, open, onToggle, flash, guide }) {
           </div>
         )}
         {r && r.decided === true && <div className="det-line dec-line">입력 정보가 부족해 「확인 필요」였던 시설 — 검토자가 「적용」으로 정해 설치 대상에 넣었습니다.</div>}
-        {it.kind === "vol" && <div className="det-line vol-line">법정 설치 의무가 없는 자진 설치 설비 — 착공신고·소방기술자 배치에는 포함, 공사감리는 면제(비대상)로 산정, 자체점검 구분에 반영, 소방안전관리대상물 등급에는 반영하지 않음</div>}
+        {it.kind === "vol" && <div className="det-line vol-line">법정 설치 의무가 없는 자진 설치 설비 — 착공신고·소방기술자 배치에는 포함, 공사감리는 면제(비대상)로 산정, 자체점검(종합점검 대상 판단)·소방안전관리대상물 등급에는 반영하지 않음</div>}
         {it.kind === "strong" && <div className="det-line strong-line">소방시설법 제13조제1항 단서 — 강화된 기준을 기존 대상물에 적용할 수 있음(소방본부장·소방서장 재량)</div>}
         {items.map((i) => (
           <div className="det-crit" key={i.id}>
@@ -175,12 +175,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   // 안전관리 검토 — 소방안전관리대상물 2·3급은 최종 설치 목록(부칙 소급·강화기준 선택 반영)으로 판정
   const safety = useMemo(() => {
     const applied = new Map(list.filter((i) => i.kind !== "base" && i.kind !== "vol").map((i) => [i.key, i.check ? null : true])); // 등급: 자진 설치 미반영
-    // 자체점검용 '설치된 법정 설비': 설치 목록(대체된 설비는 빼고 대체 설비를 넣음, 주차장만 대체면 둘 다)
-    const installed = new Map();
-    for (const i of list) {
-      if (!i.sub || i.sub.partial) installed.set(i.key, i.check ? null : true);
-      if (i.sub) for (const k of i.sub.viaKeys || []) if (!installed.has(k) || installed.get(k) !== true) installed.set(k, true);
-    }
+    const installed = inspInstalled(list);
     try {
       return safetyReview(rv, mode, applied, installed);
     } catch (e) {
@@ -489,7 +484,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
       {/* 자진 설치 설비 — 법정 설치 대상이 아닌 설비를 자진 설치하는 경우 */}
       <div className="vols no-print">
         <div className="subs-h">
-          자진 설치 설비 추가 <small>법정 설치 대상이 아니지만 설치하는 설비 — 설치 목록·출력에 「(자진)」 표시, 착공신고·기술자에 포함, 공사감리는 면제(비대상), 자체점검 구분에 반영, 소방안전관리 등급은 변하지 않음</small>
+          자진 설치 설비 추가 <small>법정 설치 대상이 아니지만 설치하는 설비 — 설치 목록·출력에 「(자진)」 표시, 착공신고·기술자에 포함, 공사감리는 면제(비대상), 종합점검 대상 판단·소방안전관리 등급에는 반영하지 않음(별표5 대체로 설치하는 설비는 반영)</small>
         </div>
         {CATS.map((cat) => {
           // 설치 목록에 있거나 「확인 필요」(적용·미적용으로 정함)인 설비는 제외
