@@ -97,3 +97,23 @@ export async function saveNotice(pw, version, text) {
     return { error: "서버에 연결할 수 없습니다." };
   }
 }
+
+/** (v2.49.0) 실무 자료 내려받기 횟수 — 저장소 미설정이면 null */
+export async function loadDownloads() {
+  try {
+    const r = await json(await fetch("/api/stats?dl=all"));
+    return r.ok && r.body && r.body.counts ? r.body.counts : null;
+  } catch (e) {
+    return null;
+  }
+}
+/** 내려받기·열기 1회 기록(같은 IP·파일은 하루 1회) — 화면 이동을 막지 않게 sendBeacon */
+export function countDownload(key) {
+  const url = `/api/stats?dl=${encodeURIComponent(key)}`;
+  try {
+    if (navigator.sendBeacon && navigator.sendBeacon(url)) return;
+  } catch (e) {
+    /* 무시 */
+  }
+  fetch(url, { method: "POST", keepalive: true }).catch(() => {});
+}

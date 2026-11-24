@@ -249,15 +249,6 @@ export default function QaTab() {
   const more = res && res.items.length < res.total;
   return (
     <div className="pp qa">
-      <div className="vd-head pp-head">
-        <div>
-          <b>질의회신 · 법령해석</b> <span className="pp-count">(국가법령정보센터)</span>
-          <p>
-            소방청 질의회신과 법제처 법령해석을 검색합니다. 국가법령정보센터에서 그때그때 받아 오므로 새 해석이 등록되면 바로 반영됩니다. 해석은 <b>회신 당시 법령</b>{" "}
-            기준이라 현행 조문 번호·내용과 다를 수 있으니 관련법령을 현행 원문과 대조하세요. 항목 앞 ☐를 체크해 두면 골라서 PDF로 저장할 수 있습니다.
-          </p>
-        </div>
-      </div>
 
       <div className="w-subs qa-src" role="tablist">
         {Object.entries(SRC).map(([k, v]) => (

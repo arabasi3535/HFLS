@@ -109,16 +109,10 @@ function Preview({ children }) {
 
 function BookLink({ f }) {
   if (f && f.kind === "fire") return null;
-  const carrier = !f || f.book === "carrier";
   return (
-    <div className="ir-link">
-      <div>
-        <b>작성 방법·용어 설명</b>
-        <p>
-          한국소방안전원 홈페이지에서 <b>「{carrier ? "위험물운송자" : "위험물안전관리자"}」 실무교재</b>의 {f ? "일반점검표" : "위험물안전카드"} 작성 방법과 설비·용어 설명을 참고하십시오. 판단 근거는 위험물안전관리법령과 「위험물안전관리에 관한 세부기준」입니다.
-        </p>
-      </div>
-      <a className="w-run" href={KFSI} target="_blank" rel="noopener noreferrer">
+    <div className="wm-book">
+      작성 방법:{" "}
+      <a href={KFSI} target="_blank" rel="noopener noreferrer">
         한국소방안전원 열기 →
       </a>
     </div>
@@ -282,7 +276,7 @@ function FormEditor({ f, st, setSt, all }) {
           </small>
         </div>
         <div className="ir-sec-b">
-        <div className="w-hint">기본은 「적합」이고, 위에서 고른 형태에 없는 설비 항목과 한국소방안전원 실무교재 작성예시에서 해당없음으로 표시된 항목(「예시 기준」 표시)은 「해당없음」으로 시작합니다. 시설에 맞게 고치고, 점검이 현저히 곤란하면 「점검곤란」(결과란 공란, 비고에 사유)을 고르십시오. 부적합은 비고에 수리·개조 연월일과 내용을 적습니다.</div>
+        <div className="w-hint">기본 「적합」(형태에 없는 설비·「예시 기준」 항목은 「해당없음」) · 부적합은 비고에 수리·개조 연월일과 내용</div>
         {groups.map((g) => (
           <div key={g.name + g.idx[0]} className="wm-grp">
             <div className="wm-grp-h">
@@ -396,7 +390,7 @@ export default function WmInspection() {
   const blankBook = async () => {
     const [{ wmBook }, { downloadBytes }] = await Promise.all([import("../lib/sheets/wm"), import("../lib/xlsx")]);
     downloadBytes(wmBook(sub), `${f ? f.tab : "위험물안전카드"}_입력서식.xlsx`);
-    return `「${f ? f.tab : "위험물안전카드"}」 빈 서식(엑셀)을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리십시오.`;
+    return `「${f ? f.tab : "위험물안전카드"}」 빈 서식을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리십시오.`;
   };
   // 다른 날 저장한 파일 → 점검기간은 오늘로, 점검결과·비고는 기본값으로(작년 내용 재사용). 같은 날 저장한 파일 → 그대로 복원.
   const loadFile = async (file) => {
@@ -472,18 +466,19 @@ export default function WmInspection() {
       </div>
       <div className="ir">
         <div className="ir-form no-print">
-          <div className="ir-intro">
-            {f ? (
-              <>
-                <b>{f.form === "19" ? "물분무소화설비·스프링클러설비 일반점검표" : f.title}</b> — 「위험물안전관리에 관한 세부기준」 [별지 제{f.form}호서식]. 정기점검 대상 제조소등(영 제16조)의 관계인은 연 1회 이상 점검하고(시행규칙 제64조), 점검한 날부터 30일 이내 결과를 시·도지사(소방서)에 제출하며(법 제18조제2항), 점검기록은 3년간 보존합니다(시행규칙 제68조).
-                {f.kind === "fire" && " 소화·경보설비 점검표는 해당 제조소등의 일반점검표와 함께 작성합니다."}
-              </>
-            ) : (
-              <>
-                <b>위험물안전카드</b> — 위험물안전관리법 시행규칙 [별지 제48호서식]. 위험물(특수인화물·제1석유류 등)을 운송할 때 운송자가 휴대하는 카드입니다.
-              </>
-            )}
-          </div>
+          {f && (
+            <div className="ir-keys">
+              <span>
+                <b>연 1회 이상</b> 점검<small>시행규칙 제64조</small>
+              </span>
+              <span>
+                점검한 날부터 <b>30일 이내</b> 결과 제출<small>법 제18조제2항</small>
+              </span>
+              <span>
+                점검기록 <b>3년</b> 보존<small>시행규칙 제68조</small>
+              </span>
+            </div>
+          )}
           <FileBar
             saveLabel="입력 내용 파일로 저장"
             onSave={() => saveFile(false)}
@@ -494,7 +489,6 @@ export default function WmInspection() {
             accept=".json,.xlsx,application/json"
             msg={msg}
             setMsg={setMsg}
-            hint="저장한 파일(.json)을 내년에 불러오면 날짜와 불량 사항만 고치면 됩니다. 컴퓨터에서 엑셀 빈 서식에 작성해 올려도 됩니다."
           />
           <BookLink f={f} />
           {f ? <FormEditor key={f.id} f={f} st={st} setSt={setSt} all={all.forms} /> : <div className="ir-sec"><div className="ir-sec-b wm-pt"><CardEditor c={card} set={setCard} /></div></div>}
@@ -510,7 +504,7 @@ export default function WmInspection() {
                 초기화
               </button>
             </div>
-            <div className="w-hint">입력 내용은 이 기기의 브라우저에만 저장되며 서버로 전송되지 않습니다(점검표마다 따로 저장). 출력 후 서명 또는 날인하십시오.</div>
+            <div className="w-hint">입력 내용은 이 기기에만 저장 · 출력 후 서명(날인)</div>
           </div>
         </div>
         <Preview>{f ? <WmDoc key={f.id} f={f} st={st} rows={wmRows(f)} res={results(f, st)} hz={hzSummary(st.hz)} /> : <CardDoc c={card} />}</Preview>

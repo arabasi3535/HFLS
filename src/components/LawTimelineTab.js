@@ -133,7 +133,7 @@ function Row({ r, now, std, tag }) {
 }
 
 function History() {
-  const [kind, setKind] = useState("dec");
+  const [kind, setKind] = useState("law"); // (v2.49.0) 기본 법률
   const [std, setStd] = useState("103");
   const [major, setMajor] = useState(true);
   const [era, setEra] = useState("");

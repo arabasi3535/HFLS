@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { DEF_FAMS, KIND_NAME, defsFromFam, defsFromStd, searchDefs } from "../law/defs";
+import { DEF_FAMS, KIND_NAME, defsFromFam, defsFromStd, searchDefs, mergeExtra } from "../law/defs";
 import { DEF_EXTRA } from "../law/defsExtra";
 
 // ============================================================
@@ -8,7 +8,7 @@ import { DEF_EXTRA } from "../law/defsExtra";
 //  별표 등에 있는 정의는 src/law/defsExtra.js에 추가(사용자 정리분)
 // ============================================================
 
-const CACHE = "hfls_defs_v1";
+const CACHE = "hfls_defs_v2";
 const WEEK = 7 * 24 * 3600 * 1000;
 const STD_PAGES = 7; // 화재안전성능기준 42종 ÷ 6
 const STD_GROUP = "화재안전성능기준";
@@ -100,16 +100,12 @@ export default function DefsTab() {
   }, []);
   useEffect(() => setMore(SHOW), [q, body, group]);
 
-  const all = useMemo(() => [...(st.list || []), ...DEF_EXTRA], [st.list]);
+  const all = useMemo(() => mergeExtra(st.list || [], DEF_EXTRA), [st.list]);
   const hits = useMemo(() => searchDefs(all, q, { body, group }), [all, q, body, group]);
-  const counts = useMemo(() => Object.fromEntries([...GROUPS, "별표"].map((g) => [g, all.filter((d) => d.group === g).length])), [all]);
+  const counts = useMemo(() => Object.fromEntries([...GROUPS, "별표"].map((g) => [g, all.filter((d) => d.group === g || d.fam === g).length])), [all]);
 
   return (
     <div className="card df">
-      <div className="card-t">용어 정의</div>
-      <p className="df-lead">
-        소방 관계 법령(법률·시행령·시행규칙)과 화재안전성능기준의 「정의」 조문을 용어별로 찾습니다. 정의 문장은 법제처 현행 원문 그대로이며, 출처는 조·항·호·목까지 표시합니다.
-      </p>
       <div className="df-search">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="용어 검색 (예: 무창층, 피난층, 특정소방대상물)" aria-label="용어 검색" autoFocus />
         <label className="df-chk">
@@ -150,27 +146,31 @@ export default function DefsTab() {
       )}
       <ol className="df-list">
         {hits.slice(0, more).map((d, i) => (
-          <li key={`${d.src}:${d.term}:${i}`} className="df-it">
-            <div className="df-h">
-              <b className="df-term">
-                <Mark text={d.term} q={q} />
-              </b>
-              {d.alias && <span className="df-alias">({d.alias})</span>}
-              {d.parent && <span className="df-parent">「{d.parent}」의 한 종류</span>}
-              <span className={`df-grp${d.group === STD_GROUP ? " std" : d.group === "별표" ? " byl" : ""}`}>{d.group === STD_GROUP ? `NFPC ${d.std}` : d.group}</span>
-            </div>
-            <div className="df-text">
-              <Mark text={d.text} q={body ? q : ""} />
-            </div>
-            <div className="df-src">
-              출처: {d.src}
-              {d.eff ? ` (시행 ${dot(d.eff)})` : ""}
-              {d.link && (
-                <a href={d.link} target="_blank" rel="noopener noreferrer">
-                  원문
-                </a>
-              )}
-            </div>
+          <li key={`${d.src}:${d.term}:${i}${body && q ? ":q" : ""}`} className="df-it">
+            {/* (v2.49.0) 용어만 보이고 누르면 정의·출처가 펼쳐짐 — 「정의 내용까지 검색」 중엔 펼친 채로 */}
+            <details open={!!(body && q)}>
+              <summary className="df-h">
+                <b className="df-term">
+                  <Mark text={d.term} q={q} />
+                </b>
+                {d.alias && <span className="df-alias">({d.alias})</span>}
+                {d.parent && <span className="df-parent">「{d.parent}」의 한 종류</span>}
+                {d.group === "별표" && d.ref && <span className="df-parent">{d.ref}</span>}
+                <span className={`df-grp${d.group === STD_GROUP ? " std" : d.group === "별표" ? " byl" : ""}`}>{d.group === STD_GROUP ? `NFPC ${d.std}` : d.group}</span>
+              </summary>
+              <div className="df-text">
+                <Mark text={d.text} q={body ? q : ""} />
+              </div>
+              <div className="df-src">
+                출처: {d.src}
+                {d.eff ? ` (시행 ${dot(d.eff)})` : ""}
+                {d.link && (
+                  <a href={d.link} target="_blank" rel="noopener noreferrer">
+                    원문
+                  </a>
+                )}
+              </div>
+            </details>
           </li>
         ))}
       </ol>
@@ -181,7 +181,7 @@ export default function DefsTab() {
       )}
       {st.list && !hits.length && <div className="df-empty">찾는 용어가 없습니다. 「정의 내용까지 검색」을 켜 보십시오.</div>}
       <div className="lt-src">
-        출처: 법제처 국가법령정보 OPEN API 현행 조문 — {DEF_FAMS.map((f) => f[1]).join("·")}의 법률·시행령·시행규칙과 화재안전성능기준(NFPC) 42종에서 제목이 「(정의)」인 조문. 별표·부록 등에 있는 정의는 따로 추가합니다.
+        출처: 법제처 국가법령정보 OPEN API 현행 조문 — {DEF_FAMS.map((f) => f[1]).join("·")}(법률·시행령·시행규칙)의 정의 조문·별표 비고, 화재안전성능기준(NFPC) 42종의 정의 조문.
         {st.misses.length > 0 && <span className="df-miss"> 정의 조문이 없는 법령: {st.misses.length}개</span>}
       </div>
     </div>

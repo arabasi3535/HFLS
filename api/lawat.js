@@ -392,6 +392,7 @@ async function handleStd(qy, send, fail) {
 //  ?defs=fire|prevent|work|basic|multi|haz|build&format=json → 그 계열 법률·시행령·시행규칙의 정의 조문
 //  ?defs=std&page=N&format=json → 화재안전성능기준(NFPC) 6개씩
 //  조문을 용어별로 나누는 일은 화면(src/law/defs.js)에서 함
+const { bylDefs } = require("./_bylDefs");
 const DEF_RE = /\((?:용어의\s*)?정의\)/;
 const DEF_PER = 6;
 const pickDefs = (d) => d.arts.filter((a) => !a.head && DEF_RE.test(a.label || "")).map(({ k, label, text }) => ({ k, label, text }));
@@ -424,7 +425,7 @@ async function handleDefs(qy, send, fail) {
         const ver = await findOne(fam, kind, `19000101~${today}`, "prev");
         if (!ver) return { kind, error: "현행 법령 없음" };
         const d = await loadDoc(ver.mst, ver.eff);
-        return { kind, ver, link: lawLink(ver), arts: pickDefs(d) };
+        return { kind, ver, link: lawLink(ver), arts: pickDefs(d), byls: d.byls.flatMap(bylDefs) }; // (v2.49.0) 별표 비고 등의 정의
       } catch (e) {
         return { kind, error: e.message };
       }

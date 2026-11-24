@@ -5,7 +5,8 @@ import { useRef, useState } from "react";
  *  onSave / onBlank: 파일 만들어 내려받기(비동기 가능)
  *  onLoad(file): 올린 파일 처리 → 안내 문구 반환(또는 throw)
  */
-export default function FileBar({ saveLabel = "입력 내용 받기(엑셀)", onShare, onSave, onSaveAll, saveAllLabel, onBlank, onLoad, accept = ".xlsx", hint, msg: msg0, setMsg: setMsg0 }) {
+export default function FileBar({ saveLabel = "입력 내용 받기", onShare, onSave, onSaveAll, saveAllLabel, onBlank, onLoad, accept = ".xlsx", msg: msg0, setMsg: setMsg0 }) {
+  // (v2.49.0) 버튼 한 줄, 「(엑셀)」·설명 문구(hint) 표시 안 함
   const ref = useRef(null);
   const [msgL, setMsgL] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,7 +37,7 @@ export default function FileBar({ saveLabel = "입력 내용 받기(엑셀)", on
         )}
         {onBlank && (
           <button type="button" className="w-reset" disabled={busy} onClick={() => run(onBlank)}>
-            빈 서식 받기(엑셀)
+            빈 서식 받기
           </button>
         )}
         <button type="button" className="w-reset" disabled={busy} onClick={() => ref.current && ref.current.click()}>
@@ -58,7 +59,6 @@ export default function FileBar({ saveLabel = "입력 내용 받기(엑셀)", on
             if (f) run(() => onLoad(f));
           }}
         />
-        {hint && <span className="w-hint">{hint}</span>}
       </div>
       {msg && <div className="note fb-msg">{msg}</div>}
     </>

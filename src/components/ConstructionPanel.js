@@ -122,13 +122,13 @@ export default function ConstructionPanel({ seed, onOpen }) {
                   <li key={i}>{x}</li>
                 ))}
               </ul>
-              {r.supv.status === "대상" && <div className="cx-muted">최근 3년 영업정지(취소)·과징금 처분 이력 업체 현장 여부는 보조 계산기에서 체크하십시오.</div>}
+              {r.supv.status === "대상" && <div className="cx-muted">최근 3년 영업정지(취소)·과징금 처분 이력 업체 현장 여부는 따로 확인하십시오.</div>}
               <div className="cx-ref">{r.site.ref}</div>
             </Card>
           )}
 
           <div className="cx-pnote">
-            설치 목록 그대로 산정했습니다(물분무등 호스릴 방식·캐비닛형 간이스프링클러·소화수조 여부, 여러 동 현장 합계는 보조 계산기의 「소방공사 착공·감리 판정」에서 조정).
+            설치 목록 그대로 산정(물분무등 호스릴 방식·캐비닛형 간이스프링클러·소화수조 여부, 여러 동 현장 합계는 따로 확인).
             {seed.chk && seed.chk.length > 0 && <em> 확인 필요 설비 포함: {seed.chk.join(", ")}</em>}
           </div>
         </>

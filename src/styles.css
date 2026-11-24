@@ -1402,3 +1402,47 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 .df-empty { font-size: 13px; color: var(--muted); padding: 14px 4px; }
 .df-miss { margin-left: 4px; }
 @media (max-width: 760px) { .df-grp { margin-left: 0; } }
+
+/* v2.49.0 입력·점검 파일 버튼 한 줄 */
+.ir-file.fb { flex-wrap: nowrap; gap: 6px; }
+.ir-file.fb .w-reset { flex: 1 1 auto; min-width: 0; white-space: nowrap; font-size: 12.5px; padding: 8px 8px; border-radius: 8px; }
+@media (max-width: 420px) { .ir-file.fb .w-reset { font-size: 11.5px; padding: 8px 4px; } }
+/* v2.49.0 무창층 — 계산값 자동 칸, 접이식 개구부 면적 계산 */
+.tl-direct-grid input.tl-auto { background: color-mix(in srgb, var(--accent) 10%, var(--panel)); color: var(--accent); font-weight: 700; border-style: dashed; }
+.tl-calcbox { margin-top: 6px; border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; }
+.tl-calcbox > summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--ink2); }
+.tl-calcbox[open] > summary { margin-bottom: 6px; }
+/* v2.49.0 법령 자료 — 묶음 제목 부각 */
+.lw-sec > summary { display: flex; align-items: center; gap: 8px; margin: -12px -16px 0; padding: 11px 16px; border-radius: 12px; background: color-mix(in srgb, var(--navy) 6%, var(--panel)); border-left: 4px solid var(--navy); }
+.lw-sec[open] > summary { margin-bottom: 10px; border-radius: 12px 12px 0 0; }
+.lw-sec > summary h4 { margin: 0; font-size: 15.5px; font-weight: 800; color: var(--navy); letter-spacing: -0.2px; }
+.lw-sec > summary h4 span { display: inline-block; min-width: 22px; text-align: center; background: var(--navy); color: #fff; border-radius: 999px; padding: 0 7px; font-size: 11.5px; font-weight: 700; margin-left: 6px; vertical-align: 2px; }
+@media (prefers-color-scheme: dark) { .lw-sec > summary { background: var(--line2); border-left-color: var(--accent); } .lw-sec > summary h4 { color: var(--ink); } .lw-sec > summary h4 span { background: var(--accent); color: #0f141b; } }
+/* v2.49.0 법령 연혁 — 세 카드(연혁법 찾기·법령 체계·개정 연혁) 같은 크기·제목 */
+.lt-merge > .card, .lt-merge .lt > .card { padding: 14px 16px; margin: 0; width: 100%; box-sizing: border-box; }
+.lt-merge .card-t { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+/* v2.49.0 실무 자료 내려받기 횟수 */
+.pr-dl { align-self: center; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-left: 2px; }
+/* v2.49.0 용어 정의 — 용어만 표시, 눌러서 펼침 */
+.df-it { padding: 0; }
+.df-it > details > summary.df-h { list-style: none; cursor: pointer; padding: 9px 2px; }
+.df-it > details > summary.df-h::-webkit-details-marker { display: none; }
+.df-it > details > summary.df-h::before { content: "▸"; color: var(--muted); font-size: 11px; margin-right: 2px; }
+.df-it > details[open] > summary.df-h::before { content: "▾"; }
+.df-it > details > summary.df-h:hover .df-term { color: var(--accent); }
+.df-it > details[open] { padding-bottom: 10px; }
+.df-it > details > .df-text, .df-it > details > .df-src { margin-left: 14px; }
+/* v2.49.0 점검 — 산정 연계 버튼만 */
+.ir-link:has(> .w-run:only-child) { background: none; border: 0; padding: 0; justify-content: flex-start; }
+/* v2.49.0 위험물·다중 점검 — 핵심 3가지만 강조, 탭 한 줄 */
+.ir-keys { display: flex; flex-wrap: wrap; gap: 6px; }
+.ir-keys > span { flex: 1 1 0; min-width: 0; display: block; line-height: 1.45; background: var(--m-bg); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 7px 10px; font-size: 13px; color: var(--ink); }
+.ir-keys b { color: var(--accent); font-weight: 800; }
+.ir-keys small { display: block; font-size: 11px; color: var(--muted); }
+@media (max-width: 520px) { .ir-keys > span { font-size: 12px; padding: 6px 8px; } }
+.wm-book { font-size: 13px; color: var(--ink2); }
+.wm-book a { font-weight: 700; color: var(--accent); }
+.wm-tabrow { align-items: center; }
+.wm-tabrow > span { flex: 0 0 auto; padding-top: 0; white-space: nowrap; }
+.wm-tabrow .tl-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; gap: 4px; }
+.wm-tabrow .tl-tabs button { flex: 0 0 auto; white-space: nowrap; padding-left: 9px; padding-right: 9px; }

@@ -89,8 +89,31 @@ export function defsFromFam(res, famLabel) {
         list.push({ ...d, law: it.ver.name, src: `${it.ver.name} ${d.ref}`, group: famLabel, kind: it.kind, eff: it.ver.eff, link: it.link });
       }
     }
+    for (const b of it.byls || []) {
+      const ref = bylRef(b);
+      for (const term of b.terms || []) list.push({ term, alias: b.alias || "", text: b.text, ref, law: it.ver.name, src: `${it.ver.name} ${ref}`, group: "별표", fam: famLabel, kind: it.kind, eff: it.ver.eff, link: it.link });
+    }
   }
   return list;
+}
+
+/** 별표 정의 위치 — 「[별표 1] 제2호(소방시설공사업) 비고 제6호」 */
+export function bylRef(b) {
+  const no = (x) => {
+    const m = /^(\d+)\.$/.exec(x || "");
+    if (m) return `제${m[1]}호`;
+    const k = /^([가-하])\.$/.exec(x || "");
+    return k ? `${k[1]}목` : x || "";
+  };
+  const sec = /^(\d+)\.\s*(.+)$/.exec(b.section || "");
+  return [`[별표 ${String(b.byl).replace(/-/g, "의")}]`, sec ? `제${sec[1]}호(${sec[2]})` : "", b.bigo ? "비고" : "", no(b.no)].filter(Boolean).join(" ");
+}
+
+/** 사용자 정리분(DEF_EXTRA)이 있으면 같은 출처·용어의 자동 추출분 대신 씀(줄바꿈 정리본) */
+export function mergeExtra(list, extra) {
+  const key = (d) => `${d.src}|${d.term}`;
+  const have = new Set(extra.map(key));
+  return [...list.filter((d) => !have.has(key(d))), ...extra];
 }
 
 /** 서버 응답(defs=std) → 정의 목록 */
@@ -112,7 +135,7 @@ const norm = (s) => String(s || "").replace(/[\s·ㆍ・()（）「」"“”]/g
 /** 검색 — 용어가 같으면 먼저, 용어에 들어 있으면 다음, (본문 검색을 켜면) 정의 문장에 들어 있으면 마지막 */
 export function searchDefs(list, q, { body = false, group = "" } = {}) {
   const k = norm(q);
-  const pool = group ? list.filter((d) => d.group === group) : list;
+  const pool = group ? list.filter((d) => d.group === group || d.fam === group) : list; // 법 묶음엔 그 법의 별표 정의도
   if (!k) return pool;
   const scored = [];
   for (const d of pool) {

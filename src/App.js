@@ -112,7 +112,6 @@ export default function App() {
   const [profile, setProfile] = useState(false);
   const [reportSeed, setReportSeed] = useState(null);
   const [inspSub, setInspSub] = useState(loadInspSub); // 점검 탭 하위 탭
-  const [buildSeed, setBuildSeed] = useState(null);
   // 입력 화면 → 보조 계산기(무창층·수용인원) 연결: 보낸 층 정보, 계산 결과는 onToolApply로 되돌려 반영
   const [toolLink, setToolLink] = useState(null);
   const today = useMemo(todayKST, []);
@@ -362,7 +361,6 @@ export default function App() {
                   setInputs((p) => ({ ...p, [mode]: input }));
                   return `「${file.name}」을 불러왔습니다.` + (warn.length ? ` 확인할 점: ${warn.join(" / ")}` : "");
                 }}
-                hint="컴퓨터에서 엑셀로 작성해 올릴 수 있습니다."
               />
               <Wizard key={mode} mode={mode} input={inputs[mode]} setInput={setInput} onReset={reset} onTool={openTool} errors={dateErr ? { date: dateErr.replace(/^건축허가일\(|\)$/g, "") } : {}} />
             </aside>
@@ -378,15 +376,6 @@ export default function App() {
                     setTab("inspect");
                     window.scrollTo(0, 0);
                   }}
-                  onMakeConstruction={
-                    mode === "new"
-                      ? (s) => {
-                          setBuildSeed(s);
-                          setTab("tools");
-                          window.scrollTo(0, 0);
-                        }
-                      : null
-                  }
                   mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)}
                   onDecide={(key, v) =>
                     setInput((p) => {
@@ -416,15 +405,7 @@ export default function App() {
         )}
         {tab === "tools" && (
           <Suspense fallback={<div className="empty">불러오는 중…</div>}>
-            <Tools
-              seed={buildSeed}
-              link={toolLink}
-              onApply={onToolApply}
-              onGoNew={() => {
-                setTab("new");
-                window.scrollTo(0, 0);
-              }}
-            />
+            <Tools link={toolLink} onApply={onToolApply} />
           </Suspense>
         )}
         {tab === "inspect" && (

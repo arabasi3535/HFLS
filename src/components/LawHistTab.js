@@ -148,15 +148,8 @@ export default function LawHistTab() {
   };
 
   return (
-    <div className="pp lh">
-      <div className="vd-head pp-head">
-        <div>
-          <b>연혁법 찾기</b>
-          <p>
-            허가일 같은 <b>기준일에 시행 중이던 법령·화재안전기준</b>의 조문·별표 원문을 법제처에서 바로 불러옵니다. 법령 이름이 바뀐 시기(소방법 → 소방시설법, NFSC → NFPC·NFTC 등)도 하나로 이어서 찾습니다.
-          </p>
-        </div>
-      </div>
+    <div className="card pp lh">
+      <div className="card-t">연혁법 찾기</div>
 
       <div className="lh-form">
         <div className="lh-seg lh-mode" role="radiogroup" aria-label="찾을 자료">

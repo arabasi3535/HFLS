@@ -223,7 +223,7 @@ export default function MuInspection() {
   const blankBook = async () => {
     const [{ muBook }, { downloadBytes }] = await Promise.all([import("../lib/sheets/mu"), import("../lib/xlsx")]);
     downloadBytes(muBook(), "안전시설등세부점검표_입력서식.xlsx");
-    return "빈 서식(엑셀)을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리십시오.";
+    return "빈 서식을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리십시오.";
   };
   const loadFile = async (file) => {
     if (/\.xlsx$/i.test(file.name)) {
@@ -260,8 +260,17 @@ export default function MuInspection() {
   return (
     <div className="ir mu">
       <div className="ir-form no-print">
-        <div className="ir-intro">
-          <b>안전시설등 세부점검표</b> — 다중이용업소법 시행규칙 [별지 제10호서식]. 다중이용업주는 안전시설등을 <b>매 분기 1회 이상</b> 점검하고(소방시설 자체점검을 한 분기는 생략 가능) 점검결과서를 <b>1년간 보관</b>합니다(법 제13조제1항, 시행규칙 제13조·제14조). 소방시설관리업자에게 위탁할 수 있습니다(법 제13조제2항).
+        <div className="ir-keys">
+          <span>
+            <b>매 분기 1회 이상</b> 점검<small>법 제13조제1항, 시행규칙 제13조·제14조</small>
+          </span>
+          <span>
+            점검결과서 <b>1년</b> 보관<small>법 제13조제1항, 시행규칙 제13조·제14조</small>
+          </span>
+          <span>
+            소방시설관리업자 <b>위탁 가능</b>
+            <small>법 제13조제2항</small>
+          </span>
         </div>
         <FileBar
           saveLabel="입력 내용 파일로 저장"
@@ -271,7 +280,6 @@ export default function MuInspection() {
           accept=".json,.xlsx,application/json"
           msg={msg}
           setMsg={setMsg}
-          hint="저장한 파일(.json)을 다음 분기에 불러오면 점검일자·결과만 고치면 됩니다. 컴퓨터에서 엑셀 빈 서식에 작성해 올려도 됩니다."
         />
 
         <section className="ir-sec">
@@ -295,7 +303,6 @@ export default function MuInspection() {
                   </option>
                 ))}
               </select>
-              <span className="w-hint">고르면 주용도에 업종 이름이 들어갑니다.</span>
             </label>
             <div className="w-grid2">
               {I("대상명", "name")}
@@ -318,7 +325,7 @@ export default function MuInspection() {
             </small>
           </div>
           <div className="ir-sec-b">
-            <div className="w-hint">항목마다 점검한 결과를 직접 고르십시오(같은 버튼을 다시 누르면 취소). 불량이면 조치사항(조치 내용·예정일)을 적습니다.</div>
+            <div className="w-hint">같은 버튼을 다시 누르면 취소 · 불량이면 조치사항(내용·예정일) 입력</div>
             <div className="mu-items">
               {MU_ITEMS.map(([title, subs], i) => {
                 return (
@@ -381,7 +388,7 @@ export default function MuInspection() {
               초기화
             </button>
           </div>
-          <div className="w-hint">입력 내용은 이 기기의 브라우저에만 저장되며 서버로 전송되지 않습니다. 출력 후 서명 또는 날인하고 1년간 보관하십시오.</div>
+          <div className="w-hint">입력 내용은 이 기기에만 저장 · 출력 후 서명(날인), 1년간 보관</div>
         </div>
       </div>
       <Preview>

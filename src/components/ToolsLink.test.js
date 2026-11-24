@@ -34,14 +34,17 @@ test("무창층 계산기 — 새로 열면 층·바닥면적만, 같은 at이�
   expect(linkedPart(a, link)).toBe(a);
 });
 
-test("「초기화」 — 입력 화면에서 연 경우도 층·바닥면적·산정 구분까지 모두 지우고 연결(반영)만 남김(v2.44.0)", () => {
+test("「초기화」 — 층·바닥면적·산정 구분과 「입력에서 열었습니다」 연결까지 모두 지우고, 같은 입력에서 다시 채워지지 않음(v2.49.0)", () => {
   const wl = linkedPart({}, { kind: "windowless", mode: "existing", at: 7, floors: [{ level: -1, area: "50" }, { level: 3, area: "200" }] });
   const r = resetPart("windowless", wl);
   expect(r.floors.map((f) => [f.level, f.area])).toEqual([[1, ""]]);
-  expect(r.link).toEqual({ mode: "existing", at: 7, cleared: true });
-  // 초기화 뒤 계산기 탭 안에서 옮겼다 돌아와도(같은 at) 다시 채워지지 않음
+  expect(r.link).toBeUndefined();
+  expect(r.seenAt).toBe(7);
   expect(linkedPart(r, { kind: "windowless", mode: "existing", at: 7, floors: [{ level: 3, area: "200" }] })).toBe(r);
+  const again = linkedPart(r, { kind: "windowless", mode: "existing", at: 8, floors: [{ level: 3, area: "200" }] }); // 새로 보내면 다시 채움
+  expect(again.floors.map((f) => f.area)).toEqual(["200"]);
+  expect(resetPart("windowless", r).seenAt).toBe(7);
   expect(resetPart("windowless", { floors: [] })).toEqual({ floors: [expect.objectContaining({ level: 1 })] });
-  expect(resetPart("occ", { type: "hall", area: "300", link: { mode: "new", at: 9 } })).toEqual({ link: { mode: "new", at: 9, cleared: true } });
+  expect(resetPart("occ", { type: "hall", area: "300", link: { mode: "new", at: 9 } })).toEqual({ seenAt: 9 });
   expect(resetPart("occ", { type: "hall", area: "300" })).toEqual({});
 });

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import InspectionReport, { loadReport } from "./InspectionReport";
+import InspectionReport from "./InspectionReport";
 import { VARIANTS } from "../law/report";
 
 // ============================================================
 // 자체점검 보고서 탭 — 작동점검(관계인) · 작동점검(관리업) · 종합점검(최초점검) · 종합점검(그 밖의 종합점검)
-// 보고서마다 입력값을 따로 저장하고, 다른 보고서의 대상물 정보를 가져올 수 있음
+// 보고서마다 입력값을 따로 저장
 // ============================================================
 
 const KEY = "hfls_selfinsp_sub";
@@ -37,7 +37,7 @@ export default function SelfInspection({ seed, onGoExisting }) {
           </button>
         ))}
       </nav>
-      <InspectionReport key={sub} variant={sub} seed={seed && (seed.variant || "owner") === sub ? seed : null} onGoExisting={onGoExisting} onCopyFrom={(id) => loadReport(id)} />
+      <InspectionReport key={sub} variant={sub} seed={seed && (seed.variant || "owner") === sub ? seed : null} onGoExisting={onGoExisting} />
     </div>
   );
 }

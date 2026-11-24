@@ -51,7 +51,7 @@ export default function EtcTab({ onGo }) {
         ))}
       </nav>
       {sub === "video" && <VideoTab onGo={onGo} />}
-      {sub === "law" && <LawTab onHist={() => setSub("lawhist")} />}
+      {sub === "law" && <LawTab />}
       {sub === "terms" && <DefsTab />}
       {sub === "lawhist" && (
         <div className="lt-merge">

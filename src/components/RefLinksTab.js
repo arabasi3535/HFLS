@@ -1,23 +1,15 @@
+import { useEffect, useState } from "react";
 import { GUIDE_GROUPS, SITE_GROUPS } from "../law/refLinks";
 import { PRACTICE_DOCS, practiceUrl } from "../law/practiceDocs";
+import { loadDownloads, countDownload } from "../lib/remote";
 
 // ============================================================
 // 기타 자료 › 해설서·매뉴얼 / 관련 사이트 — 링크 모음(목록: src/law/refLinks.js)
 // ============================================================
 
-const count = (groups) => groups.reduce((n, g) => n + g.items.length, 0);
-
 export function GuideTab() {
   return (
     <div className="pp">
-      <div className="vd-head pp-head">
-        <div>
-          <b>해설서·매뉴얼 {count(GUIDE_GROUPS)}건</b>
-          <p>
-            소방청 법령자료실 등에 올라온 법령 해설서·질의회신집·업무 매뉴얼의 게시물로 연결합니다. 파일(PDF·HWP)은 열린 게시물의 첨부파일에서 받으십시오. 해설서는 발간 당시 법령 기준이므로 개정된 부분은 법령 원문으로 확인하십시오.
-          </p>
-        </div>
-      </div>
       {GUIDE_GROUPS.map((g) => (
         <section key={g.id} className="pp-sec">
           <h4>
@@ -42,12 +34,6 @@ export function GuideTab() {
 export function SiteTab() {
   return (
     <div className="pp">
-      <div className="vd-head pp-head">
-        <div>
-          <b>관련 사이트 {count(SITE_GROUPS)}곳</b>
-          <p>소방 업무에 자주 쓰는 기관 누리집입니다. 「업무용 로그인」 표시가 있는 곳은 담당자 계정(인증서)으로 들어갑니다.</p>
-        </div>
-      </div>
       {SITE_GROUPS.map((g) => (
         <section key={g.id} className="pp-sec">
           <h4>
@@ -73,17 +59,22 @@ export function SiteTab() {
 }
 
 export function PracticeTab() {
-  const n = PRACTICE_DOCS.length;
+  const [dl, setDl] = useState(null); // 파일별 내려받기(열기 포함) 횟수 — 저장소 미설정이면 표시 안 함
+  useEffect(() => {
+    let on = true;
+    loadDownloads().then((c) => on && setDl(c));
+    return () => {
+      on = false;
+    };
+  }, []);
+  const hit = (f) => {
+    countDownload(f);
+    setDl((p) => (p ? { ...p, [f]: (p[f] || 0) + 1 } : p));
+  };
   return (
     <div className="pp">
       <div className="pr-warn" role="note">
         <b>⚠ 참고용 자료입니다.</b> 업무 이해를 돕기 위해 요약한 자료로, 법령 개정·해석에 따라 내용이 달라질 수 있으며 정확성을 보증하지 않습니다. 실제 업무·민원 판단은 반드시 법령 원문과 소관 부서 지침으로 확인하십시오.
-      </div>
-      <div className="vd-head pp-head">
-        <div>
-          <b>실무 자료 — 한눈에 보기 {n}종</b>
-          <p>1쪽 요약(PDF, 2026. 11. 작성). 미리보기를 누르면 크게 열리고, 「내려받기」로 저장할 수 있습니다.</p>
-        </div>
       </div>
       <section className="pp-sec">
         <div className="pr-grid">
@@ -98,12 +89,13 @@ export function PracticeTab() {
                 </div>
                 <div className="pp-m">{it.core}</div>
                 <div className="pr-btns">
-                  <a className="btn small" href={practiceUrl(it.f)} target="_blank" rel="noopener noreferrer">
+                  <a className="btn small" href={practiceUrl(it.f)} target="_blank" rel="noopener noreferrer" onClick={() => hit(it.f)}>
                     열기 ↗
                   </a>
-                  <a className="btn small" href={practiceUrl(it.f)} download={`${it.t} 한눈에 보기.pdf`}>
+                  <a className="btn small" href={practiceUrl(it.f)} download={`${it.t} 한눈에 보기.pdf`} onClick={() => hit(it.f)}>
                     ⬇ 내려받기
                   </a>
+                  {dl && <span className="pr-dl" title="열기·내려받기 횟수(같은 사람은 하루 1회)">⬇ {(dl[it.f] || 0).toLocaleString()}회</span>}
                 </div>
               </div>
             </div>

@@ -69,3 +69,37 @@ test("서버 응답 → 목록·출처, 검색 순서", () => {
   expect(searchDefs(all, "소성가공", { body: true }).map((x) => x.term)).toEqual(["분기배관", "확관형 분기배관"]); // 본문 검색(목 포함)
   expect(searchDefs(all, "", { group: "화재안전성능기준" })).toHaveLength(6);
 });
+
+test("별표 정의(v2.49.0) — 출처 표기, 법 묶음 거르기에 포함, 정리본(DEF_EXTRA)이 자동 추출분을 대신함", () => {
+  const { defsFromFam, bylRef, mergeExtra, searchDefs } = require("./defs");
+  const { DEF_EXTRA } = require("./defsExtra");
+  const res = {
+    items: [
+      {
+        kind: "dec",
+        ver: { name: "소방시설공사업법 시행령", eff: "20260701" },
+        link: "L",
+        arts: [],
+        byls: [
+          { byl: "1", section: "2. 소방시설공사업", bigo: true, no: "6.", terms: ["개설"], alias: "", text: '"개설"이란 이미 특정소방대상물에 설치된 소방시설등의 전부 또는 일부를 철거\n하고 새로 설치하는 것을 말한다.' },
+          { byl: "4", section: "1. 소방공사 감리원의 배치기준", bigo: true, no: "가.", terms: ["책임감리원"], alias: "", text: "x" },
+          { byl: "2-3", section: "", bigo: true, no: "3.", terms: ["가상용어"], alias: "", text: "y" },
+        ],
+      },
+    ],
+  };
+  const list = defsFromFam(res, "소방시설공사업법");
+  expect(list.map((d) => d.src)).toEqual([
+    "소방시설공사업법 시행령 [별표 1] 제2호(소방시설공사업) 비고 제6호",
+    "소방시설공사업법 시행령 [별표 4] 제1호(소방공사 감리원의 배치기준) 비고 가목",
+    "소방시설공사업법 시행령 [별표 2의3] 비고 제3호",
+  ]);
+  expect(bylRef({ byl: "1", section: "", bigo: false, no: "가." })).toBe("[별표 1] 가목");
+  expect(searchDefs(list, "", { group: "소방시설공사업법" })).toHaveLength(3);
+  const all = mergeExtra(list, DEF_EXTRA);
+  const gaeseol = all.filter((d) => d.term === "개설");
+  expect(gaeseol).toHaveLength(1);
+  expect(gaeseol[0].text).toBe('"개설"이란 이미 특정소방대상물에 설치된 소방시설등의 전부 또는 일부를 철거하고 새로 설치하는 것을 말한다. 다만, 제8호에 해당하는 경우는 제외한다.');
+  expect(all.filter((d) => d.term === "책임감리원")).toHaveLength(1);
+  expect(all.some((d) => d.term === "가상용어")).toBe(true);
+});

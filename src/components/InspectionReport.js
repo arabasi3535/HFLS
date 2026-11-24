@@ -119,7 +119,7 @@ function FacRow({ row, st, onChange, comp }) {
   );
 }
 
-export default function InspectionReport({ variant = "owner", seed, onGoExisting, onCopyFrom }) {
+export default function InspectionReport({ variant = "owner", seed, onGoExisting }) {
   const vr = VARIANTS[variant] || VARIANTS.owner;
   const pro = vr.id !== "owner";
   const QUALS = pro ? QUALS_PRO : QUALS_OWNER;
@@ -215,7 +215,7 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
   const blankBook = async () => {
     const [{ reportBook }, { downloadBytes }] = await Promise.all([import("../lib/sheets/report"), import("../lib/xlsx")]);
     downloadBytes(reportBook(vr.id), `${vr.file}_보고서_입력서식.xlsx`);
-    return "빈 서식(엑셀)을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리면 보고서가 채워집니다.";
+    return "빈 서식을 받았습니다. 노란 칸을 채운 뒤 「불러오기」로 올리면 보고서가 채워집니다.";
   };
 
   const missing = missingFields(rep);
@@ -301,25 +301,7 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
   return (
     <div className="ir">
       <div className="ir-form no-print">
-        <div className="ir-intro">
-          {vr.id === "owner" && (
-            <>
-              <b>관계인 작동점검 보고서</b> — 3급 소방안전관리대상물(간이스프링클러설비·자동화재탐지설비)을 관계인이 직접 점검한 결과를 「소방시설등 자체점검 실시결과 보고서」(시행규칙 별지 제9호서식)로 만듭니다.
-            </>
-          )}
-          {vr.id === "mgmt" && (
-            <>
-              <b>작동점검 보고서(관리업)</b> — 소방시설관리업자(관리업에 등록된 소방시설관리사·특급점검자) 또는 소방안전관리자로 선임된 소방시설관리사·소방기술사가 작동점검한 결과를 별지 제9호서식으로 만듭니다.
-            </>
-          )}
-          {vr.comp && (
-            <>
-              <b>{vr.title}</b> — 관리업에 등록된 소방시설관리사 또는 소방안전관리자로 선임된 소방시설관리사·소방기술사가 종합점검한 결과를 별지 제9호서식으로 만듭니다. 불량 항목은 고시 점검표의 작동(○)·종합(●) 항목에서 고릅니다.
-              {vr.first && " 최초점검은 소방시설이 신설된 경우 건축물을 사용할 수 있게 된 날부터 60일 이내 실시합니다(시행규칙 별표3 제1호나목1)·제3호나목)."}
-            </>
-          )}{" "}
-          기본값은 모두 <b>양호</b>이고, 불량인 설비만 고르면 점검번호와 불량내용이 자동으로 들어갑니다.
-        </div>
+        {vr.first && <div className="ir-intro">최초점검: 건축물을 사용할 수 있게 된 날부터 60일 이내(시행규칙 별표3 제1호나목1)·제3호나목)</div>}
         <FileBar
           saveLabel="입력 내용 파일로 저장"
           onSave={exportFile}
@@ -328,67 +310,15 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
           accept=".json,.xlsx,application/json"
           msg={msg}
           setMsg={setMsg}
-          hint="저장한 파일(.json)을 내년에 불러오면 날짜·불량 사항만 고치면 됩니다. 컴퓨터에서 엑셀 빈 서식에 작성해 올려도 됩니다."
         />
 
-        {pro && onCopyFrom && (
-          <div className="ir-copy">
-            <span>다른 보고서에서 대상물 정보 가져오기:</span>
-            {Object.values(VARIANTS)
-              .filter((x) => x.id !== vr.id)
-              .map((x) => (
-                <button
-                  key={x.id}
-                  type="button"
-                  className="w-link"
-                  onClick={() => {
-                    const src = onCopyFrom(x.id);
-                    if (!src || !src.name) {
-                      alert(`「${x.tab}」에 입력된 대상물이 없습니다.`);
-                      return;
-                    }
-                    setRep((r) => ({
-                      ...r,
-                      name: src.name,
-                      useLabel: src.useLabel,
-                      addr: src.addr,
-                      station: src.station,
-                      owner: src.owner,
-                      manager: src.manager,
-                      grade: src.grade,
-                      plan: src.plan,
-                      edu: src.edu,
-                      drill: src.drill,
-                      insurance: src.insurance,
-                      multi: src.multi,
-                      bld: src.bld,
-                      detail: src.detail,
-                      rows: Object.fromEntries(Object.entries(src.rows || {}).map(([k, st]) => [k, { on: !!(st && st.on), bad: {} }])),
-                      mRows: Object.fromEntries(Object.entries(src.mRows || {}).map(([k, st]) => [k, { on: !!(st && st.on), bad: {} }])),
-                    }));
-                    setMsg(`「${x.tab}」의 대상물·관계인·건축물·설치 소방시설 정보를 가져왔습니다(점검 결과는 모두 양호로).`);
-                  }}
-                >
-                  {x.tab}
-                </button>
-              ))}
-          </div>
-        )}
-
-        <div className="ir-link">
-          <div>
-            <b>소방시설 산정 결과 연계</b>
-            <p>
-              「기존 건축물」{vr.first ? "(또는 「신축 건축물」)" : ""}에서 용도·규모를 입력해 소방시설을 산정하면, 그 결과(용도·연면적·층수·세대수·설치 소방시설{pro ? "·소방안전관리등급" : ""})를 이 보고서에 그대로 옮겨 올 수 있습니다. 산정 결과
-              「안전관리 검토 → 자체점검」에서 <b>「{vr.id === "owner" ? "관계인 작동점검" : vr.comp ? (vr.first ? "종합점검(최초점검)" : "종합점검") : "작동점검(관리업)"} 보고서 작성 →」</b>을 누르십시오.
-            </p>
-          </div>
-          {onGoExisting && (
+        {onGoExisting && (
+          <div className="ir-link">
             <button type="button" className="w-run" onClick={onGoExisting}>
               기존 건축물에서 산정하기 →
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <Sec title="1. 대상물·점검기간" sub="필수">
           <div className="w-grid2">
@@ -630,8 +560,8 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
         </Sec>
 
         <Sec title="5. 소방시설 점검 결과" sub={`설치 ${onRows.length}종 · 불량 ${defs.length}건`}>
-          <div className="w-hint">설치된 시설은 모두 「양호」가 기본입니다. 문제가 있는 시설만 「불량」을 누르고 해당 점검항목을 고르십시오.</div>
-          {onRows.length === 0 && <div className="note warn">설치된 소방시설이 없습니다. 아래 「시설 추가」에서 고르거나, {pro ? "위 「다른 보고서에서 대상물 정보 가져오기」를 이용하십시오." : "기존 건축물 탭의 검토 결과에서 「관계인 작동점검 보고서 작성」을 누르십시오."}</div>}
+          <div className="w-hint">기본 「양호」 — 불량 시설만 「불량」 후 점검항목 선택</div>
+          {onRows.length === 0 && <div className="note warn">설치된 소방시설이 없습니다. 아래 「시설 추가」에서 고르거나, 위 「기존 건축물에서 산정하기」로 가져오십시오.</div>}
           {onRows.map((row) => (
             <FacRow key={row.id} row={row} comp={vr.comp} st={rep.rows[row.id]} onChange={(st) => setRow(row.id, st)} />
           ))}
@@ -857,7 +787,7 @@ export default function InspectionReport({ variant = "owner", seed, onGoExisting
               첨부: 관계인에게는 소방시설등 점검표(고시 별지 제4호서식), 관계인이 소방서에 보고할 때는 {rep.checker === "mgmt" ? "점검인력 배치확인서와 " : ""}불량 시 이행계획서(별지 제10호서식)를 함께 냅니다.
             </div>
           )}
-          <div className="w-hint">입력 내용은 이 기기의 브라우저에만 저장되며 서버로 전송되지 않습니다. 출력 후 서명 또는 날인하십시오.</div>
+          <div className="w-hint">입력 내용은 이 기기에만 저장 · 출력 후 서명(날인)</div>
         </div>
       </div>
 

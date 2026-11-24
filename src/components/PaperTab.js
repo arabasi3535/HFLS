@@ -80,15 +80,6 @@ export default function PaperTab() {
 
   return (
     <div className="pp">
-      <div className="vd-head pp-head">
-        <div>
-          <b>논문 자료 {PAPERS.length}편</b>
-          <p>
-            누구나 무료로 원문을 볼 수 있는 학술지 2곳(한국화재소방학회논문지, 한국방재학회논문집)에서 소방공무원과 소방시설에 관한 논문을 골라
-            분야별로 모았습니다. 제목을 누르면 학술지 누리집의 원문 화면이 열립니다.
-          </p>
-        </div>
-      </div>
 
       <JournalBox />
 

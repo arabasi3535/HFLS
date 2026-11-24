@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import PumpCalc from "./PumpCalc";
-import ConstructionCalc from "./ConstructionCalc";
 import HazmatCalc from "./HazmatCalc";
 import AcademyCalc, { newUnit } from "./AcademyCalc";
-import { facsFromKeys } from "../law/construction";
 import { windowlessFloor, occupancy, OCC_TYPES } from "../law/tools";
 
 // ============================================================
-// 보조 계산기 탭 — 무창층 판정 · 수용인원 산정 · 소화펌프 용량 산정 · 소방공사 착공·감리 판정 · 위험물 지정수량 배수 판정 · 학원 다중이용업소 판단
+// 보조 계산기 탭 — 무창층 판정 · 수용인원 산정 · 소화펌프 용량 산정 · 위험물 지정수량 배수 판정 · 학원 다중이용업소 판단
 // ============================================================
 
 const KEY = "hfls_tools_v1";
@@ -31,18 +29,17 @@ const AREA_N = 8; // 면적 직접 입력 — 한 줄 칸 수
 const areaRow = () => Array(AREA_N).fill("0");
 const floor0 = (level) => ({ level, area: "", doors: level === 1 ? [row0()] : [], windows: [row0()], areas: areaRow() });
 
-/** 개구부 면적 직접 입력 — 세움터 등에서 확인한 유효 개구부 면적(㎡)을 칸마다 입력(기본값 0) */
-function AreaInputs({ values, direct, onChange }) {
+/** 개구부 면적 입력 — 「개구부 면적 계산」(가로×세로×개수)에서 나온 면적은 자동 칸(읽기 전용), 그 밖은 직접 입력(기본값 0) — 합계는 둘을 더함 */
+function AreaInputs({ values, direct, auto = [], onChange }) {
   const vals = values && values.length ? values : areaRow();
   const set = (i, v) => onChange(vals.map((x, j) => (j === i ? v : x)));
+  const autoSum = auto.reduce((s, a) => s + a.area, 0);
   return (
     <div className="tl-op tl-direct">
       <div className="tl-op-h">
-        <span>
-          개구부 면적 직접 입력(㎡) <small>세움터 등에서 확인한 면적 — 요건(가~마)을 갖춘 개구부만</small>
-        </span>
+        <span>개구부 면적 입력(㎡)</span>
         <span className="tl-direct-act">
-          <b>{fmt(direct)}㎡</b>
+          <b>{fmt(direct + autoSum)}㎡</b>
           <button type="button" className="w-link" onClick={() => onChange([...vals, ...areaRow()])}>
             + 줄 추가
           </button>
@@ -54,6 +51,9 @@ function AreaInputs({ values, direct, onChange }) {
         </span>
       </div>
       <div className="tl-direct-grid">
+        {auto.map((a, i) => (
+          <input key={`a${i}`} className="tl-auto" type="text" readOnly value={fmt(a.area)} title={`개구부 면적 계산 — ${a.label}`} aria-label={`계산된 개구부 면적 ${i + 1}`} />
+        ))}
         {vals.map((v, i) => (
           <input
             key={i}
@@ -120,16 +120,16 @@ export function floorsFromLink(link) {
 /** 입력 화면에서 계산기를 열 때 계산기 상태 — 새로 보낸 것(at이 다름)이면 입력을 비우고 새로 시작, 같으면 그대로(계산기 탭 안에서 옮겼다 돌아온 경우)
  *  무창층: 층·바닥면적(기본정보)만 가져옴 / 수용인원: 입력 모두 비움(v2.44.0) */
 export function linkedPart(prev, link) {
-  if (prev && prev.link && prev.link.at === link.at) return prev;
+  if (prev && ((prev.link && prev.link.at === link.at) || prev.seenAt === link.at)) return prev;
   if (link.kind === "windowless") return { floors: floorsFromLink(link), link: { mode: link.mode, at: link.at, floors: (link.floors || []).filter((f) => f && f.level).map((f) => ({ level: f.level, area: f.area ?? "" })) } };
   return { link: { mode: link.mode, at: link.at } };
 }
 
-/** 「초기화」 — 입력 화면에서 연 경우도 층·바닥면적까지 모두 지움(v2.44.0). 입력 화면 연결(반영 버튼)만 남김 */
+/** 「초기화」 — 층·바닥면적과 「입력에서 열었습니다」 연결까지 모두 지움(v2.49.0). 같은 입력에서 다시 채워지지 않게 seenAt만 기억 */
 export function resetPart(kind, st) {
-  const link = st && st.link ? { mode: st.link.mode, at: st.link.at, cleared: true } : undefined;
-  if (kind === "windowless") return link ? { floors: [floor0(1)], link } : { floors: [floor0(1)] };
-  return link ? { link } : {};
+  const seen = st && (st.link ? st.link.at : st.seenAt);
+  const base = kind === "windowless" ? { floors: [floor0(1)] } : {};
+  return seen !== undefined ? { ...base, seenAt: seen } : base;
 }
 
 function Windowless({ st, setSt, onApply }) {
@@ -148,14 +148,7 @@ function Windowless({ st, setSt, onApply }) {
   };
   return (
     <div className="tl-body">
-      <div className="tl-intro">
-        지상층별로 바닥면적과 개구부(가로×세로×개수)를 입력하면 <b>개구부 면적 합계가 바닥면적의 1/30 이하</b>인지로 무창층 여부를 판정합니다. 문은 1층만, 2층부터는 창문만 입력합니다. 세움터 등으로 면적을 이미 알면 아래 「개구부 면적 직접 입력」 칸에 면적만 넣어도 합산됩니다(치수 입력과 함께 쓰면 둘 다 더함).
-      </div>
-      {link && (
-        <div className="tl-linked">
-          {!link.cleared ? `${modeName(link.mode)} 입력에서 가져온 층·바닥면적입니다(계산기로 새로 보낼 때마다 개구부 입력은 비워짐).` : `${modeName(link.mode)} 입력에서 열었습니다(초기화로 층·바닥면적까지 지움 — 층을 직접 입력하십시오).`} 지하층은 무창층 판정 대상이 아니어서(시행령 제2조제1호 "지상층 중") 「지하층」으로 분류합니다.
-        </div>
-      )}
+      {link && <div className="tl-linked">{modeName(link.mode)} 입력에서 열었습니다.</div>}
       {floors.map((fl, i) => {
         const r = results[i];
         if (fl.level < 0)
@@ -186,9 +179,17 @@ function Windowless({ st, setSt, onApply }) {
                 </button>
               )}
             </div>
-            {fl.level === 1 && <OpeningTable title="문(출입구)" rows={r.doors} onChange={(rows) => upd(i, { doors: rows.map(({ w, h, cnt, excluded }) => ({ w, h, cnt, excluded })) })} />}
-            <OpeningTable title="창문" rows={r.windows} onChange={(rows) => upd(i, { windows: rows.map(({ w, h, cnt, excluded }) => ({ w, h, cnt, excluded })) })} />
-            <AreaInputs values={fl.areas} direct={r.direct} onChange={(areas) => upd(i, { areas })} />
+            <AreaInputs
+              values={fl.areas}
+              direct={r.direct}
+              auto={[...r.doors.map((x) => ({ ...x, label: "문" })), ...r.windows.map((x) => ({ ...x, label: "창문" }))].filter((x) => x.counted && x.area > 0)}
+              onChange={(areas) => upd(i, { areas })}
+            />
+            <details className="tl-calcbox">
+              <summary>개구부 면적 계산</summary>
+              {fl.level === 1 && <OpeningTable title="문(출입구)" rows={r.doors} onChange={(rows) => upd(i, { doors: rows.map(({ w, h, cnt, excluded }) => ({ w, h, cnt, excluded })) })} />}
+              <OpeningTable title="창문" rows={r.windows} onChange={(rows) => upd(i, { windows: rows.map(({ w, h, cnt, excluded }) => ({ w, h, cnt, excluded })) })} />
+            </details>
             {r.limit !== null && (
               <div className="tl-calc">
                 유효 개구부 합계 <b>{fmt(r.sum)}㎡</b> {r.status === "무창층" ? "≤" : ">"} 바닥면적 {fmt(r.area)}㎡ × 1/30 = <b>{fmt(r.limit)}㎡</b>
@@ -266,8 +267,7 @@ function Occupancy({ st, setSt, onToAcademy, onApply }) {
   );
   return (
     <div className="tl-body">
-      <div className="tl-intro">용도에 맞는 산정 구분을 고르고 면적을 입력하면 소방시설법 시행령 [별표7]에 따라 수용인원을 계산합니다.</div>
-      {st.link && <div className="tl-linked">{modeName(st.link.mode)} 입력에서 열었습니다. 산정한 뒤 아래 「반영」을 누르면 수용인원만 입력 화면에 들어갑니다.</div>}
+      {st.link && <div className="tl-linked">{modeName(st.link.mode)} 입력에서 열었습니다.</div>}
       <label className="w-field">
         <span className="w-label">산정 구분(용도)</span>
         <select value={v.type} onChange={(e) => set("type", e.target.value)}>
@@ -354,15 +354,17 @@ function Pump() {
 const SUBS = [
   ["windowless", "무창층 판정"],
   ["occ", "수용인원 산정"],
-  ["build", "소방공사 착공·감리 판정"],
   ["haz", "위험물 지정수량 배수 판정"],
   ["academy", "학원 다중이용업소 판단"],
   ["pump", "소화펌프 용량 산정"],
 ];
 
-export default function Tools({ seed, onGoNew, link, onApply }) {
+export default function Tools({ link, onApply }) {
   const [all, setAll] = useState(load);
-  const [sub, setSub] = useState(link ? link.kind : seed ? "build" : all.sub || "windowless");
+  const [sub, setSub] = useState(() => {
+    const s = link ? link.kind : all.sub;
+    return SUBS.some(([k]) => k === s) ? s : "windowless"; // (v2.49.0) 착공·감리 판정 탭 삭제 — 결과 화면에서 바로 판정
+  });
   // 입력 화면 → 무창층·수용인원 계산기 연결(새로 보낸 것만 반영)
   useEffect(() => {
     if (!link) return;
@@ -373,31 +375,6 @@ export default function Tools({ seed, onGoNew, link, onApply }) {
     });
     setSub(link.kind);
   }, [link]);
-  // 신축 건축물 산정 결과 → 착공 계산기 (새로 보낸 결과만 반영)
-  useEffect(() => {
-    if (!seed || (all.build && all.build.seed && all.build.seed.at === seed.at)) return;
-    const f = facsFromKeys(seed.facs);
-    setAll((p) => ({
-      ...p,
-      build: {
-        kind: seed.ugduct ? "ug" : seed.apt ? "apt" : "gen",
-        hazmat: !!seed.hazmat,
-        area: seed.area ?? "",
-        gf: seed.gf ?? "",
-        bf: seed.bf ?? "",
-        households: seed.households ?? "",
-        facs: f,
-        vol: facsFromKeys(seed.vol),
-        optSupv: facsFromKeys(seed.optSupv),
-        multiUse: !!seed.multiUse,
-        site: seed.site ? { ...seed.site, uses: [...(seed.site.uses || [])] } : undefined,
-        mixedRes: !!seed.mixedRes,
-        seed: { at: seed.at, useLabel: seed.useLabel, chk: (seed.chk || []).filter((x) => x) },
-      },
-    }));
-    setSub("build");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed]);
   useEffect(() => save({ ...all, sub }), [all, sub]);
   const part = (k) => [all[k] || {}, (v) => setAll((p) => ({ ...p, [k]: v }))];
   const [pumpSeen, setPumpSeen] = useState(sub === "pump");
@@ -406,7 +383,6 @@ export default function Tools({ seed, onGoNew, link, onApply }) {
   }, [sub]);
   const [wl, setWl] = part("windowless");
   const [oc, setOc] = part("occ");
-  const [bd, setBd] = part("build");
   const [hz, setHz] = part("haz");
   const [ac, setAc] = part("academy");
   const toAcademy = (area, excl) => {
@@ -428,7 +404,6 @@ export default function Tools({ seed, onGoNew, link, onApply }) {
       </nav>
       {sub === "windowless" && <Windowless st={wl} setSt={setWl} onApply={onApply} />}
       {sub === "occ" && <Occupancy st={oc} setSt={setOc} onToAcademy={toAcademy} onApply={onApply} />}
-      {sub === "build" && <ConstructionCalc st={bd} setSt={setBd} onGoNew={onGoNew} />}
       {sub === "haz" && <HazmatCalc st={hz} setSt={setHz} />}
       {sub === "academy" && <AcademyCalc st={ac} setSt={setAc} />}
       {/* 펌프 계산기는 한 번 연 뒤에는 다른 계산기로 바꿔도 입력값 유지 */}
