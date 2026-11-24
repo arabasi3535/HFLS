@@ -255,10 +255,6 @@ export default function HazmatCalc({ st, setSt }) {
   const [lc, lt] = LV[t.level];
   return (
     <div className="tl-body">
-      <div className="tl-intro">
-        CAS 번호나 물질명으로 위험물 품명을 찾고 저장·취급량을 입력하면, 위험물안전관리법 시행령 [별표1]의 지정수량으로 <b>품명별 배수와 합계</b>를 산정합니다. 둘 이상의 위험물은 배수를 합산합니다(법 제5조제5항).
-      </div>
-
       <div className="hz-quick">
         <span>자주 쓰는 제4류</span>
         {HZ_QUICK.map((s) => (

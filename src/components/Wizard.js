@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { USES, USE_GROUPS, getUse } from "../law/uses";
 import { D, getLawSystem } from "../law/sources";
 import { tableRef } from "../law/engine";
@@ -98,7 +98,6 @@ const Num = ({ value, onChange, placeholder }) => (
 );
 
 export default function Wizard({ mode, input, setInput, onReset, onTool, errors }) {
-  const [showMore, setShowMore] = useState(false);
   const set = (k, v) => setInput((p) => ({ ...p, [k]: v }));
   const setF = (k, v) => setInput((p) => ({ ...p, f: { ...p.f, [k]: v } }));
   const setLevels = (k, v) =>
@@ -559,52 +558,48 @@ export default function Wizard({ mode, input, setInput, onReset, onTool, errors 
 
           {!g("house", "tunnel", "ugduct") && (
             <div className="w-more">
-              <button type="button" className="w-link" onClick={() => setShowMore((v) => !v)}>
-                {showMore ? "▾" : "▸"} 주차장·전기실 등 해당 시 입력
-              </button>
-              {showMore && (
-                <div className="w-more-body">
-                  <div className="w-grid2">
-                    <Field label="건물 내부 차고·주차장 합계(㎡)" hint="지상+지하 합계 — 물분무등소화설비(200㎡ 이상) 판단">
-                      <Num value={input.f.parkingInside} onChange={(v) => setF("parkingInside", v)} />
-                    </Field>
-                    <Field label="그중 지하 차고·주차장(㎡)" hint="2026.3.1. 이후 신청분의 지하 주차장 기준(자동화재탐지·비상경보·연결살수 등) 판단 — 합계에 포함된 면적">
-                      <Num value={input.f.ugParking} onChange={(v) => setF("ugParking", v)} />
-                    </Field>
-                    <Field label="기계식 주차 대수">
-                      <Num value={input.f.mechCars} onChange={(v) => setF("mechCars", v)} />
-                    </Field>
-                    <Field label="옥상 차고·주차장(㎡)">
-                      <Num value={input.f.rooftopParking} onChange={(v) => setF("rooftopParking", v)} />
-                    </Field>
-                    <Field label="전기실·발전실·변전실·전산실(㎡)" hint="하나의 방화구획 안 합산 — 가연성 절연유·가연성 피복 없는 기기·전선만 있는 실, 양압·220V 이하·24시간 상주 주조정실은 빼고 입력">
-                      <Num value={input.f.elecRoom} onChange={(v) => setF("elecRoom", v)} />
-                    </Field>
-                  </div>
-                  <div className="w-checks">
-                    <Check checked={input.f.specialStairs} onChange={(v) => setF("specialStairs", v)}>특별피난계단·비상용(피난용) 승강기 승강장 있음</Check>
-                    <Check checked={input.f.co2} onChange={(v) => setF("co2", v)}>이산화탄소소화설비 설치(호스릴 제외)</Check>
-                    <Check checked={input.f.groupCafeteria} onChange={(v) => setF("groupCafeteria", v)}>집단급식소 있음</Check>
-                    <Check checked={input.f.lath} onChange={(v) => setF("lath", v)}>라스(철망) 비내화구조</Check>
-                    <Check checked={input.f.leak100A} onChange={(v) => setF("leak100A", v)}>계약전류용량 100A 초과</Check>
-                    <Check checked={input.f.roadDirect} onChange={(v) => setF("roadDirect", v)}>지하층이 피난층이고 주출입구가 도로에 접함</Check>
-                    {(parseInt(input.f.mechCars, 10) || 0) > 0 && (parseInt(input.f.mechCars, 10) || 0) < 20 && (
-                      <Check checked={input.f.mechOpen} onChange={(v) => setF("mechOpen", v)}>기계식 주차시설에 지붕 또는 외벽이 없음 <small>— 연결살수설비 제외 판단</small></Check>
-                    )}
-                    <Check checked={input.f.staffed24} onChange={(v) => setF("staffed24", v)}>수신기 설치 장소 24시간 근무자 있음</Check>
-                    {need.radwaste && (
-                      <label className="w-check">
-                        <span>방사성폐기물 저장시설</span>
-                        <select value={input.f.radwaste ?? ""} onChange={(e) => setF("radwaste", e.target.value || undefined)}>
-                          <option value="">해당 없음</option>
-                          <option value="withWater">소화수 처리설비 있음</option>
-                          <option value="noWater">소화수 처리설비 없음</option>
-                        </select>
-                      </label>
-                    )}
-                  </div>
+              <div className="w-more-h">주차장·전기실 등 해당 시 입력</div>
+              <div className="w-more-body">
+                <div className="w-grid2">
+                  <Field label="건물 내부 차고·주차장 합계(㎡)" hint="지상+지하 합계 — 물분무등소화설비(200㎡ 이상) 판단">
+                    <Num value={input.f.parkingInside} onChange={(v) => setF("parkingInside", v)} />
+                  </Field>
+                  <Field label="그중 지하 차고·주차장(㎡)" hint="2026.3.1. 이후 신청분의 지하 주차장 기준(자동화재탐지·비상경보·연결살수 등) 판단 — 합계에 포함된 면적">
+                    <Num value={input.f.ugParking} onChange={(v) => setF("ugParking", v)} />
+                  </Field>
+                  <Field label="기계식 주차 대수">
+                    <Num value={input.f.mechCars} onChange={(v) => setF("mechCars", v)} />
+                  </Field>
+                  <Field label="옥상 차고·주차장(㎡)">
+                    <Num value={input.f.rooftopParking} onChange={(v) => setF("rooftopParking", v)} />
+                  </Field>
+                  <Field label="전기실·발전실·변전실·전산실(㎡)" hint="하나의 방화구획 안 합산 — 가연성 절연유·가연성 피복 없는 기기·전선만 있는 실, 양압·220V 이하·24시간 상주 주조정실은 빼고 입력">
+                    <Num value={input.f.elecRoom} onChange={(v) => setF("elecRoom", v)} />
+                  </Field>
                 </div>
-              )}
+                <div className="w-checks">
+                  <Check checked={input.f.specialStairs} onChange={(v) => setF("specialStairs", v)}>특별피난계단·비상용(피난용) 승강기 승강장 있음</Check>
+                  <Check checked={input.f.co2} onChange={(v) => setF("co2", v)}>이산화탄소소화설비 설치(호스릴 제외)</Check>
+                  <Check checked={input.f.groupCafeteria} onChange={(v) => setF("groupCafeteria", v)}>집단급식소 있음</Check>
+                  <Check checked={input.f.lath} onChange={(v) => setF("lath", v)}>라스(철망) 비내화구조</Check>
+                  <Check checked={input.f.leak100A} onChange={(v) => setF("leak100A", v)}>계약전류용량 100A 초과</Check>
+                  <Check checked={input.f.roadDirect} onChange={(v) => setF("roadDirect", v)}>지하층이 피난층이고 주출입구가 도로에 접함</Check>
+                  {(parseInt(input.f.mechCars, 10) || 0) > 0 && (parseInt(input.f.mechCars, 10) || 0) < 20 && (
+                    <Check checked={input.f.mechOpen} onChange={(v) => setF("mechOpen", v)}>기계식 주차시설에 지붕 또는 외벽이 없음 <small>— 연결살수설비 제외 판단</small></Check>
+                  )}
+                  <Check checked={input.f.staffed24} onChange={(v) => setF("staffed24", v)}>수신기 설치 장소 24시간 근무자 있음</Check>
+                  {need.radwaste && (
+                    <label className="w-check">
+                      <span>방사성폐기물 저장시설</span>
+                      <select value={input.f.radwaste ?? ""} onChange={(e) => setF("radwaste", e.target.value || undefined)}>
+                        <option value="">해당 없음</option>
+                        <option value="withWater">소화수 처리설비 있음</option>
+                        <option value="noWater">소화수 처리설비 없음</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

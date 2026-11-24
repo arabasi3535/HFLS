@@ -17,13 +17,23 @@ function Card({ title, badge, status, lead, children }) {
         <span className={`sf-badge ${cls(status)}`}>{badge}</span>
         <span className="it-caret">{open ? "▾" : "▸"}</span>
       </button>
-      {lead && <div className="sf-lead">{lead}</div>}
+      {lead && <div className={`sf-lead${open ? "" : " fold"}`}>{lead}</div>}
       <div className={`sf-det ${open ? "open" : ""}`}>{children}</div>
     </div>
   );
 }
 
-export default function SafetyPanel({ sv, onMakeReport, mode }) {
+/** 점검 보고서 작성 버튼(결과 화면 출력 버튼 줄에 표시) — [{ variant, label, title }] */
+export function reportGos(insp, mode) {
+  if (!insp) return [];
+  const out = [];
+  if (insp.ownerOk) out.push({ variant: "owner", label: "관계인 작동점검 보고서 →", title: "3급 소방안전관리대상물 — 관계인이 직접 점검한 결과 보고서" });
+  if (insp.op === true && !insp.top) out.push({ variant: "mgmt", label: "작동점검(관리업) 보고서 →", title: "관리업자·소방시설관리사 등이 작동점검한 결과 보고서" });
+  if (insp.comp.length > 0) out.push(mode === "new" ? { variant: "compFirst", label: "최초점검 보고서 →", title: "종합점검(최초점검) — 사용할 수 있게 된 날부터 60일 이내" } : { variant: "comp", label: "종합점검 보고서 →", title: "종합점검 실시결과 보고서" });
+  return out;
+}
+
+export default function SafetyPanel({ sv }) {
   const { grade, flame, lane, insp, temp, site } = sv;
   const gl = grade.label || grade.grade;
   const gBadge = grade.status === S.NA ? "해당없음" : grade.status === S.CHK ? (gl ? `${gl} 이상` : "확인 필요") : gl || "해당없음";
@@ -117,25 +127,6 @@ export default function SafetyPanel({ sv, onMakeReport, mode }) {
           <div className="det-ref">{insp.ref}</div>
           <QaLink word="자체점검" />
         </Card>
-      )}
-      {insp && onMakeReport && (insp.ownerOk || (insp.op === true && !insp.top) || insp.comp.length > 0) && (
-        <div className="sf-gos no-print">
-          {insp.ownerOk && (
-            <button type="button" className="w-run" onClick={() => onMakeReport("owner")}>
-              관계인 작동점검 보고서 작성 →
-            </button>
-          )}
-          {insp.op === true && !insp.top && (
-            <button type="button" className={insp.ownerOk ? "w-reset" : "w-run"} onClick={() => onMakeReport("mgmt")}>
-              작동점검(관리업) 보고서 작성 →
-            </button>
-          )}
-          {insp.comp.length > 0 && (
-            <button type="button" className="w-run" onClick={() => onMakeReport(mode === "new" ? "compFirst" : "comp")}>
-              {mode === "new" ? "종합점검(최초점검) 보고서 작성 →" : "종합점검 보고서 작성 →"}
-            </button>
-          )}
-        </div>
       )}
 
       <Card

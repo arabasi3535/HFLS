@@ -3,7 +3,7 @@ import { CATS, FACILITIES, SUBSTITUTIONS, getFacility } from "../law/facilities"
 import { isReq, PARKING_WATER, subDefaultOn, substitutionsFor, resolveSubs, inspInstalled } from "../law/installed";
 import { STATUS } from "../law/engine";
 import ResultView from "./ResultView";
-import SafetyPanel from "./SafetyPanel";
+import SafetyPanel, { reportGos } from "./SafetyPanel";
 import ConstructionPanel from "./ConstructionPanel";
 import { safetyReview } from "../law/safety";
 import { guideKind } from "../law/guide";
@@ -11,6 +11,7 @@ import { practiceNotes } from "../law/practiceNotes";
 import { subName, groupLabel } from "./Wizard";
 import { USE_GROUPS } from "../law/uses";
 import QaLink from "./QaLink";
+import { floorRows, inputItems } from "../law/inputSummary";
 
 // ============================================================
 // 간결한 결과 화면 — 설치 대상(소급·강화·대체 표시) / 확인 필요 / 출력
@@ -131,7 +132,7 @@ function printReport(summary) {
   window.print();
 }
 
-export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode, adminMode, author, sel: selIn, setSel, provisional, onReport, onDecide }) {
+export default function Report({ rv, sv, onMakeReport, mode, adminMode, author, sel: selIn, setSel, provisional, onReport, onDecide }) {
   const existing = mode === "existing";
   const [open, setOpen] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
@@ -148,6 +149,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   const setSubOn = upd("sub");
   const setVolOn = upd("vol");
   const volOn = sel.vol;
+  const [volOpen0] = useState(() => Object.values(volOn || {}).some(Boolean)); // 자진 설비를 이미 고른 경우만 펼친 채 시작
 
   const { hist } = rv;
   const u = rv.use;
@@ -298,6 +300,11 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   const strongCands = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("강화")) : [];
   const noRetroAdds = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("소급 없음")) : [];
   const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
+  const [fold, setFold] = useState({}); // (v2.49.1) 면제(대체)·확인 필요 항목별 설명 펼침
+  const flip = (k) => setFold((o) => ({ ...o, [k]: !o[k] }));
+  const allOpen = list.length > 0 && list.every((x) => open[x.key]);
+  const fRows = floorRows(rv.input);
+  const fItems = inputItems(rv.input);
   const sys = hist.system;
   const grp = USE_GROUPS.find((x) => x.no === u.no);
   const sn = subName(u, existing ? rv.input.date : "");
@@ -305,8 +312,42 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
   const useTitle = gl && gl !== sn ? `${gl} — ${sn}` : sn;
   const nRetro = list.filter((i) => i.kind === "retro").length;
 
+  // 점검 보고서 작성 — 결과(설치 목록·등급·건축물 정보)를 점검 탭으로 넘김
+  const makeReport =
+    onMakeReport && safety
+      ? (variant = "owner") => {
+          const inst = list.filter((i) => !i.sub || i.sub.partial).map((i) => i.key);
+          for (const i of list) if (i.sub) inst.push(...(i.sub.viaKeys || []));
+          const f = rv.input.f || {};
+          const parking = [];
+          if (Number(f.ugParking) > 0) parking.push("지하");
+          if (Number(f.parkingInside) > 0 && !(Number(f.ugParking) > 0)) parking.push("지상");
+          if (Number(f.mechCars) > 0) parking.push("기계식");
+          if (Number(f.rooftopParking) > 0) parking.push("옥상");
+          const gg = safety.grade;
+          onMakeReport({
+            at: Date.now(),
+            variant,
+            guideKind: gk.kind,
+            grade: gg && gg.status === "대상" && ["특급", "1급", "2급", "3급"].includes(gg.grade) ? gg.grade : "",
+            useLabel: useTitle,
+            area: rv.input.area,
+            gf: rv.input.gf,
+            bf: rv.input.bf,
+            households: f.households || "",
+            height: f.height || "",
+            permit: existing ? rv.input.date : "",
+            approval: rv.input.completed || "",
+            parking,
+            facs: [...new Set(inst)],
+            residential: ["apt", "row", "multi", "dorm", "officetel", "mixed_res"].some((k) => u.g.includes(k)),
+            flame: safety.flame.status === "대상",
+          });
+        }
+      : null;
+
   return (
-    <div className="report">
+    <div className={`report${allOpen ? " rep-all" : ""}`}>
       <div className="print-head print-only">
         <div className="ph-t">
           소방시설 적용·안전관리 검토서<span className="ps-only"> (요약)</span>
@@ -335,6 +376,31 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
           <span>{hist.table}</span>
         </div>
       </div>
+
+      {/* (v2.49.1) 산정에 쓴 입력 — 층별 바닥면적·무창층, 입력·선택 사항(요약본 인쇄에도) */}
+      {(fRows.length > 0 || fItems.length > 0) && (
+        <div className="inp-sum">
+          {fRows.length > 0 && (
+            <div className="inp-floors">
+              <span className="inp-h">층별 바닥면적</span>
+              {fRows.map((f) => (
+                <span key={f.name} className={`inp-fl${f.windowless ? " wl" : ""}`}>
+                  {f.name} <b>{f.area}</b>
+                  {f.windowless && <em>무창층</em>}
+                </span>
+              ))}
+            </div>
+          )}
+          {fItems.length > 0 && (
+            <div className="inp-items">
+              <span className="inp-h">입력·선택 사항</span>
+              {fItems.map((t) => (
+                <span key={t}>{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 꼭 알아야 할 안내만 */}
       {rv.issues.length > 0 && (
@@ -449,7 +515,13 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
                 <input type="checkbox" checked={subIsOn(s)} onChange={(e) => setSubOn((o) => ({ ...o, [s.id]: e.target.checked }))} />
                 <span>
                   <b>{getFacility(s.target).name}</b> ← {s.replaceWith}
-                  <small>
+                  <button type="button" className="fold-btn no-print" aria-expanded={!!fold[`s:${s.id}`]} onClick={(e) => {
+                      e.preventDefault();
+                      flip(`s:${s.id}`);
+                    }}>
+                    {fold[`s:${s.id}`] ? "▾ 설명" : "▸ 설명"}
+                  </button>
+                  <small className={fold[`s:${s.id}`] ? "" : "fold"}>
                     {s.no}: {s.text}
                     {s.partial ? " — 주차장 부분만 대체, 전기실 등 그 밖의 부분은 물분무등소화설비 유지" : ""}
                     {s.weakOnly ? " — 물분무등 중 물분무·미분무소화설비로 설치하는 경우만(포·이산화탄소·할론 등은 해당 없음), 설치 범위가 대상 전체를 덮는지 확인" : ""}
@@ -467,7 +539,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
         <div className="chks">
           <div className="chks-h">
             확인 필요 — 입력 정보가 부족해 판정하지 못한 시설
-            {onDecide && <small className="no-print"> 실제 해당 여부를 확인했으면 「적용」·「미적용」을 눌러 결과에 반영하십시오(다시 누르면 취소).</small>}
+            {onDecide && <small className="no-print"> 확인 후 「적용」·「미적용」(다시 누르면 취소)</small>}
           </div>
           <ul>
             {checks.map((r) => {
@@ -475,7 +547,9 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
               return (
                 <li key={r.fac.key} className={d === true ? "dec-on" : d === false ? "dec-off" : ""}>
                   <div className="chk-row">
-                    <b>{r.fac.name}</b>
+                    <button type="button" className="chk-name" aria-expanded={!!fold[`c:${r.fac.key}`]} onClick={() => flip(`c:${r.fac.key}`)}>
+                      {fold[`c:${r.fac.key}`] ? "▾" : "▸"} <b>{r.fac.name}</b>
+                    </button>
                     {onDecide ? (
                       <span className="chk-btns no-print">
                         <button type="button" className={d === true ? "on yes" : ""} onClick={() => onDecide(r.fac.key, d === true ? null : true)}>
@@ -488,7 +562,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
                     ) : null}
                     <span className="chk-state print-only">{d === true ? "적용(검토자 확인)" : d === false ? "미적용(검토자 확인)" : "미정"}</span>
                   </div>
-                  <span className="chk-crit">{r.checks.map((c) => c.text).join(" / ")}</span>
+                  <span className={`chk-crit${fold[`c:${r.fac.key}`] ? "" : " fold"}`}>{r.checks.map((c) => c.text).join(" / ")}</span>
                 </li>
               );
             })}
@@ -504,57 +578,16 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
 
       {/* 안전관리 검토: 소방안전관리대상물 등급 · 방염 · 소방자동차 전용구역 */}
       {safety && (
-        <SafetyPanel
-          sv={safety}
-          mode={mode}
-          onMakeReport={
-            onMakeReport
-              ? (variant = "owner") => {
-                  const inst = list.filter((i) => !i.sub || i.sub.partial).map((i) => i.key);
-                  for (const i of list) if (i.sub) inst.push(...(i.sub.viaKeys || []));
-                  const f = rv.input.f || {};
-                  const parking = [];
-                  if (Number(f.ugParking) > 0) parking.push("지하");
-                  if (Number(f.parkingInside) > 0 && !(Number(f.ugParking) > 0)) parking.push("지상");
-                  if (Number(f.mechCars) > 0) parking.push("기계식");
-                  if (Number(f.rooftopParking) > 0) parking.push("옥상");
-                  const gg = safety.grade;
-                  onMakeReport({
-                    at: Date.now(),
-                    variant,
-                    guideKind: gk.kind,
-                    grade: gg && gg.status === "대상" && ["특급", "1급", "2급", "3급"].includes(gg.grade) ? gg.grade : "",
-                    useLabel: useTitle,
-                    area: rv.input.area,
-                    gf: rv.input.gf,
-                    bf: rv.input.bf,
-                    households: f.households || "",
-                    height: f.height || "",
-                    permit: existing ? rv.input.date : "",
-                    approval: rv.input.completed || "",
-                    parking,
-                    facs: [...new Set(inst)],
-                    residential: ["apt", "row", "multi", "dorm", "officetel", "mixed_res"].some((k) => u.g.includes(k)),
-                    flame: safety.flame.status === "대상",
-                  });
-                }
-              : null
-          }
-        />
+        <SafetyPanel sv={safety} />
       )}
 
-      {buildSeed && (
-        <ConstructionPanel
-          seed={buildSeed}
-          onOpen={onMakeConstruction ? () => onMakeConstruction({ ...buildSeed, at: Date.now() }) : null}
-        />
-      )}
+      {buildSeed && <ConstructionPanel seed={buildSeed} />}
 
-      {/* 자진 설치 설비 — 법정 설치 대상이 아닌 설비를 자진 설치하는 경우 */}
-      <div className="vols no-print">
-        <div className="subs-h">
-          자진 설치 설비 추가 <small>법정 설치 대상이 아니지만 설치하는 설비 — 설치 목록·출력에 「(자진)」 표시, 착공신고·기술자에 포함, 공사감리자 지정 생략 가능, 종합점검 대상 판단·소방안전관리 등급에는 반영하지 않음(별표5 대체로 설치하는 설비는 반영)</small>
-        </div>
+      {/* 자진 설치 설비 — 법정 설치 대상이 아닌 설비를 자진 설치하는 경우(기본 접힘) */}
+      <details className="vols no-print" open={volOpen0 || undefined}>
+        <summary className="subs-h">
+          자진 설치 설비 추가 <small>법정 설치 대상이 아니지만 설치하는 설비 — 「(자진)」 표시, 착공신고·기술자에 포함, 감리자 지정 생략 가능, 종합점검·소방안전관리 등급에는 미반영</small>
+        </summary>
         {CATS.map((cat) => {
           // 설치 목록에 있거나 「확인 필요」(적용·미적용으로 정함)인 설비는 제외
           const cands = FACILITIES.filter((fac) => fac.cat === cat && (volOn[fac.key] || (!list.some((i) => i.key === fac.key) && hist.byKey[fac.key].status !== STATUS.CHK)));
@@ -573,7 +606,7 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
             </div>
           );
         })}
-      </div>
+      </details>
 
       <div className="rep-actions no-print">
         <button type="button" className="w-run" onClick={() => printReport(true)} title="화면에 보이는 결과만 설명 없이 출력">
@@ -582,13 +615,16 @@ export default function Report({ rv, sv, onMakeReport, onMakeConstruction, mode,
         <button type="button" className="w-reset" onClick={() => printReport(false)} title="설치 근거·범위·설치기준 설명까지 모두 출력">
           상세본 PDF·인쇄
         </button>
-        <button
-          type="button"
-          className="w-reset"
-          onClick={() => setOpen(Object.fromEntries(list.map((i) => [i.key, !list.every((x) => open[x.key])])))}
-        >
-          {list.length && list.every((x) => open[x.key]) ? "설명 접기" : "설명 모두 펼치기"}
+        <button type="button" className="w-reset" onClick={() => setOpen(Object.fromEntries(list.map((i) => [i.key, !allOpen])))}>
+          {allOpen ? "설명 접기" : "설명 모두 펼치기"}
         </button>
+        {safety &&
+          makeReport &&
+          reportGos(safety.insp, mode).map((g) => (
+            <button key={g.variant} type="button" className="w-reset rep-go" onClick={() => makeReport(g.variant)} title={g.title}>
+              {g.label}
+            </button>
+          ))}
       </div>
       <div className="rep-report no-print">
         결과가 법령과 다르다면{" "}

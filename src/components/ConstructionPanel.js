@@ -3,7 +3,7 @@ import { construction, facsFromKeys } from "../law/construction";
 
 // ============================================================
 // 신축 건축물 결과 — 소방시설공사 착공 검토(착공신고·소방기술자·공사감리·감리원)
-// 설치 목록으로 바로 산정하고, 세부 조정은 보조 계산기 「착공 계산기」로 넘김
+// 설치 목록으로 바로 산정
 // ============================================================
 
 const cls = (st) => (st === "대상" || st === "의무" || st === "현장확인" ? "sf-yes" : st === "확인 필요" || st === "가능" ? "sf-chk" : "sf-no");
@@ -20,7 +20,7 @@ function Card({ title, badge, status, lead, children }) {
         <span className={`sf-badge ${cls(status)}`}>{badge}</span>
         <span className="it-caret">{open ? "▾" : "▸"}</span>
       </button>
-      {lead && <div className="sf-lead">{lead}</div>}
+      {lead && <div className={`sf-lead${open ? "" : " fold"}`}>{lead}</div>}
       <div className={`sf-det ${open ? "open" : ""}`}>{children}</div>
     </div>
   );
@@ -45,7 +45,7 @@ export function constructionFromSeed(seed) {
   });
 }
 
-export default function ConstructionPanel({ seed, onOpen }) {
+export default function ConstructionPanel({ seed }) {
   const r = constructionFromSeed(seed);
   return (
     <div className="safety cx-panel">
@@ -134,11 +134,6 @@ export default function ConstructionPanel({ seed, onOpen }) {
         </>
       )}
 
-      {onOpen && (
-        <button type="button" className="w-run sf-go no-print" onClick={onOpen}>
-          자세히 보기·조정 (보조 계산기) →
-        </button>
-      )}
     </div>
   );
 }

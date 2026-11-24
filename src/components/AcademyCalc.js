@@ -23,10 +23,6 @@ export default function AcademyCalc({ st, setSt }) {
   const allFire = floors.every((f) => f.fireFloor);
   return (
     <div className="tl-body">
-      <div className="tl-intro">
-        건축물의 층별 업소와 면적, <b>층간 방화구획</b>·<b>영업장별 방화구획</b> 여부를 입력하면 학원마다 다중이용업소 해당 여부를 판단합니다(다중이용업소법 시행령 제2조제3호). 학원 수용인원은 소방시설법 시행령 별표7(바닥면적 ÷ 1.9㎡, 복도·계단·화장실 제외)로 산정합니다.
-      </div>
-
       <div className="ac-bar">
         <label className="cx-chk">
           <input type="checkbox" checked={allFire} onChange={(e) => setFloors(floors.map((f) => ({ ...f, fireFloor: e.target.checked })))} /> 모든 층 층간 방화구획

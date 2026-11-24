@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.49.0",
+  version: "2.49.1",
   date: "2026-11-24",
-  note: "화면 문구 간결화·착공 계산기 탭 삭제·별표 정의 추가(판정 규칙 변경 없음)",
+  note: "결과 화면 입력 요약·설명 접기, 점검 보고서 버튼 이동(판정 규칙 변경 없음)",
 };
 
 export const D = {

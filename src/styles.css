@@ -1446,3 +1446,35 @@ button.foot-author { font: inherit; font-weight: 600; color: var(--ink2); backgr
 .wm-tabrow > span { flex: 0 0 auto; padding-top: 0; white-space: nowrap; }
 .wm-tabrow .tl-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; gap: 4px; }
 .wm-tabrow .tl-tabs button { flex: 0 0 auto; white-space: nowrap; padding-left: 9px; padding-right: 9px; }
+.w-more-h { font-size: 13px; font-weight: 700; color: var(--ink2); }
+/* v2.49.1 결과 화면 — 항목별 설명 접기(인쇄 상세본·「설명 모두 펼치기」에는 보임) */
+.fold { display: none !important; }
+.rep-all .fold { display: block !important; }
+.rep-all .sub-opt small.fold { display: block !important; }
+@media print { .fold { display: block !important; } }
+.fold-btn { font: inherit; font-size: 11px; color: var(--muted); background: none; border: 0; padding: 0 4px; margin-left: 4px; cursor: pointer; }
+.fold-btn:hover, .chk-name:hover b { color: var(--accent); }
+.chk-name { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; color: var(--muted); font-size: 11px; display: inline-flex; gap: 4px; align-items: baseline; }
+.chk-name b { color: var(--ink); font-size: 13px; }
+@media print { .chk-name { color: transparent; } .chk-name b { color: #000; } }
+/* 산정 입력 요약(요약본 인쇄에도) */
+.inp-sum { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink2); }
+.inp-floors, .inp-items { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; }
+.inp-h { font-weight: 700; color: var(--ink); margin-right: 4px; font-size: 12.5px; }
+.inp-fl, .inp-items > span:not(.inp-h) { border: 1px solid var(--line2); border-radius: 6px; padding: 1px 7px; background: var(--m-bg); white-space: nowrap; }
+.inp-items > span:not(.inp-h) { white-space: normal; }
+.inp-fl b { font-weight: 700; color: var(--ink); }
+.inp-fl.wl { border-color: var(--chk); }
+.inp-fl em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--chk); margin-left: 4px; }
+@media print { .inp-sum { break-inside: avoid; border-color: #999; } .inp-fl, .inp-items > span:not(.inp-h) { background: none; border-color: #bbb; } }
+/* 자진 설치 설비 — 접기 */
+details.vols > summary { cursor: pointer; list-style: none; margin-bottom: 0; }
+details.vols > summary::-webkit-details-marker { display: none; }
+details.vols > summary::before { content: "▸ "; color: var(--muted); }
+details.vols[open] > summary::before { content: "▾ "; }
+details.vols[open] > summary { margin-bottom: 8px; }
+/* 출력·보고서 버튼 한 줄 */
+.rep-actions { flex-wrap: nowrap; }
+.rep-actions > button { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; padding-right: 8px; font-size: 13px; }
+.rep-actions > .rep-go { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+@media (max-width: 640px) { .rep-actions { flex-wrap: wrap; } .rep-actions > button { flex: 1 1 calc(50% - 4px); font-size: 12.5px; } }
