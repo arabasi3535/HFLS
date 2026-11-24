@@ -162,6 +162,7 @@ export function derive(b, u) {
     aboveSum, // 지상층 바닥면적 합계
     floorSum,
     hasWindowless: wl.length > 0,
+    hasFloor: (pred) => floors.some(pred), // 층 입력 행이 있는가(층별 입력 없이 층수만 있으면 false)
     ugOrWlMax: maxOf((f) => f.level < 0 || f.windowless),
     anyFloorGE,
     ugOrWlGE: (t) => anyFloorGE((f) => f.level < 0 || f.windowless, t),

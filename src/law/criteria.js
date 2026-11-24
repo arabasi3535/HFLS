@@ -24,6 +24,33 @@ import { isNoyuRes, isNoyuGen } from "./uses";
 import { ge, lt, between, or, and, num, fmt, T, F, U } from "./logic";
 
 const INF = "9999-12-31";
+
+/**
+ * (v2.49.2) 건축법령상 특별피난계단·비상용승강기·피난용승강기 설치 대상으로 보이는 이유 — 제연설비 「확인 필요」 근거
+ *  입력값(층수·층별 바닥면적·높이·용도)만으로 추정, 현행 조문 기준(허가 당시 건축법령은 따로 확인)
+ *  - 건축법 시행령 제35조제2항: 11층(공동주택 16층) 이상인 층 또는 지하 3층 이하인 층(각 바닥면적 400㎡ 미만인 층 제외) → 특별피난계단(갓복도식 공동주택 제외)
+ *  - 같은 조 제3항: 5층 이상·지하 2층 이하 판매시설 층의 직통계단 중 1개소 이상 특별피난계단
+ *  - 건축법 제64조제2항·시행령 제90조: 높이 31m 초과 → 비상용승강기
+ *  - 건축법 제64조제3항(고층건축물: 제2조제1항제19호 30층 이상 또는 높이 120m 이상) → 피난용승강기
+ *  - 주택건설기준 등에 관한 규정 제15조제2항: 10층 이상 공동주택(사업계획승인 대상) → 승용승강기를 비상용승강기 구조로
+ */
+export function stairElevReasons(c) {
+  const out = [];
+  const x = c.x;
+  const resid = c.g("apt", "row", "multi", "dorm");
+  const sp = resid ? 16 : 11;
+  const flGE = (pred) => (x.hasFloor && x.hasFloor(pred) ? x.anyFloorGE(pred, 400) : U); // 층별 면적이 없으면 확인
+  if (!(c.f.corridorApt && resid)) {
+    if (x.gf >= sp && flGE((f) => f.level >= sp) !== F) out.push(`특별피난계단 — ${sp}층 이상인 층(바닥면적 400㎡ 이상) 있음(건축법 시행령 제35조제2항${resid ? ", 공동주택 16층" : ""})`);
+    if (x.bf >= 3 && flGE((f) => f.level <= -3) !== F) out.push("특별피난계단 — 지하 3층 이하인 층(바닥면적 400㎡ 이상) 있음(건축법 시행령 제35조제2항)");
+  }
+  if (c.g("retail") && (x.gf >= 5 || x.bf >= 2)) out.push("특별피난계단 — 5층 이상 또는 지하 2층 이하 판매시설 층의 직통계단 1개소 이상(건축법 시행령 제35조제3항)");
+  const h = num(c.f.height);
+  if (h !== null ? h > 31 : x.gf >= 11) out.push(h !== null ? `비상용승강기 — 높이 ${fmt(h)}m(31m 초과, 건축법 제64조제2항)` : `비상용승강기 — 지상 ${x.gf}층(높이 미입력, 31m 초과 여부 확인 — 건축법 제64조제2항)`);
+  if (x.gf >= 30 || (h !== null && h >= 120)) out.push("피난용승강기 — 고층건축물(30층 이상 또는 높이 120m 이상, 건축법 제64조제3항)");
+  if (c.g("apt") && x.gf >= 10) out.push("비상용승강기 구조 — 10층 이상 공동주택(주택건설기준 등에 관한 규정 제15조제2항, 사업계획승인 대상)");
+  return out;
+}
 // 자료 간 시행일 차이가 남는 구간(그 사이 기준일은 '설치(연혁 확인)'으로 하향)
 
 const n0 = (v) => num(v) ?? 0; // 부가조건 수치: 미입력은 0(해당없음)으로 보고 체크리스트로 안내
@@ -1069,7 +1096,10 @@ export const CRITERIA = [
   {
     id: "sm-stair", fac: "smoke", from: D.P92, to: INF, cert: "V", src: "manual,s1,s2,cur4", cur: "7)",
     text: "특별피난계단·비상용 승강기 승강장·피난용 승강기 승강장 (갓복도형 아파트 1995.8.10.~ 제외)", scope: "부속실·승강장",
-    when: (c) => !!c.f.specialStairs && !(c.f.corridorApt && c.d >= D.P95), basis: () => "특별피난계단·비상용승강기 승강장 있음",
+    // 체크 → 설치 대상, 체크 안 함 + 건축법령상 설치 대상으로 보임 → 확인 필요(적용·미적용 선택), 그 밖 → 해당 없음
+    when: (c) => (c.f.corridorApt && c.d >= D.P95 ? F : c.f.specialStairs ? T : stairElevReasons(c).length ? U : F),
+    basis: (c) => (c.f.specialStairs ? "특별피난계단·비상용(피난용) 승강기 승강장 있음" : `건축법령상 설치 대상으로 보임 — ${stairElevReasons(c).join(" / ")}`),
+    why: (c) => (c.f.specialStairs ? "" : `${stairElevReasons(c).join(" / ")} — 현행 건축법령 기준 추정(기존 건축물은 허가 당시 기준 확인), 실제 부속실·승강장이 있으면 「적용」`),
   },
 
   // ───────────────────────── 연결송수관설비 ─────────────────────────

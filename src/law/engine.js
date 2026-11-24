@@ -3,7 +3,7 @@
 //  evaluateAt(input, date)  : 특정 기준일의 설치대상 판정
 //  review(input, today)     : 당시 기준 + 현행 비교 + 부칙 소급 + 강화기준 + 증축·용도변경
 // ============================================================
-import { CRITERIA } from "./criteria";
+import { CRITERIA, stairElevReasons } from "./criteria";
 import { FACILITIES, getFacility, stdLabel, EXEMPTION_HINTS } from "./facilities";
 import { D, getLawSystem, SOURCES } from "./sources";
 import { getUse } from "./uses";
@@ -104,6 +104,7 @@ export function evaluateAt(input, date, overrides = {}) {
       text: crit.text,
       scope: crit.scope,
       basis: safe(() => crit.basis(ctx)),
+      why: crit.why ? safe(() => crit.why(ctx)) : "", // 확인 필요 사유(화면 표시)
       ref: refText(fac, crit, date),
       cert,
       effect: eff,
@@ -204,7 +205,8 @@ function inputChecklist(u, input, x) {
   if (g("tunnel") && f.tunnelLen == null) out.push("터널 길이 미입력.");
   if (!f.parkingInside && !f.ugParking && !g("tunnel", "ugduct")) out.push("건축물 내부 차고·주차장 면적(물분무등 200㎡)·지하 주차장 면적(2026.3.1. 기준) 해당 여부 확인.");
   if (!f.elecRoom) out.push("전기실·발전실·변전실·통신기기실·전산실 바닥면적(물분무등 300㎡) 확인.");
-  if (!f.specialStairs) out.push("특별피난계단·비상용승강기 승강장 설치 여부(제연설비) 확인.");
+  // 건축법령상 설치 대상으로 보이면 제연설비가 「확인 필요」로 나오므로 여기서는 그 밖의 경우만 안내
+  if (!f.specialStairs && !stairElevReasons({ x, f, g }).length) out.push("특별피난계단·비상용승강기 승강장 설치 여부(제연설비) 확인.");
   return out;
 }
 

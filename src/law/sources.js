@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.49.1",
+  version: "2.49.2",
   date: "2026-11-24",
-  note: "결과 화면 입력 요약·설명 접기, 점검 보고서 버튼 이동(판정 규칙 변경 없음)",
+  note: "제연설비(특별피난계단·비상용승강기 승강장) — 건축법령상 설치 대상으로 보이면 확인 필요",
 };
 
 export const D = {

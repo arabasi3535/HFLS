@@ -562,7 +562,7 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, author, 
                     ) : null}
                     <span className="chk-state print-only">{d === true ? "적용(검토자 확인)" : d === false ? "미적용(검토자 확인)" : "미정"}</span>
                   </div>
-                  <span className={`chk-crit${fold[`c:${r.fac.key}`] ? "" : " fold"}`}>{r.checks.map((c) => c.text).join(" / ")}</span>
+                  <span className={`chk-crit${fold[`c:${r.fac.key}`] ? "" : " fold"}`}>{r.checks.map((c) => (c.why ? `${c.text} — ${c.why}` : c.text)).join(" / ")}</span>
                 </li>
               );
             })}
