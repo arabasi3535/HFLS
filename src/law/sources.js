@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.51.1",
+  version: "2.52.0",
   date: "2026-11-26",
-  note: "완공검사 현장확인 — 공사업법 시행령 제5조만으로 판단",
+  note: "신축 결과 「도면 검토 포인트」(화재안전기술기준 핵심) 추가(판정 규칙 변경 없음)",
 };
 
 export const D = {

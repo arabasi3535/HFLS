@@ -12,6 +12,7 @@ import { subName, groupLabel } from "./Wizard";
 import { USE_GROUPS } from "../law/uses";
 import QaLink from "./QaLink";
 import { floorRows, inputItems } from "../law/inputSummary";
+import { drawPoints, DP_VER } from "../law/drawPoints";
 
 // ============================================================
 // 간결한 결과 화면 — 설치 대상(소급·강화·대체 표시) / 확인 필요 / 출력
@@ -303,6 +304,18 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
     return [...keys];
   })();
   const nInstall = instKeys.length;
+  // (v2.52.0) 도면 검토 포인트 — 신축만, 기존 시설 사용 설비는 제외
+  const dps = (() => {
+    if (existing) return [];
+    const on = new Set(instKeys.filter((k) => !oldOn[k]));
+    const x = (rv.hist && rv.hist.x) || {};
+    const inp = rv.input || {};
+    const ctx = { g: (...k) => k.some((kk) => u.g.includes(kk)), gf: Number(inp.gf) || 0, bf: Number(inp.bf) || 0, area: Number(inp.area) || 0, f: inp.f || {}, ugSum: x.ugSum, wl: !!x.hasWindowless, has: (k) => on.has(k) };
+    const order = (k) => instKeys.indexOf(k) === -1 ? 999 : instKeys.indexOf(k);
+    return drawPoints(ctx).sort((a, b) => order(a.fac) - order(b.fac));
+  })();
+  const dpStds = [...new Set(dps.flatMap((d) => d.items.map((i) => i.std)))].filter((k) => DP_VER[k]).sort();
+  const dpName = (k) => (k === "guide" ? "유도등" : getFacility(k).name);
   const checks = hist.rows.filter((r) => r.status === STATUS.CHK || typeof r.decided === "boolean");
   const nOpen = checks.filter((r) => typeof r.decided !== "boolean").length;
   const strongCands = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("강화")) : [];
@@ -636,6 +649,50 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
           );
         })}
       </details>
+
+      {/* (v2.52.0) 도면 검토 포인트 — 화재안전기술기준 핵심(사용자 표시 부분), 기본 접힘 */}
+      {dps.length > 0 && (
+        <details className="vols dp no-print">
+          <summary className="subs-h">
+            도면 검토 포인트 <small>설치 대상별 화재안전기술기준 핵심 — 설비를 누르면 내용·근거</small>
+          </summary>
+          {dps.map((d) => (
+            <details key={d.fac} className="dp-fac">
+              <summary>
+                <b>{dpName(d.fac)}</b>
+                <span>
+                  {d.items.map((x, i) => (
+                    <span key={i} className="dp-short">
+                      {x.rev && <em className="dp-rev">개정</em>}
+                      {x.short}
+                    </span>
+                  ))}
+                </span>
+              </summary>
+              <ul>
+                {d.items.map((x, i) => (
+                  <li key={i}>
+                    {x.rev && <em className="dp-rev">개정</em>}
+                    {x.text} <span className="dp-ref">{x.src}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ))}
+          <div className="dp-ver">기준 시행일: {dpStds.map((k) => `NFTC ${k} ${DP_VER[k]}`).join(" · ")}</div>
+        </details>
+      )}
+      {dps.length > 0 && (
+        <div className="dp-print print-only">
+          <div className="dp-ph">도면 검토 포인트</div>
+          {dps.map((d) => (
+            <div key={d.fac} className="dp-pl">
+              <b>{dpName(d.fac)}</b> {d.items.map((x) => `${x.rev ? "[개정] " : ""}${x.text} (${x.src})`).join(" / ")}
+            </div>
+          ))}
+          <div className="dp-ver">기준 시행일: {dpStds.map((k) => `NFTC ${k} ${DP_VER[k]}`).join(" · ")}</div>
+        </div>
+      )}
 
       <div className="rep-actions no-print">
         <button type="button" className="w-run" onClick={() => printReport(true, objName)} title="화면에 보이는 결과만 설명 없이 출력">
