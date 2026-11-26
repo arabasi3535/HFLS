@@ -29,14 +29,12 @@ const it = (std, ref, short, text, rev = false) => ({ std: String(std), ref, sho
 const ESC = {
   noyu: { 1: ["구조대"], 2: ["구조대"], 3: ["구조대"], 4: { none: "피난교·다수인피난장비·승강식 피난기구(구조대는 장애인 관련 시설로서 스스로 피난이 불가한 사용자가 있어 2.1.2.4에 따라 추가 설치하는 경우만)" } },
   medical: { 3: ["구조대"], 4: ["구조대"] },
-  multi: { 2: ["구조대", "완강기"], 3: ["구조대", "완강기"], 4: ["구조대", "완강기"] },
-  etc: { 3: ["구조대", "완강기"], 4: ["구조대", "완강기"] },
 };
 function escapeLine(row, gf) {
   const bands = [];
   const top = Math.min(gf, 10);
   for (let lv = 1; lv <= top; lv++) {
-    const key = row === "multi" ? (lv <= 4 ? lv : null) : lv >= 4 ? 4 : lv;
+    const key = lv >= 4 ? 4 : lv;
     const v = key && ESC[row][key];
     if (!v) continue;
     const txt = v.none ? v.none : v.length === 2 ? "구조대·완강기" : `${v[0]}(완강기 불가)`;
@@ -104,18 +102,17 @@ export function drawPoints(ctx) {
       add("spk", it(103, "표 2.1.1.1", `헤드 기준개수 ${n}`, `헤드 기준개수 ${n}(${cond})`));
     }
     // 조기반응형 헤드
+    // (v2.52.0 수정) 지하주차장 습식·전기차 충전구역 조기반응형은 공동주택만, 송수구 2차측 연결(2.8.1.5)은 표시 안 함
+    if (jointHouse) add("spk", it(103, "2.5.15", "지하주차장 습식", "지하주차장은 습식 — 헤드 작동으로도 유수검지장치가 열리는 방식 허용(시험장치 기준 충족 시)", true));
     if (apt) add("spk", it(608, "2.3.1.6", "거실 조기반응형 헤드", "거실에는 조기반응형 스프링클러헤드"));
     else {
       const places = [];
       if (jointHouse || g("noyu")) places.push(`${jointHouse ? "공동주택" : "노유자시설"} 거실`);
       if (g("officetel", "lodging")) places.push(`${g("officetel") ? "오피스텔" : "숙박시설"} 침실`);
       if (inpatient) places.push("병원·의원 입원실");
-      if (places.length) add("spk", it(103, "2.7.5", `조기반응형 헤드(${places.join("·")})`, `조기반응형 헤드: ${places.join("·")} — 전기차 충전구역이 있으면 그곳도`));
-      else add("spk", it(103, "2.7.5(4)", "조기반응형 헤드(전기차 충전구역)", "전기차 충전구역이 있으면 조기반응형 헤드"));
+      if (places.length) add("spk", it(103, "2.7.5", `조기반응형 헤드(${places.join("·")})`, `조기반응형 헤드: ${places.join("·")}`));
     }
-    const ugp = num(f.ugParking);
-    if (!wh && (bf > 0 || (ugp !== null && ugp > 0))) add("spk", it(103, "2.5.15", "지하주차장 습식", `지하주차장${ugp ? "" : "이 있으면"} 습식 — 헤드 작동으로도 유수검지장치가 열리는 방식 허용(시험장치 기준 충족 시)`, true));
-    add("spk", it(103, "2.8.1.5", "송수구 2차측 연결", "준비작동식·일제살수식 등 전기 신호로만 열리는 방식이면 송수구를 방호구역(방수구역)마다 유수검지장치(일제개방밸브) 2차측에 연결", true));
+    if (jointHouse) add("spk", it(103, "2.7.5(4)", "조기반응형 헤드(전기차 충전구역)", "전기차 충전구역에는 조기반응형 헤드"));
     const ug = num(ctx.ugSum);
     if ((gf >= 7 && area >= 2000) || (ug !== null && ug >= 3000)) add("spk", it(103, "2.10.1", "감시·동력제어반 구분", `감시제어반과 동력제어반 구분 설치(${gf >= 7 && area >= 2000 ? "지하층 제외 7층 이상·연면적 2,000㎡ 이상" : "지하층 바닥면적 합계 3,000㎡ 이상"})`));
   }
@@ -143,15 +140,12 @@ export function drawPoints(ctx) {
   if (ugduct) add("monitor", it(605, "2.8.1", "통합감시시설 기준", "통합감시시설은 NFTC 605 2.8.1 기준에 따라 설치(소방관서–통제실 정보통신망 등)"));
 
   // ── 피난기구
+  // (v2.52.0 수정) 완강기 적응성이 없는 노유자시설·의료시설만 적응성 표시, 숙박시설은 객실마다 완강기, 나머지는 표시 안 함
   if (has("escape")) {
-    const row = g("noyu") ? "noyu" : inpatient ? "medical" : "etc";
-    const line = escapeLine(row, gf);
+    const row = g("noyu") ? "noyu" : inpatient ? "medical" : null;
+    const line = row && escapeLine(row, gf);
     if (line) add("escape", it(301, "표 2.1.1", line, `적응성 ${line}`));
-    if (f.multiUse && row !== "noyu") {
-      const ml = escapeLine("multi", gf);
-      if (ml) add("escape", it(301, "표 2.1.1 제3호", `다중이용업소 ${ml}`, `다중이용업소 영업장(4층 이하): ${ml}`));
-    }
-    if (g("lodging")) add("escape", it(301, "2.1.2.2", "객실마다 완강기 추가", "숙박시설(휴양콘도미니엄 제외)은 객실마다 완강기 1개 또는 객실 수용인원 수 이상 간이완강기 추가"));
+    if (g("lodging")) add("escape", it(301, "2.1.2.2", "객실마다 완강기·간이완강기", "숙박시설(휴양콘도미니엄 제외)은 객실마다 완강기 1개 또는 객실 수용인원 수 이상 간이완강기 추가"));
   }
 
   // ── 인명구조기구
@@ -181,9 +175,8 @@ export function drawPoints(ctx) {
       else if (g("entertain", "retail", "transport", "hotel", "medical", "funeral", "broadcast", "ugmall", "station")) [no, kind] = [3, "대형피난구유도등·통로유도등"];
       else if (g("lodging", "officetel")) [no, kind] = [4, "중형피난구유도등·통로유도등"];
       else if (bf > 0 || ctx.wl || gf >= 11) [no, kind] = [5, `중형피난구유도등·통로유도등(${gf >= 11 ? "11층 이상" : bf > 0 ? "지하층 있음" : "무창층 있음"})`];
-      else if (g("neigh", "noyu", "office", "power", "religion", "edu", "training", "factory", "correction", "aircar", "mixed") || f.multiUse) [no, kind] = [6, "소형피난구유도등·통로유도등"];
-      else [no, kind] = [7, "피난구유도표지·통로유도표지"];
-      add("guide", it(303, `표 2.1.1 제${no}호`, kind.replace(/\(.*\)$/, ""), kind));
+      // 소형(제6호)·유도표지(제7호) 대상은 표시 안 함(v2.52.0 수정)
+      if (no) add("guide", it(303, `표 2.1.1 제${no}호`, kind.replace(/\(.*\)$/, ""), kind));
     }
   }
 
