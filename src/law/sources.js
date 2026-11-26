@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.50.0",
+  version: "2.51.0",
   date: "2026-11-26",
-  note: "신축 대상명(선택) 입력·검토서 표시(판정 규칙 변경 없음)",
+  note: "신축 결과 「기존 소방시설 사용」 선택·(기존) 표시, 착공·감리 산정에서 제외(설치 판정 규칙 변경 없음)",
 };
 
 export const D = {

@@ -1486,3 +1486,8 @@ details.vols[open] > summary { margin-bottom: 8px; }
 .w-name input { flex: 1 1 auto; min-width: 0; font-size: 15px; padding: 8px 10px; }
 .sum-name { font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 4px; word-break: keep-all; }
 .ph-name { font-size: 22px; font-weight: 800; margin: 4px 0 2px; word-break: keep-all; }
+/* v2.51.0 기존 소방시설 사용(기본 접힘) */
+.olds { border-left: 4px solid var(--muted); }
+.olds .old-n { color: var(--accent); font-weight: 700; }
+details.olds[open] > summary { margin-bottom: 8px; }
+.cx-old { font-size: 12.5px; color: var(--ink2); background: var(--m-bg); border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; }

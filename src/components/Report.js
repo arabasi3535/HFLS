@@ -37,7 +37,10 @@ function Item({ it, open, onToggle, flash, guide }) {
   return (
     <li className={`it ${it.kind} ${fullSub ? "subbed" : ""} ${flash ? "flash" : ""}`}>
       <button type="button" className="it-main" onClick={onToggle}>
-        <span className="it-name">{guide ? (guide.kind === "light" ? "유도등" : "유도표지") : it.name}</span>
+        <span className="it-name">
+          {guide ? (guide.kind === "light" ? "유도등" : "유도표지") : it.name}
+          {it.old && "(기존)"}
+        </span>
         <span className="it-tags">
           {it.kind === "retro" && <span className="tag t-retro">소급</span>}
           {it.kind === "strong" && <span className="tag t-strong">강화기준</span>}
@@ -115,7 +118,8 @@ function Item({ it, open, onToggle, flash, guide }) {
   );
 }
 
-const EMPTY_SEL = { retro: {}, strong: {}, sub: {}, vol: {} };
+const NO_OLD = {};
+const EMPTY_SEL = { retro: {}, strong: {}, sub: {}, vol: {}, old: {} }; // old: (v2.51.0) 기존 소방시설 사용
 
 /** 인쇄: summary=true면 요약본(화면에 보이는 결과만, 설명 없이) */
 function printReport(summary, name) {
@@ -150,6 +154,8 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
   const setSubOn = upd("sub");
   const setVolOn = upd("vol");
   const volOn = sel.vol;
+  const oldOn = existing ? NO_OLD : sel.old || NO_OLD; // (v2.51.0) 신축 — 기존 시설을 그대로 쓰는 설비
+  const setOldOn = upd("old");
   const [volOpen0] = useState(() => Object.values(volOn || {}).some(Boolean)); // 자진 설비를 이미 고른 경우만 펼친 채 시작
 
   const { hist } = rv;
@@ -212,11 +218,11 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
       if (!volOn[fac.key] || m.has(fac.key)) continue;
       m.set(fac.key, { key: fac.key, name: `${fac.name}(자진)`, cat: fac.cat, row: hist.byKey[fac.key], kind: "vol", check: false, scope: "자진 설치" });
     }
-    const out = [...m.values()];
+    const out = [...m.values()].map((i) => (oldOn[i.key] && i.kind !== "vol" ? { ...i, old: true } : i));
     out.blocked = rs.blocked;
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hist, rv, existing, retroOn, strongOn, subOn, subs, volOn]);
+  }, [hist, rv, existing, retroOn, strongOn, subOn, subs, volOn, oldOn]);
 
   // 안전관리 검토 — 소방안전관리대상물 2·3급은 최종 설치 목록(부칙 소급·강화기준 선택 반영)으로 판정
   const safety = useMemo(() => {
@@ -235,6 +241,8 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
     const inst = list.filter((i) => !i.sub || i.sub.partial).map((i) => i.key);
     for (const i of list) if (i.sub) inst.push(...(i.sub.viaKeys || []));
     const vol = list.filter((i) => i.kind === "vol").map((i) => i.key);
+    // (v2.51.0) 「기존 소방시설 사용」으로 고른 설비는 새로 시공하지 않으므로 착공·기술자·감리 산정에서 뺌
+    const old = [...new Set(inst)].filter((k) => oldOn[k]);
     const f = rv.input.f || {};
     const grp0 = USE_GROUPS.find((x) => x.no === u.no);
     const sn0 = subName(u, "");
@@ -251,8 +259,9 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
       gf: rv.input.gf,
       bf: rv.input.bf,
       households: f.households || "",
-      facs: [...new Set(inst)],
+      facs: [...new Set(inst)].filter((k) => !oldOn[k]),
       vol,
+      old,
       // 비상경보설비·단독경보형 감지기 대상에 대체 설치하는 자동화재탐지설비 — 공사감리자 지정 생략 가능(소민센① 각주1)
       optSupv: list.some((i) => i.kind === "subinst" && i.key === "afd") ? ["afd"] : [],
       site: {
@@ -266,7 +275,7 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
       },
       chk: list.filter((i) => i.check).map((i) => i.name),
     };
-  }, [existing, list, rv, u]);
+  }, [existing, list, rv, u, oldOn]);
 
   // 조건 변경 시 추가·제외된 시설 잠시 강조
   const prevRef = useRef(null);
@@ -287,15 +296,16 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
   }, [sig]);
 
   // 실제 설치하는 법정 설비 수 — 대체된 설비는 빼고 대체 설비(제5호 차고·주차장 대체 설치 스프링클러 포함)를 셈, 자진 제외
-  const nInstall = (() => {
+  const instKeys = (() => {
     const keys = new Set();
     for (const i of list) {
       if (i.kind === "vol") continue;
       if (!i.sub || i.sub.partial) keys.add(i.key);
       if (i.sub) for (const k of i.sub.viaKeys || []) keys.add(k);
     }
-    return keys.size;
+    return [...keys];
   })();
+  const nInstall = instKeys.length;
   const checks = hist.rows.filter((r) => r.status === STATUS.CHK || typeof r.decided === "boolean");
   const nOpen = checks.filter((r) => typeof r.decided !== "boolean").length;
   const strongCands = existing ? rv.compare.filter((c) => c.kind === "added" && c.retroKind.startsWith("강화")) : [];
@@ -506,6 +516,23 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
           );
         })}
       </div>
+
+      {/* (v2.51.0) 기존 소방시설 사용 — 신축 설치 대상 중 기존 시설을 그대로 쓰는 설비(기본 접힘) */}
+      {!existing && instKeys.length > 0 && (
+        <details className="vols olds no-print">
+          <summary className="subs-h">
+            기존 소방시설 사용{instKeys.some((k) => oldOn[k]) && <b className="old-n"> · {instKeys.filter((k) => oldOn[k]).length}종</b>} <small>설치 대상 중 기존 시설을 그대로 쓰는 설비 — 설치 목록에 「(기존)」 표시</small>
+          </summary>
+          <div className="opt-chips">
+            {instKeys.map((k) => (
+              <label key={k} className={`chip-t ${oldOn[k] ? "on" : ""}`}>
+                <input type="checkbox" checked={!!oldOn[k]} onChange={(e) => setOldOn((o) => ({ ...(o || {}), [k]: e.target.checked }))} />
+                {k === "guide" && gk ? (gk.kind === "light" ? "유도등" : "유도표지") : getFacility(k).name}
+              </label>
+            ))}
+          </div>
+        </details>
+      )}
 
       {/* 별표5 대체 */}
       {subs.length > 0 && (

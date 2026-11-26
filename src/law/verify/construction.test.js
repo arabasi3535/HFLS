@@ -141,3 +141,11 @@ describe("자진 설치 설비(v2.42.0) — 착공신고·기술자 포함, 공�
     expect(r.tech.reasons.some((x) => x.ref === "다목1)")).toBe(true); // 기술자는 포함
   });
 });
+
+test("(v2.51.0) 기존 소방시설 사용 — 기존으로 뺀 설비만 착공 대상 설비였으면 착공신고 비대상", () => {
+  const { construction, facsFromKeys } = require("../construction");
+  const base = { area: "3000", gf: "4", bf: "1", site: { uses: ["medical"] } };
+  expect(construction({ ...base, facs: facsFromKeys(["ext", "afd"]) }).report.status).toBe("대상");
+  const r = construction({ ...base, facs: facsFromKeys(["ext"]) }); // 자동화재탐지설비를 기존 사용으로 뺀 경우
+  expect(r.report.status).toBe("비대상");
+});

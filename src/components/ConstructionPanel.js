@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { construction, facsFromKeys } from "../law/construction";
+import { getFacility } from "../law/facilities";
 
 // ============================================================
 // 신축 건축물 결과 — 소방시설공사 착공 검토(착공신고·소방기술자·공사감리·감리원)
@@ -53,6 +54,7 @@ export default function ConstructionPanel({ seed }) {
         <span>소방공사 착공·감리 판정</span>
         <span className="facs-legend">신설 공사 기준 · 공사업법 시행령</span>
       </div>
+      {seed.old && seed.old.length > 0 && <div className="cx-old">기존 시설 사용으로 착공·감리 산정에서 제외: {seed.old.map((k) => getFacility(k).name).join(", ")}</div>}
 
       {!r.ok ? (
         <div className="sf-lead">{r.msg} — 입력을 마치면 표시됩니다.</div>
