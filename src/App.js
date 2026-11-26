@@ -376,7 +376,7 @@ export default function App() {
                     setTab("inspect");
                     window.scrollTo(0, 0);
                   }}
-                  mode={mode} adminMode={adminMode} author={AUTHOR} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)}
+                  mode={mode} adminMode={adminMode} sel={sels[mode]} setSel={setSel} provisional={provisional} onReport={() => setBug(true)}
                   onDecide={(key, v) =>
                     setInput((p) => {
                       const dec = { ...(p.dec || {}) };

@@ -132,7 +132,7 @@ function printReport(summary) {
   window.print();
 }
 
-export default function Report({ rv, sv, onMakeReport, mode, adminMode, author, sel: selIn, setSel, provisional, onReport, onDecide }) {
+export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: selIn, setSel, provisional, onReport, onDecide }) {
   const existing = mode === "existing";
   const [open, setOpen] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
@@ -353,7 +353,7 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, author, 
           소방시설 적용·안전관리 검토서<span className="ps-only"> (요약)</span>
         </div>
         <div className="ph-m">
-          작성일 {fmtDate(rv.today)} · {author.org} {author.name}
+          작성일 {fmtDate(rv.today)}
         </div>
       </div>
 
