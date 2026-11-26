@@ -259,6 +259,7 @@ export function applySeed(rep, seed) {
   if (!seed) return rep;
   const r = { ...rep, bld: { ...rep.bld }, rows: {}, mRows: { ...rep.mRows } };
   r.useLabel = seed.useLabel || r.useLabel;
+  r.name = r.name || seed.name || ""; // (v2.50.0) 대상명 → 명칭(상호), 이미 적은 값은 유지
   if (!rep.kind || rep.kind === "owner") r.grade = "3급";
   else if (seed.grade) r.grade = seed.grade;
   r.bld.area = seed.area ?? r.bld.area;

@@ -9,6 +9,7 @@ import { tableRef } from "../law/engine";
 
 export const EMPTY = {
   action: "new",
+  name: "", // (v2.50.0) 대상명(선택) — 결과 화면·검토서 머리에 표시, 판정에는 쓰지 않음
   date: "",
   grp: "",
   use: "",
@@ -161,6 +162,16 @@ export default function Wizard({ mode, input, setInput, onReset, onTool, errors 
 
   return (
     <div className="wizard">
+      {!isExisting && (
+        <div className="w-name">
+          <label>
+            <span>
+              대상명 <small>(선택)</small>
+            </span>
+            <input type="text" value={input.name || ""} maxLength={60} placeholder="예: ○○빌딩 신축공사" onChange={(e) => set("name", e.target.value)} />
+          </label>
+        </div>
+      )}
       {isExisting && (
         <section className="w-step">
           <div className="w-step-h">

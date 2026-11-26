@@ -1478,3 +1478,11 @@ details.vols[open] > summary { margin-bottom: 8px; }
 .rep-actions > button { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; padding-right: 8px; font-size: 13px; }
 .rep-actions > .rep-go { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 @media (max-width: 640px) { .rep-actions { flex-wrap: wrap; } .rep-actions > button { flex: 1 1 calc(50% - 4px); font-size: 12.5px; } }
+/* v2.50.0 대상명(선택) */
+.w-name { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.w-name label { display: flex; align-items: center; gap: 10px; }
+.w-name label > span { flex: 0 0 auto; font-weight: 700; font-size: 14px; color: var(--ink); }
+.w-name label > span small { font-weight: 500; color: var(--muted); font-size: 12px; }
+.w-name input { flex: 1 1 auto; min-width: 0; font-size: 15px; padding: 8px 10px; }
+.sum-name { font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 4px; word-break: keep-all; }
+.ph-name { font-size: 22px; font-weight: 800; margin: 4px 0 2px; word-break: keep-all; }

@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.49.3",
+  version: "2.50.0",
   date: "2026-11-26",
-  note: "검토서 인쇄 머리말에서 작성자(제작자) 표시 삭제(판정 규칙 변경 없음)",
+  note: "신축 대상명(선택) 입력·검토서 표시(판정 규칙 변경 없음)",
 };
 
 export const D = {

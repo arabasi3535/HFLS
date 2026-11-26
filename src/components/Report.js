@@ -118,17 +118,18 @@ function Item({ it, open, onToggle, flash, guide }) {
 const EMPTY_SEL = { retro: {}, strong: {}, sub: {}, vol: {} };
 
 /** 인쇄: summary=true면 요약본(화면에 보이는 결과만, 설명 없이) */
-function printReport(summary) {
+function printReport(summary, name) {
   const cls = "print-summary";
   const body = document.body;
+  const title0 = document.title;
   const done = () => {
     body.classList.remove(cls);
+    document.title = title0;
     window.removeEventListener("afterprint", done);
   };
-  if (summary) {
-    body.classList.add(cls);
-    window.addEventListener("afterprint", done);
-  }
+  if (summary) body.classList.add(cls);
+  if (name) document.title = `${name} 소방시설 검토서${summary ? "(요약)" : ""}`; // PDF로 저장할 때 파일 이름
+  window.addEventListener("afterprint", done);
   window.print();
 }
 
@@ -303,6 +304,7 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
   const [fold, setFold] = useState({}); // (v2.49.1) 면제(대체)·확인 필요 항목별 설명 펼침
   const flip = (k) => setFold((o) => ({ ...o, [k]: !o[k] }));
   const allOpen = list.length > 0 && list.every((x) => open[x.key]);
+  const objName = String(rv.input.name || "").trim(); // (v2.50.0) 대상명(선택)
   const fRows = floorRows(rv.input);
   const fItems = inputItems(rv.input);
   const sys = hist.system;
@@ -330,6 +332,7 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
             variant,
             guideKind: gk.kind,
             grade: gg && gg.status === "대상" && ["특급", "1급", "2급", "3급"].includes(gg.grade) ? gg.grade : "",
+            name: objName,
             useLabel: useTitle,
             area: rv.input.area,
             gf: rv.input.gf,
@@ -352,6 +355,7 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
         <div className="ph-t">
           소방시설 적용·안전관리 검토서<span className="ps-only"> (요약)</span>
         </div>
+        {objName && <div className="ph-name">{objName}</div>}
         <div className="ph-m">
           작성일 {fmtDate(rv.today)}
         </div>
@@ -366,6 +370,7 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
 
       {/* 요약 */}
       <div className="sum">
+        {objName && <div className="sum-name no-print">{objName}</div>}
         <div className="sum-use">
           {existing ? "기존 건축물" : "신축 건축물"} · <b>{useTitle}</b>
         </div>
@@ -609,10 +614,10 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
       </details>
 
       <div className="rep-actions no-print">
-        <button type="button" className="w-run" onClick={() => printReport(true)} title="화면에 보이는 결과만 설명 없이 출력">
+        <button type="button" className="w-run" onClick={() => printReport(true, objName)} title="화면에 보이는 결과만 설명 없이 출력">
           {provisional.length > 0 ? "요약본 PDF·인쇄 (잠정)" : "요약본 PDF·인쇄"}
         </button>
-        <button type="button" className="w-reset" onClick={() => printReport(false)} title="설치 근거·범위·설치기준 설명까지 모두 출력">
+        <button type="button" className="w-reset" onClick={() => printReport(false, objName)} title="설치 근거·범위·설치기준 설명까지 모두 출력">
           상세본 PDF·인쇄
         </button>
         <button type="button" className="w-reset" onClick={() => setOpen(Object.fromEntries(list.map((i) => [i.key, !allOpen])))}>

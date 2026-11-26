@@ -27,3 +27,11 @@ test("층별 바닥면적·무창층(위층부터), 입력·선택 사항(0·빈
   expect(inputItems(input)).toEqual(["수용인원 120명", "건물 내부 차고·주차장 합계 1,200㎡", "의원 종류: 치과의원", "특별피난계단·비상용(피난용) 승강기 승강장 있음"]);
   expect(floorRows({ floors: [{ level: 1, area: "" }] })).toEqual([]);
 });
+
+test("(v2.50.0) 대상명 — 점검 보고서 명칭(상호)으로 넘기되 이미 적은 명칭은 유지", () => {
+  const { applySeed, emptyReport } = require("./report");
+  const base = emptyReport("owner");
+  expect(applySeed({ ...base, name: "" }, { name: "○○빌딩", useLabel: "업무시설" }).name).toBe("○○빌딩");
+  expect(applySeed({ ...base, name: "기존 상호" }, { name: "○○빌딩", useLabel: "업무시설" }).name).toBe("기존 상호");
+  expect(applySeed({ ...base, name: "" }, { useLabel: "업무시설" }).name).toBe("");
+});
