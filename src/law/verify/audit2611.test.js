@@ -124,10 +124,15 @@ describe("C — 안내·보조", () => {
     expect(r.hist.byKey.report.status).toBe(STATUS.REQ);
     expect(practiceNotes(r, "existing").map((n) => n.id)).toContain("report-remove");
   });
-  test("현장확인 — 노유자시설 + 스프링클러 감리 → 현장확인 의무", () => {
+  test("현장확인 — 시행령 제5조만으로 판단(v2.51.1): 노유자·숙박·스프링클러·캐비닛형 간이스프링클러 → 대상", () => {
     const c = construction({ area: 2000, gf: 3, bf: 0, facs: F("spk", "afd"), site: { uses: ["noyu"] } });
     expect(c.supv.status).toBe("대상");
-    expect(c.site.status).toBe("의무");
+    expect(c.site.status).toBe("대상");
+    expect(construction({ area: 2000, gf: 3, bf: 0, facs: F("hydrant", "afd"), site: { uses: ["lodging"], rooms: "20" } }).site.status).toBe("대상"); // 숙박시설: 객실 수 무관
+    const h = construction({ area: 2997.9, gf: 4, bf: 1, facs: F("hydrant", "spk", "afd"), site: { uses: ["medical", "hosp"] } }); // 병원 — 제2호 스프링클러
+    expect(h.site.status).toBe("대상");
+    expect(h.site.why[0]).toContain("제2호 스프링클러설비");
+    expect(construction({ area: 2000, gf: 3, bf: 0, facs: F("hydrant", "sspk", "afd"), cabinetOnly: true, site: { uses: ["office"] } }).site.status).toBe("대상"); // 스프링클러설비등에 캐비닛형 포함
     const c2 = construction({ area: 800, gf: 2, bf: 0, facs: F("afd"), site: { uses: ["office"] } });
     expect(c2.site.status).toBe("갈음");
     const c3 = construction({ area: 300, gf: 1, bf: 0, facs: F("alarm"), site: { uses: ["office"] } });

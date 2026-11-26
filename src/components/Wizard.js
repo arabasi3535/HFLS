@@ -149,7 +149,6 @@ export default function Wizard({ mode, input, setInput, onReset, onTool, errors 
     apt: g("apt"),
     households: g("apt", "row", "multi", "mixed_res"),
     aptMgmtOld: g("apt") && between(D.P92, D.P01),
-    siteNew: !isExisting,
     carStore: g("aircar") && !g("hangar", "parking") && between(D.P94, D.A),
     cooking: g("lodging") && between(D.B13, D.C),
     unmanned: g("office", "factory", "warehouse", "military", "power") && between(D.A, D.C),
@@ -346,25 +345,6 @@ export default function Wizard({ mode, input, setInput, onReset, onTool, errors 
             {need.households && (
               <Field label={g("mixed_res") ? "주택 세대수" : "세대수"} hint={g("apt") ? "전용구역 100세대 · 의무관리대상 150/300세대(단지 전체)" : "의무관리대상 공동주택 판정(단지 전체 세대수)"}>
                 <Num value={input.f.households} onChange={(v) => setF("households", v)} />
-              </Field>
-            )}
-            {need.siteNew && g("lodging") && (
-              <Field label="객실 수" hint="완공검사 현장확인 의무(대형 숙박시설 100실 이상) 판단">
-                <Num value={input.f.lodgingRooms} onChange={(v) => setF("lodgingRooms", v)} />
-              </Field>
-            )}
-            {need.siteNew && g("medical") && (
-              <Field label="병상 수" hint="완공검사 현장확인 의무(대형병원 100병상 이상) 판단">
-                <Num value={input.f.beds} onChange={(v) => setF("beds", v)} />
-              </Field>
-            )}
-            {need.siteNew && g("bigstore") && (
-              <Field label="백화점 여부" hint="완공검사 현장확인 의무(백화점) 판단">
-                <select value={input.f.deptStore || ""} onChange={(e) => setF("deptStore", e.target.value || undefined)}>
-                  <option value="">— 확인 필요 —</option>
-                  <option value="yes">백화점</option>
-                  <option value="no">백화점 아님(대형마트 등)</option>
-                </select>
               </Field>
             )}
             {need.aptMgmtOld && (

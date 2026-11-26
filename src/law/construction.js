@@ -67,7 +67,7 @@ const m2 = (x) => `${x.toLocaleString("ko-KR")}㎡`;
  * @param {object} p { apt, ugduct, hazmat, multiUse, area, gf, bf, households, facs:{key:true}, vol:{key:true}, optSupv:{key:true}, hoseReelOnly, cabinetOnly, site }
  *   vol: 자진 설치 설비(법정 설치 의무 없음) — 착공신고·소방기술자 배치에는 포함, 공사감리자는 지정 생략 가능(소민센① 각주3)
  *   optSupv: 대체설비로서 공사감리자를 지정하지 않을 수 있는 설비(비상경보설비 대상에 설치하는 자동화재탐지설비 — 소민센① 각주1)
- *   site: 완공검사 현장확인 판단 입력 { uses:[용도 그룹], rooms, beds, deptStore, pbd, gas1000, sanction }
+ *   site: 완공검사 현장확인 판단 입력 { uses:[용도 그룹], gas1000 }
  */
 export function construction(p) {
   const has = (k) => !!(p.facs && p.facs[k]);
@@ -232,7 +232,7 @@ export function construction(p) {
   notes.push("하나의 공사 현장 기준(동별이 아닌 현장 연면적 합계·최고 층수)으로 입력하세요. 2개 이상 기준에 해당하면 상위 등급 1명으로 갈음 가능(별표2 비고 바·별표4 비고 마)");
   notes.push("배치기간: 착공일부터 소방시설 완공검사증명서 발급일까지(감리원은 행정안전부령으로 정하는 기간) — 공사 중단 시 발주자 서면 승낙으로 미배치 가능");
 
-  const siteRes = siteCheck(p, { A, gf, bf, apt, ug, has, report, supv });
+  const siteRes = siteCheck(p, { A, gf, apt, has, report, supv });
   return { ok: true, area: A, floors, apt, ug, picked, report, tech, supv, site: siteRes, notes };
 }
 
@@ -245,14 +245,14 @@ export function facsFromKeys(keys) {
 }
 
 // ============================================================
-// 완공검사 현장확인 — 소방시설공사업법 제14조제1항, 시행령 제5조,
-//   소방청 「소방시설공사업법 제14조 관련 업무처리지침(완공검사 시 현장확인 기준, '26.1월)」
-//   · 감리자 없음: 소방서가 현장 확인 후 완공검사증명서 발급
-//   · 감리자 있음: 감리 결과보고서로 갈음, 영 제5조 대상은 현장 확인 가능
-//   · 지침 의무대상(영 제5조 해당): 대형 숙박시설(100실 또는 3만㎡ 이상)·노유자시설·백화점·대형병원(100병상 이상)·
-//     성능위주설계 대상·최근 3년 영업정지(취소)·과징금 처분 이력 공사·감리업체 현장 → 2인 이상 합동 현장확인
+// 완공검사 현장확인 — 소방시설공사업법 제14조제1항, 시행령 제5조만으로 판단(v2.51.1)
+//   · 감리자 없음: 소방본부장·소방서장이 완공검사(현장 확인) 후 증명서 발급(법 제14조제1항 본문)
+//   · 감리자 있음: 감리 결과보고서로 갈음, 다만 시행령 제5조 대상은 현장확인 대상(같은 항 단서)
+//   · 제5조: 1. 문화집회·종교·판매·노유자·수련·운동·숙박·창고시설, 지하상가, 다중이용업소
+//            2. 스프링클러설비등(스프링클러·간이스프링클러(캐비닛형 포함)·화재조기진압용) 또는 물분무등소화설비(호스릴 제외) 설치
+//            3. 연면적 1만㎡ 이상 또는 11층 이상(아파트 제외)  4. 지상 노출 가연성가스탱크 저장용량 합계 1천톤 이상
 // ============================================================
-export const SITE_REF = "소방시설공사업법 제14조제1항, 시행령 제5조, 소방청 「제14조 관련 업무처리지침(완공검사 시 현장확인 기준, '26.1월)」";
+export const SITE_REF = "소방시설공사업법 제14조제1항, 시행령 제5조";
 const ART5_USES = { culture: "문화 및 집회시설", religion: "종교시설", retail: "판매시설", noyu: "노유자시설", training: "수련시설", sports: "운동시설", lodging: "숙박시설", warehouse: "창고시설", ugmall: "지하상가" };
 
 /** 성능위주설계 대상(소방시설법 시행령 제9조, 신축) — 입력으로 판단 가능한 호만 자동, 나머지는 p.site.pbd 체크 */
@@ -267,58 +267,18 @@ export function pbdTarget({ A, gf, bf, apt, uses, ugSum, tunnelLen }) {
   return why;
 }
 
-function siteCheck(p, { A, gf, bf, apt, has, report, supv }) {
+function siteCheck(p, { A, gf, apt, has, report, supv }) {
   const s = p.site || {};
   const uses = s.uses || [];
-  const why = [];
-  if (report.status !== "대상") return { status: "해당 없음", why: ["착공신고 대상 공사가 아님 — 소방시설공사 완공검사 대상 아님"], art5: [], must: [], ref: SITE_REF };
-  if (supv.status !== "대상") {
-    why.push("공사감리자 지정 대상이 아님 — 소방본부장·소방서장이 현장을 확인하고 완공검사증명서를 발급(법 제14조제1항 본문)");
-    return { status: "현장확인", why, art5: [], must: [], ref: SITE_REF };
-  }
-  // 영 제5조 현장확인 대상 특정소방대상물
+  if (report.status !== "대상") return { status: "해당 없음", why: ["착공신고 대상 공사가 아님 — 소방시설공사 완공검사 대상 아님"], art5: [], ref: SITE_REF };
+  if (supv.status !== "대상") return { status: "현장확인", why: ["공사감리자 지정 대상이 아님 — 소방본부장·소방서장이 현장을 확인하고 완공검사증명서를 발급(법 제14조제1항 본문)"], art5: [], ref: SITE_REF };
   const art5 = [];
   const u1 = Object.keys(ART5_USES).filter((k) => uses.includes(k)).map((k) => ART5_USES[k]);
   if (u1.length || p.multiUse) art5.push(`제1호 ${[...u1, p.multiUse ? "다중이용업소" : ""].filter(Boolean).join("·")}`);
-  const s2 = [has("spk") && "스프링클러설비", has("sspk") && !p.cabinetOnly && "간이스프링클러설비(캐비닛형 제외)", has("water") && !p.hoseReelOnly && "물분무등소화설비(호스릴 제외)"].filter(Boolean);
+  const s2 = [has("spk") && "스프링클러설비", has("sspk") && "간이스프링클러설비", has("water") && !p.hoseReelOnly && "물분무등소화설비(호스릴 제외)"].filter(Boolean);
   if (s2.length) art5.push(`제2호 ${s2.join("·")} 설치`);
   if (!apt && (A >= 10000 || gf >= 11)) art5.push(`제3호 ${A >= 10000 ? `연면적 ${m2(A)}(1만㎡ 이상)` : `지상 ${gf}층(11층 이상)`}(아파트 제외)`);
   if (s.gas1000) art5.push("제4호 가연성가스 지상 노출 탱크 저장용량 합계 1천톤 이상");
-  if (!art5.length) {
-    why.push("감리 결과보고서로 완공검사를 갈음 — 시행령 제5조 현장확인 대상에 해당하지 않음");
-    return { status: "갈음", why, art5, must: [], ref: SITE_REF };
-  }
-  // 지침 의무대상
-  const must = [];
-  const chk = [];
-  if (uses.includes("lodging")) {
-    const rooms = n(s.rooms);
-    if (A >= 30000 || (rooms !== null && rooms >= 100)) must.push(`대형 숙박시설(${A >= 30000 ? `연면적 ${m2(A)}` : `객실 ${rooms}실`} — 100실 또는 3만㎡ 이상)`);
-    else if (rooms === null) chk.push("숙박시설 객실 수(100실 이상이면 의무)");
-  }
-  if (uses.includes("noyu")) must.push("노유자시설");
-  if (uses.includes("bigstore")) {
-    if (s.deptStore === true) must.push("백화점");
-    else if (s.deptStore === undefined || s.deptStore === null) chk.push("대규모점포 중 백화점인지(백화점이면 의무)");
-  }
-  if (uses.includes("medical") && !uses.includes("clinic")) {
-    const beds = n(s.beds);
-    if (beds !== null && beds >= 100) must.push(`대형병원(${beds}병상 — 100병상 이상)`);
-    else if (beds === null) chk.push("병상 수(100병상 이상이면 의무)");
-  }
-  const pbd = pbdTarget({ A, gf, bf, apt, uses, ugSum: n(s.ugSum), tunnelLen: n(s.tunnelLen) });
-  if (pbd.length) must.push(`성능위주설계 대상 — ${pbd.join(", ")}`);
-  else if (s.pbd) must.push("성능위주설계 대상(입력)");
-  if (s.sanction) must.push("최근 3년 이내 영업정지(취소)·과징금 처분 이력이 있는 소방공사·감리업체 현장(완공검사 신청서 접수일 기준)");
-  why.push(`시행령 제5조 현장확인 대상 — ${art5.join(" / ")}`);
-  if (must.length) {
-    why.push(`현장확인 의무대상(지침 '26.1월) — ${must.join(" / ")} → 2인 이상 합동으로 현장 확인`);
-    return { status: "의무", why, art5, must, chk, ref: SITE_REF };
-  }
-  if (chk.length) {
-    why.push(`의무대상 여부 확인 필요 — ${chk.join(" / ")}`);
-    return { status: "확인 필요", why, art5, must, chk, ref: SITE_REF };
-  }
-  why.push("지침 의무대상(대형 숙박·노유자·백화점·대형병원·성능위주설계·처분 이력 업체)에 해당하지 않음 — 감리 결과보고서로 갈음하되 소방관서 판단으로 현장 확인 가능");
-  return { status: "가능", why, art5, must, chk, ref: SITE_REF };
+  if (!art5.length) return { status: "갈음", why: ["시행령 제5조 현장확인 대상에 해당하지 않음 — 감리 결과보고서로 완공검사를 갈음(법 제14조제1항 단서)"], art5, ref: SITE_REF };
+  return { status: "대상", why: [`시행령 제5조 현장확인 대상 — ${art5.join(" / ")}`], art5, ref: SITE_REF };
 }

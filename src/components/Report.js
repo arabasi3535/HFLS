@@ -266,9 +266,6 @@ export default function Report({ rv, sv, onMakeReport, mode, adminMode, sel: sel
       optSupv: list.some((i) => i.kind === "subinst" && i.key === "afd") ? ["afd"] : [],
       site: {
         uses: u.g,
-        rooms: f.lodgingRooms || "",
-        beds: f.beds || "",
-        deptStore: u.g.includes("bigstore") ? (f.deptStore === "yes" ? true : f.deptStore === "no" ? false : null) : null,
         gas1000: (Number(f.gasTankTon) || 0) >= 1000,
         ugSum: rv.hist && rv.hist.x ? rv.hist.x.ugSum : "",
         tunnelLen: f.tunnelLen || "",
