@@ -47,9 +47,12 @@ test("아파트(NFTC 608)·창고(609)는 일반 기준 대신 특례, 설치 �
   expect(of(w, "afd")).toEqual([]);
 });
 
-test("객석유도등 — 설치 대상이면 시행령 별표4 제3호다목2) 근거로 표시", () => {
+test("객석유도등 — 「유도등」 줄에 「객석유도등」으로 함께 표시(시행령 별표4 제3호다목2))", () => {
   const r = mk(["religion"], {}, ["guide", "seatguide"]);
-  expect(of(r, "seatguide")[0]).toMatchObject({ short: "설치 대상(종교시설)", src: "소방시설법 시행령 별표4 제3호다목2)" });
-  expect(of(mk(["entertain", "dance"], {}, ["seatguide"]), "seatguide")[0].short).toBe("설치 대상(유흥주점영업시설)");
-  expect(of(mk(["office"], {}, ["guide"]), "seatguide")).toEqual([]);
+  expect(of(r, "seatguide")).toEqual([]); // 따로 줄을 만들지 않고 「유도등」에 함께
+  expect(of(r, "guide")).toEqual([expect.objectContaining({ short: "객석유도등", src: "소방시설법 시행령 별표4 제3호다목2)" })]);
+  expect(of(r, "guide")[0].text).toContain("종교시설");
+  const sp = mk(["sports"], {}, ["guide", "seatguide"]);
+  expect(of(sp, "guide").map((x) => x.short)).toEqual(["대형피난구유도등·통로유도등", "객석유도등"]);
+  expect(of(mk(["office"], {}, ["guide"]), "guide")).toEqual([]);
 });

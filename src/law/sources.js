@@ -15,9 +15,9 @@ export const HIST24_PAGES = {
 
 /** 판정 규칙 개정 이력 표시용 (사이트 머리말·바닥글에 노출) */
 export const RULES_REV = {
-  version: "2.52.1",
-  date: "2026-11-26",
-  note: "도면 검토 포인트 항목 정리(판정 규칙 변경 없음)",
+  version: "2.52.2",
+  date: "2026-11-27",
+  note: "도면 검토 포인트 — 객석유도등을 유도등 줄로 합침(판정 규칙 변경 없음)",
 };
 
 export const D = {
