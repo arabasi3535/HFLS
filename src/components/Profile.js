@@ -37,7 +37,11 @@ export default function ProfileModal({ onClose }) {
               <ul>
                 {s.items.map((it) => (
                   <li key={it.t}>
-                    {it.url ? (
+                    {it.dl ? (
+                      <a href={it.dl} download={it.file || true} className="pf-dl">
+                        {it.t} <span>⬇ 내려받기</span>
+                      </a>
+                    ) : it.url ? (
                       <a href={it.url} target="_blank" rel="noopener noreferrer">
                         {it.t}
                       </a>

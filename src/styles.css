@@ -1510,3 +1510,5 @@ details.olds[open] > summary { margin-bottom: 8px; }
 .dp-print .dp-ph { font-weight: 800; border-bottom: 1px solid #999; margin-bottom: 4px; }
 .dp-print .dp-pl { margin: 2px 0; line-height: 1.5; }
 @media print { .dp-print { break-inside: avoid-page; } }
+/* v2.52.3 제작자 정보 — 앱 내려받기 */
+.pf-dl span { font-size: 11.5px; font-weight: 700; border: 1px solid currentColor; border-radius: 6px; padding: 0 6px; margin-left: 4px; white-space: nowrap; }

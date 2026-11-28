@@ -33,7 +33,11 @@ export const PROFILE = {
     {
       k: "app",
       title: "기타 앱",
-      items: [{ t: "다이사이 점수 기록", url: "https://arabasi3535.github.io/daesai-tracker/" }],
+      // dl: 내려받기 파일(public/docs/apps) — file: 저장될 파일 이름
+      items: [
+        { t: "초과근무계산기(v2611)", dl: "/docs/apps/overtime-calc-v2611.html", file: "초과근무계산기(v2611).html", note: "HTML 파일 하나 — 내려받아 Chrome·Edge로 열기" },
+        { t: "다이사이 점수 기록", url: "https://arabasi3535.github.io/daesai-tracker/" },
+      ],
       empty: "",
     },
   ],
